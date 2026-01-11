@@ -76,92 +76,163 @@ class R2Uploader(ctk.CTk):
         )
         title_label.pack(pady=(0, 20))
         
-        # Folder Selection Section
-        folder_frame = ctk.CTkFrame(main_frame)
-        folder_frame.pack(fill="x", pady=(0, 20))
+        # === R2 BUCKET BROWSER SECTION ===
+        r2_browser_frame = ctk.CTkFrame(main_frame)
+        r2_browser_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        r2_header = ctk.CTkFrame(r2_browser_frame)
+        r2_header.pack(fill="x", padx=15, pady=(15, 10))
         
         ctk.CTkLabel(
-            folder_frame, 
-            text="Select Folder to Upload:",
-            font=ctk.CTkFont(size=14, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 5))
-        
-        self.folder_label = ctk.CTkLabel(
-            folder_frame,
-            text="No folder selected",
-            text_color="gray",
-            wraplength=700
-        )
-        self.folder_label.pack(anchor="w", padx=15, pady=(0, 5))
-        
-        ctk.CTkButton(
-            folder_frame,
-            text="Browse Folder",
-            command=self.select_folder,
-            height=35,
-            width=200
-        ).pack(padx=15, pady=(5, 15))
-        
-        # R2 Path Configuration
-        path_frame = ctk.CTkFrame(main_frame)
-        path_frame.pack(fill="x", pady=(0, 20))
-        
-        ctk.CTkLabel(
-            path_frame,
-            text="R2 Destination Path:",
-            font=ctk.CTkFont(size=14, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 5))
-        
-        ctk.CTkLabel(
-            path_frame,
-            text="Files will be uploaded to: bucket/{folder_name}/",
-            text_color="gray",
-            font=ctk.CTkFont(size=11)
-        ).pack(anchor="w", padx=15, pady=(0, 5))
-        
-        self.path_entry = ctk.CTkEntry(
-            path_frame,
-            placeholder_text="Enter custom path (optional, e.g., th11, bases/th12)"
-        )
-        self.path_entry.pack(fill="x", padx=15, pady=(0, 10))
-        
-        ctk.CTkLabel(
-            path_frame,
-            text="Leave empty to use folder name",
-            text_color="gray",
-            font=ctk.CTkFont(size=10)
-        ).pack(anchor="w", padx=15, pady=(0, 15))
-        
-        # File Preview Section
-        preview_frame = ctk.CTkFrame(main_frame)
-        preview_frame.pack(fill="both", expand=True, pady=(0, 20))
-        
-        preview_header = ctk.CTkFrame(preview_frame)
-        preview_header.pack(fill="x", padx=15, pady=(15, 10))
-        
-        ctk.CTkLabel(
-            preview_header,
-            text="Files to Upload:",
-            font=ctk.CTkFont(size=14, weight="bold")
+            r2_header,
+            text="📁 R2 Bucket Browser",
+            font=ctk.CTkFont(size=16, weight="bold")
         ).pack(side="left")
         
-        self.file_count_label = ctk.CTkLabel(
-            preview_header,
-            text="0 files",
-            text_color="gray"
-        )
-        self.file_count_label.pack(side="right")
+        ctk.CTkButton(
+            r2_header,
+            text="🔄 Refresh Folders",
+            command=self.load_r2_folders,
+            height=30,
+            width=150,
+            fg_color="#2fa572",
+            hover_color="#1f8c5a"
+        ).pack(side="right")
         
-        # File list textbox
-        self.file_list_textbox = ctk.CTkTextbox(
-            preview_frame,
-            height=200,
+        # R2 Bucket info
+        self.r2_bucket_label = ctk.CTkLabel(
+            r2_browser_frame,
+            text=f"Bucket: {BUCKET_NAME}",
+            text_color="gray",
+            font=ctk.CTkFont(size=11)
+        )
+        self.r2_bucket_label.pack(anchor="w", padx=15, pady=(0, 5))
+        
+        # R2 folders listbox
+        self.r2_folders_textbox = ctk.CTkTextbox(
+            r2_browser_frame,
+            height=150,
             font=ctk.CTkFont(family="Consolas", size=11)
         )
-        self.file_list_textbox.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        self.file_list_textbox.configure(state="disabled")
+        self.r2_folders_textbox.pack(fill="both", expand=True, padx=15, pady=(0, 10))
+        self.r2_folders_textbox.configure(state="disabled")
         
-        # Upload Controls
+        # R2 destination selection
+        r2_dest_frame = ctk.CTkFrame(r2_browser_frame)
+        r2_dest_frame.pack(fill="x", padx=15, pady=(0, 15))
+        
+        ctk.CTkLabel(
+            r2_dest_frame,
+            text="Upload to folder:",
+            font=ctk.CTkFont(size=12)
+        ).pack(side="left", padx=(0, 10))
+        
+        self.r2_dest_dropdown = ctk.CTkComboBox(
+            r2_dest_frame,
+            values=["root"],
+            width=300,
+            command=self.on_r2_folder_selected
+        )
+        self.r2_dest_dropdown.set("root")
+        self.r2_dest_dropdown.pack(side="left", padx=(0, 10))
+        
+        ctk.CTkLabel(
+            r2_dest_frame,
+            text="or create new:",
+            font=ctk.CTkFont(size=12),
+            text_color="gray"
+        ).pack(side="left", padx=(0, 5))
+        
+        self.new_folder_entry = ctk.CTkEntry(
+            r2_dest_frame,
+            placeholder_text="e.g., th11, bases/th12",
+            width=200
+        )
+        self.new_folder_entry.pack(side="left")
+        
+        # === LOCAL FILES SELECTION SECTION ===
+        local_frame = ctk.CTkFrame(main_frame)
+        local_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        local_header = ctk.CTkFrame(local_frame)
+        local_header.pack(fill="x", padx=15, pady=(15, 10))
+        
+        ctk.CTkLabel(
+            local_header,
+            text="💾 Local Files to Upload",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(side="left")
+        
+        # Button container for file/folder selection
+        btn_container = ctk.CTkFrame(local_header)
+        btn_container.pack(side="right")
+        
+        ctk.CTkButton(
+            btn_container,
+            text="📁 Select Folder",
+            command=self.select_folder,
+            height=30,
+            width=130
+        ).pack(side="left", padx=2)
+        
+        ctk.CTkButton(
+            btn_container,
+            text="📄 Select Files",
+            command=self.select_files,
+            height=30,
+            width=130
+        ).pack(side="left", padx=2)
+        
+        self.folder_label = ctk.CTkLabel(
+            local_frame,
+            text="No files selected",
+            text_color="gray",
+            wraplength=1000
+        )
+        self.folder_label.pack(anchor="w", padx=15, pady=(0, 10))
+        
+        # File selection controls
+        file_controls = ctk.CTkFrame(local_frame)
+        file_controls.pack(fill="x", padx=15, pady=(0, 10))
+        
+        self.file_count_label = ctk.CTkLabel(
+            file_controls,
+            text="0 files selected",
+            text_color="gray"
+        )
+        self.file_count_label.pack(side="left")
+        
+        btn_controls = ctk.CTkFrame(file_controls)
+        btn_controls.pack(side="right")
+        
+        ctk.CTkButton(
+            btn_controls,
+            text="✓ Select All",
+            command=self.select_all_files,
+            height=25,
+            width=100,
+            fg_color="#4a4a4a",
+            hover_color="#3a3a3a"
+        ).pack(side="left", padx=2)
+        
+        ctk.CTkButton(
+            btn_controls,
+            text="✗ Deselect All",
+            command=self.deselect_all_files,
+            height=25,
+            width=100,
+            fg_color="#4a4a4a",
+            hover_color="#3a3a3a"
+        ).pack(side="left", padx=2)
+        
+        # Scrollable file list with checkboxes
+        self.file_list_frame = ctk.CTkScrollableFrame(
+            local_frame,
+            height=200
+        )
+        self.file_list_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # === UPLOAD CONTROLS ===
         control_frame = ctk.CTkFrame(main_frame)
         control_frame.pack(fill="x")
         
@@ -170,9 +241,9 @@ class R2Uploader(ctk.CTk):
         
         self.upload_button = ctk.CTkButton(
             button_container,
-            text="Upload to R2",
+            text="🚀 Upload to R2",
             command=self.confirm_upload,
-            height=40,
+            height=45,
             width=200,
             font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="#1f6aa5",
@@ -183,9 +254,9 @@ class R2Uploader(ctk.CTk):
         
         self.cancel_button = ctk.CTkButton(
             button_container,
-            text="Clear Selection",
+            text="🗑️ Clear All",
             command=self.clear_selection,
-            height=40,
+            height=45,
             width=150,
             font=ctk.CTkFont(size=14),
             fg_color="#6b6b6b",
@@ -204,6 +275,9 @@ class R2Uploader(ctk.CTk):
             font=ctk.CTkFont(size=12)
         )
         self.progress_label.pack(pady=(0, 15))
+        
+        # Load R2 folders on startup
+        self.after(500, self.load_r2_folders)
         
     def select_folder(self):
         """Open folder selection dialog"""
