@@ -11,7 +11,7 @@ class ImageBatchProcessor(ctk.CTk):
         
         # Window configuration
         self.title("Image Batch Processor")
-        self.geometry("600*900")
+        self.geometry("600x900")
         
         # Set theme
         ctk.set_appearance_mode("dark")
@@ -26,9 +26,13 @@ class ImageBatchProcessor(ctk.CTk):
         self.setup_ui()
         
     def setup_ui(self):
+        # Create scrollable frame
+        scrollable_frame = ctk.CTkScrollableFrame(self)
+        scrollable_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
         # Main container with padding
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame = ctk.CTkFrame(scrollable_frame)
+        main_frame.pack(fill="both", expand=True, padx=0, pady=0)
         
         # Title
         title_label = ctk.CTkLabel(
@@ -137,32 +141,59 @@ class ImageBatchProcessor(ctk.CTk):
         self.thumbnail_width_entry.insert(0, "300")
         self.thumbnail_width_entry.pack(padx=15, pady=(0, 10))
         
-        # Quality Slider
+        # Details Quality Slider
         ctk.CTkLabel(
             settings_frame,
-            text="Quality:",
+            text="Details Image Quality:",
             font=ctk.CTkFont(size=14)
         ).pack(anchor="w", padx=15, pady=(5, 5))
         
-        quality_frame = ctk.CTkFrame(settings_frame)
-        quality_frame.pack(fill="x", padx=15, pady=(0, 10))
+        details_quality_frame = ctk.CTkFrame(settings_frame)
+        details_quality_frame.pack(fill="x", padx=15, pady=(0, 10))
         
-        self.quality_slider = ctk.CTkSlider(
-            quality_frame,
+        self.details_quality_slider = ctk.CTkSlider(
+            details_quality_frame,
             from_=1,
             to=100,
             number_of_steps=99,
-            command=self.update_quality_label
+            command=self.update_details_quality_label
         )
-        self.quality_slider.set(80)
-        self.quality_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.details_quality_slider.set(80)
+        self.details_quality_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
         
-        self.quality_label = ctk.CTkLabel(
-            quality_frame,
+        self.details_quality_label = ctk.CTkLabel(
+            details_quality_frame,
             text="80",
             width=40
         )
-        self.quality_label.pack(side="right")
+        self.details_quality_label.pack(side="right")
+        
+        # Thumbnail Quality Slider
+        ctk.CTkLabel(
+            settings_frame,
+            text="Thumbnail Quality:",
+            font=ctk.CTkFont(size=14)
+        ).pack(anchor="w", padx=15, pady=(5, 5))
+        
+        thumbnail_quality_frame = ctk.CTkFrame(settings_frame)
+        thumbnail_quality_frame.pack(fill="x", padx=15, pady=(0, 10))
+        
+        self.thumbnail_quality_slider = ctk.CTkSlider(
+            thumbnail_quality_frame,
+            from_=1,
+            to=100,
+            number_of_steps=99,
+            command=self.update_thumbnail_quality_label
+        )
+        self.thumbnail_quality_slider.set(80)
+        self.thumbnail_quality_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        
+        self.thumbnail_quality_label = ctk.CTkLabel(
+            thumbnail_quality_frame,
+            text="80",
+            width=40
+        )
+        self.thumbnail_quality_label.pack(side="right")
         
         # Aggressive Compression Checkbox
         self.aggressive_compression_var = ctk.BooleanVar(value=False)
@@ -201,8 +232,11 @@ class ImageBatchProcessor(ctk.CTk):
         )
         self.progress_label.pack(pady=(0, 15))
         
-    def update_quality_label(self, value):
-        self.quality_label.configure(text=str(int(value)))
+    def update_details_quality_label(self, value):
+        self.details_quality_label.configure(text=str(int(value)))
+        
+    def update_thumbnail_quality_label(self, value):
+        self.thumbnail_quality_label.configure(text=str(int(value)))
         
     def select_source_folder(self):
         folder = filedialog.askdirectory(title="Select Source Folder")
@@ -278,7 +312,8 @@ class ImageBatchProcessor(ctk.CTk):
                 return
             
             total_images = len(image_files)
-            quality = int(self.quality_slider.get())
+            details_quality = int(self.details_quality_slider.get())
+            thumbnail_quality = int(self.thumbnail_quality_slider.get())
             details_width = int(self.details_width_entry.get())
             thumbnail_width = int(self.thumbnail_width_entry.get())
             aggressive_compression = self.aggressive_compression_var.get()
@@ -300,11 +335,11 @@ class ImageBatchProcessor(ctk.CTk):
                         
                         base_name = Path(filename).stem
                         
-                        # Prepare save options based on aggressive compression setting
-                        save_options = {'format': 'WEBP', 'quality': quality}
+                        # Prepare save options for details image
+                        details_save_options = {'format': 'WEBP', 'quality': details_quality}
                         if aggressive_compression:
-                            save_options['optimize'] = True
-                            save_options['method'] = 6
+                            details_save_options['optimize'] = True
+                            details_save_options['method'] = 6
                         
                         # Create details version (resize to details width)
                         # Calculate new height maintaining aspect ratio
@@ -316,7 +351,13 @@ class ImageBatchProcessor(ctk.CTk):
                         
                         details_filename = f"{base_name}.webp"
                         details_path = os.path.join(self.details_output_folder, details_filename)
-                        details_img.save(details_path, **save_options)
+                        details_img.save(details_path, **details_save_options)
+                        
+                        # Prepare save options for thumbnail image
+                        thumbnail_save_options = {'format': 'WEBP', 'quality': thumbnail_quality}
+                        if aggressive_compression:
+                            thumbnail_save_options['optimize'] = True
+                            thumbnail_save_options['method'] = 6
                         
                         # Create thumbnail version
                         # Calculate new height maintaining aspect ratio
@@ -328,7 +369,7 @@ class ImageBatchProcessor(ctk.CTk):
                         
                         thumbnail_filename = f"{base_name}_thumb.webp"
                         thumbnail_path = os.path.join(self.thumbnail_output_folder, thumbnail_filename)
-                        thumbnail.save(thumbnail_path, **save_options)
+                        thumbnail.save(thumbnail_path, **thumbnail_save_options)
                         
                 except Exception as e:
                     print(f"Error processing {filename}: {str(e)}")
