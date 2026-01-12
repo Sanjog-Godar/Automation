@@ -113,33 +113,83 @@ class ImageBatchProcessor(ctk.CTk):
         settings_frame = ctk.CTkFrame(main_frame)
         settings_frame.pack(fill="x", pady=(0, 20))
         
-        # Details Image Width
+        # Details Image Size
         ctk.CTkLabel(
             settings_frame,
-            text="Details Image Width (pixels):",
+            text="Full Image Size (16:9):",
             font=ctk.CTkFont(size=14)
         ).pack(anchor="w", padx=15, pady=(15, 5))
         
-        self.details_width_entry = ctk.CTkEntry(
-            settings_frame,
-            placeholder_text="1200"
-        )
-        self.details_width_entry.insert(0, "1200")
-        self.details_width_entry.pack(padx=15, pady=(0, 10))
+        details_size_frame = ctk.CTkFrame(settings_frame)
+        details_size_frame.pack(fill="x", padx=15, pady=(0, 10))
         
-        # Thumbnail Width
+        self.details_width_entry = ctk.CTkEntry(
+            details_size_frame,
+            placeholder_text="1920",
+            width=100
+        )
+        self.details_width_entry.insert(0, "1920")
+        self.details_width_entry.pack(side="left", padx=(0, 5))
+        
+        ctk.CTkLabel(
+            details_size_frame,
+            text="x",
+            font=ctk.CTkFont(size=12)
+        ).pack(side="left", padx=(0, 5))
+        
+        self.details_height_entry = ctk.CTkEntry(
+            details_size_frame,
+            placeholder_text="1080",
+            width=100
+        )
+        self.details_height_entry.insert(0, "1080")
+        self.details_height_entry.pack(side="left", padx=(0, 10))
+        
+        ctk.CTkLabel(
+            details_size_frame,
+            text="px (for detail views)",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        ).pack(side="left")
+        
+        # Thumbnail Size
         ctk.CTkLabel(
             settings_frame,
-            text="Thumbnail Width (pixels):",
+            text="Thumbnail Size (3:2):",
             font=ctk.CTkFont(size=14)
         ).pack(anchor="w", padx=15, pady=(5, 5))
         
+        thumbnail_size_frame = ctk.CTkFrame(settings_frame)
+        thumbnail_size_frame.pack(fill="x", padx=15, pady=(0, 10))
+        
         self.thumbnail_width_entry = ctk.CTkEntry(
-            settings_frame,
-            placeholder_text="300"
+            thumbnail_size_frame,
+            placeholder_text="1200",
+            width=100
         )
-        self.thumbnail_width_entry.insert(0, "300")
-        self.thumbnail_width_entry.pack(padx=15, pady=(0, 10))
+        self.thumbnail_width_entry.insert(0, "1200")
+        self.thumbnail_width_entry.pack(side="left", padx=(0, 5))
+        
+        ctk.CTkLabel(
+            thumbnail_size_frame,
+            text="x",
+            font=ctk.CTkFont(size=12)
+        ).pack(side="left", padx=(0, 5))
+        
+        self.thumbnail_height_entry = ctk.CTkEntry(
+            thumbnail_size_frame,
+            placeholder_text="800",
+            width=100
+        )
+        self.thumbnail_height_entry.insert(0, "800")
+        self.thumbnail_height_entry.pack(side="left", padx=(0, 10))
+        
+        ctk.CTkLabel(
+            thumbnail_size_frame,
+            text="px (for cards/grids)",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        ).pack(side="left")
         
         # Details Quality Slider
         ctk.CTkLabel(
@@ -272,18 +322,20 @@ class ImageBatchProcessor(ctk.CTk):
             
         try:
             details_width = int(self.details_width_entry.get())
-            if details_width <= 0:
+            details_height = int(self.details_height_entry.get())
+            if details_width <= 0 or details_height <= 0:
                 raise ValueError
         except ValueError:
-            messagebox.showerror("Error", "Please enter a valid details image width")
+            messagebox.showerror("Error", "Please enter valid full image dimensions")
             return
             
         try:
             thumbnail_width = int(self.thumbnail_width_entry.get())
-            if thumbnail_width <= 0:
+            thumbnail_height = int(self.thumbnail_height_entry.get())
+            if thumbnail_width <= 0 or thumbnail_height <= 0:
                 raise ValueError
         except ValueError:
-            messagebox.showerror("Error", "Please enter a valid thumbnail width")
+            messagebox.showerror("Error", "Please enter valid thumbnail dimensions")
             return
             
         # Disable start button during processing
@@ -315,7 +367,9 @@ class ImageBatchProcessor(ctk.CTk):
             details_quality = int(self.details_quality_slider.get())
             thumbnail_quality = int(self.thumbnail_quality_slider.get())
             details_width = int(self.details_width_entry.get())
+            details_height = int(self.details_height_entry.get())
             thumbnail_width = int(self.thumbnail_width_entry.get())
+            thumbnail_height = int(self.thumbnail_height_entry.get())
             aggressive_compression = self.aggressive_compression_var.get()
             
             # Create output folders if they don't exist
@@ -341,13 +395,24 @@ class ImageBatchProcessor(ctk.CTk):
                             details_save_options['optimize'] = True
                             details_save_options['method'] = 6
                         
-                        # Create details version (resize to details width)
-                        # Calculate new height maintaining aspect ratio
-                        details_aspect_ratio = img.height / img.width
-                        details_new_height = int(details_width * details_aspect_ratio)
+                        # Create full image (1920x1080 - 16:9 aspect ratio)
+                        # Calculate crop to fit 16:9 aspect ratio
+                        target_ratio = details_width / details_height  # 16:9 = 1.778
+                        current_ratio = img.width / img.height
                         
-                        # Resize using LANCZOS resampling for high quality
-                        details_img = img.resize((details_width, details_new_height), Image.LANCZOS)
+                        if current_ratio > target_ratio:
+                            # Image is wider - crop width
+                            new_width = int(img.height * target_ratio)
+                            left = (img.width - new_width) // 2
+                            img_cropped = img.crop((left, 0, left + new_width, img.height))
+                        else:
+                            # Image is taller - crop height
+                            new_height = int(img.width / target_ratio)
+                            top = (img.height - new_height) // 2
+                            img_cropped = img.crop((0, top, img.width, top + new_height))
+                        
+                        # Resize to exact dimensions using LANCZOS resampling
+                        details_img = img_cropped.resize((details_width, details_height), Image.LANCZOS)
                         
                         details_filename = f"{base_name}.webp"
                         details_path = os.path.join(self.details_output_folder, details_filename)
@@ -359,13 +424,24 @@ class ImageBatchProcessor(ctk.CTk):
                             thumbnail_save_options['optimize'] = True
                             thumbnail_save_options['method'] = 6
                         
-                        # Create thumbnail version
-                        # Calculate new height maintaining aspect ratio
-                        thumb_aspect_ratio = img.height / img.width
-                        thumb_new_height = int(thumbnail_width * thumb_aspect_ratio)
+                        # Create thumbnail (1200x800 - 3:2 aspect ratio)
+                        # Calculate crop to fit 3:2 aspect ratio
+                        thumb_target_ratio = thumbnail_width / thumbnail_height  # 3:2 = 1.5
+                        thumb_current_ratio = img.width / img.height
                         
-                        # Resize using LANCZOS resampling for high quality
-                        thumbnail = img.resize((thumbnail_width, thumb_new_height), Image.LANCZOS)
+                        if thumb_current_ratio > thumb_target_ratio:
+                            # Image is wider - crop width
+                            thumb_new_width = int(img.height * thumb_target_ratio)
+                            thumb_left = (img.width - thumb_new_width) // 2
+                            thumb_cropped = img.crop((thumb_left, 0, thumb_left + thumb_new_width, img.height))
+                        else:
+                            # Image is taller - crop height
+                            thumb_new_height = int(img.width / thumb_target_ratio)
+                            thumb_top = (img.height - thumb_new_height) // 2
+                            thumb_cropped = img.crop((0, thumb_top, img.width, thumb_top + thumb_new_height))
+                        
+                        # Resize to exact dimensions using LANCZOS resampling
+                        thumbnail = thumb_cropped.resize((thumbnail_width, thumbnail_height), Image.LANCZOS)
                         
                         thumbnail_filename = f"{base_name}_thumb.webp"
                         thumbnail_path = os.path.join(self.thumbnail_output_folder, thumbnail_filename)

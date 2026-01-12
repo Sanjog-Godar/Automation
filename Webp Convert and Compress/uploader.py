@@ -35,6 +35,7 @@ class R2Uploader(ctk.CTk):
         self.r2_folders = []
         self.selected_r2_folder = ""
         self.file_checkboxes = {}
+        self.search_results = []
         
         # Initialize R2 client
         self.init_r2_client()
@@ -150,6 +151,83 @@ class R2Uploader(ctk.CTk):
             width=200
         )
         self.new_folder_entry.pack(side="left")
+        
+        # === SEARCH & DELETE SECTION ===
+        search_frame = ctk.CTkFrame(main_frame)
+        search_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        search_header = ctk.CTkFrame(search_frame)
+        search_header.pack(fill="x", padx=15, pady=(15, 10))
+        
+        ctk.CTkLabel(
+            search_header,
+            text="🔍 Search & Delete Files",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(side="left")
+        
+        # Search controls
+        search_controls = ctk.CTkFrame(search_frame)
+        search_controls.pack(fill="x", padx=15, pady=(0, 10))
+        
+        ctk.CTkLabel(
+            search_controls,
+            text="Search:",
+            font=ctk.CTkFont(size=13)
+        ).pack(side="left", padx=(0, 8))
+        
+        self.search_entry = ctk.CTkEntry(
+            search_controls,
+            placeholder_text="Enter filename or part of filename...",
+            width=400,
+            height=35
+        )
+        self.search_entry.pack(side="left", padx=(0, 10))
+        self.search_entry.bind("<Return>", lambda e: self.search_files())
+        
+        ctk.CTkButton(
+            search_controls,
+            text="🔍 Search",
+            command=self.search_files,
+            height=35,
+            width=120,
+            fg_color="#2196F3",
+            hover_color="#1976D2"
+        ).pack(side="left", padx=2)
+        
+        ctk.CTkButton(
+            search_controls,
+            text="✕ Clear",
+            command=self.clear_search,
+            height=35,
+            width=100,
+            fg_color="#6b6b6b",
+            hover_color="#4a4a4a"
+        ).pack(side="left", padx=2)
+        
+        # Search results count
+        self.search_count_label = ctk.CTkLabel(
+            search_frame,
+            text="Search for files in your R2 bucket",
+            text_color="gray",
+            font=ctk.CTkFont(size=12)
+        )
+        self.search_count_label.pack(anchor="w", padx=15, pady=(0, 5))
+        
+        # Search results list
+        self.search_results_frame = ctk.CTkScrollableFrame(
+            search_frame,
+            height=180
+        )
+        self.search_results_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # Initial empty state
+        empty_search_label = ctk.CTkLabel(
+            self.search_results_frame,
+            text="🔍 No search performed yet\n\nEnter a filename and click Search",
+            text_color="gray",
+            font=ctk.CTkFont(size=13)
+        )
+        empty_search_label.pack(pady=40)
         
         # === LOCAL FILES SELECTION SECTION ===
         local_frame = ctk.CTkFrame(main_frame)
@@ -351,6 +429,178 @@ class R2Uploader(ctk.CTk):
         """Handle R2 folder selection from dropdown"""
         self.selected_r2_folder = choice if choice != "root" else ""
         self.new_folder_entry.delete(0, "end")
+    
+    def search_files(self):
+        """Search for files in R2 bucket"""
+        search_term = self.search_entry.get().strip()
+        
+        if not search_term:
+            messagebox.showwarning("Search", "Please enter a search term")
+            return
+        
+        if not self.s3_client:
+            messagebox.showerror("Error", "R2 client not initialized. Check your .env credentials.")
+            return
+        
+        self.search_count_label.configure(text=f"Searching for '{search_term}'...")
+        
+        # Run search in thread
+        thread = threading.Thread(target=self._perform_search, args=(search_term,), daemon=True)
+        thread.start()
+    
+    def _perform_search(self, search_term):
+        """Perform search in background thread"""
+        try:
+            self.search_results = []
+            
+            # List all objects in bucket
+            paginator = self.s3_client.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=BUCKET_NAME)
+            
+            search_lower = search_term.lower()
+            
+            for page in pages:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        key = obj['Key']
+                        filename = os.path.basename(key)
+                        
+                        # Check if search term is in filename
+                        if search_lower in filename.lower():
+                            self.search_results.append({
+                                'key': key,
+                                'filename': filename,
+                                'size': obj['Size'],
+                                'last_modified': obj['LastModified']
+                            })
+            
+            # Update UI with results
+            self.after(0, self._display_search_results)
+            
+        except Exception as e:
+            self.after(0, lambda: messagebox.showerror("Search Error", f"Failed to search: {str(e)}"))
+            self.after(0, lambda: self.search_count_label.configure(text="Search failed"))
+    
+    def _display_search_results(self):
+        """Display search results in UI"""
+        # Clear previous results
+        for widget in self.search_results_frame.winfo_children():
+            widget.destroy()
+        
+        if not self.search_results:
+            no_results = ctk.CTkLabel(
+                self.search_results_frame,
+                text=f"❌ No files found matching '{self.search_entry.get()}'\n\nTry a different search term",
+                text_color="gray",
+                font=ctk.CTkFont(size=13)
+            )
+            no_results.pack(pady=40)
+            self.search_count_label.configure(text="No results found", text_color="orange")
+            return
+        
+        # Update count label
+        count = len(self.search_results)
+        self.search_count_label.configure(
+            text=f"✓ Found {count} file{'s' if count != 1 else ''}",
+            text_color="#4CAF50"
+        )
+        
+        # Display each result with delete button
+        for i, result in enumerate(self.search_results):
+            result_frame = ctk.CTkFrame(self.search_results_frame)
+            result_frame.pack(fill="x", padx=5, pady=5)
+            
+            # File icon based on extension
+            ext = Path(result['filename']).suffix.lower()
+            icon = self.get_file_icon(ext)
+            
+            # Left side - File info
+            info_frame = ctk.CTkFrame(result_frame, fg_color="transparent")
+            info_frame.pack(side="left", fill="x", expand=True, padx=10, pady=8)
+            
+            # Filename
+            filename_label = ctk.CTkLabel(
+                info_frame,
+                text=f"{icon} {result['filename']}",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                anchor="w"
+            )
+            filename_label.pack(anchor="w")
+            
+            # Path and size
+            details_text = f"📁 {result['key']} | 📊 {self.format_size(result['size'])}"
+            details_label = ctk.CTkLabel(
+                info_frame,
+                text=details_text,
+                font=ctk.CTkFont(family="Consolas", size=10),
+                text_color="gray",
+                anchor="w"
+            )
+            details_label.pack(anchor="w")
+            
+            # Right side - Delete button
+            delete_btn = ctk.CTkButton(
+                result_frame,
+                text="🗑️ Delete",
+                command=lambda key=result['key'], name=result['filename']: self.confirm_delete(key, name),
+                width=100,
+                height=35,
+                fg_color="#f44336",
+                hover_color="#d32f2f",
+                font=ctk.CTkFont(size=12, weight="bold")
+            )
+            delete_btn.pack(side="right", padx=10, pady=5)
+    
+    def clear_search(self):
+        """Clear search results and input"""
+        self.search_entry.delete(0, "end")
+        self.search_results = []
+        
+        # Clear results display
+        for widget in self.search_results_frame.winfo_children():
+            widget.destroy()
+        
+        empty_search_label = ctk.CTkLabel(
+            self.search_results_frame,
+            text="🔍 No search performed yet\n\nEnter a filename and click Search",
+            text_color="gray",
+            font=ctk.CTkFont(size=13)
+        )
+        empty_search_label.pack(pady=40)
+        
+        self.search_count_label.configure(
+            text="Search for files in your R2 bucket",
+            text_color="gray"
+        )
+    
+    def confirm_delete(self, file_key, filename):
+        """Show confirmation dialog before deleting"""
+        message = f"⚠️ Are you sure you want to delete this file?\n\n📄 {filename}\n📁 {file_key}\n\nThis action cannot be undone!"
+        
+        if messagebox.askyesno("Confirm Delete", message):
+            self.delete_file(file_key, filename)
+    
+    def delete_file(self, file_key, filename):
+        """Delete a file from R2"""
+        if not self.s3_client:
+            messagebox.showerror("Error", "R2 client not initialized")
+            return
+        
+        try:
+            # Delete the file
+            self.s3_client.delete_object(Bucket=BUCKET_NAME, Key=file_key)
+            
+            messagebox.showinfo("Success", f"✅ Successfully deleted:\n{filename}")
+            
+            # Refresh search results
+            if self.search_entry.get().strip():
+                self.search_files()
+            
+            # Refresh folder list
+            self.load_r2_folders()
+            
+        except Exception as e:
+            messagebox.showerror("Delete Error", f"Failed to delete file:\n{str(e)}")
     
     def select_folder(self):
         """Open folder selection dialog"""
