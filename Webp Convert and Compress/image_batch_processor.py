@@ -164,10 +164,10 @@ class ImageBatchProcessor(ctk.CTk):
         
         self.thumbnail_width_entry = ctk.CTkEntry(
             thumbnail_size_frame,
-            placeholder_text="1200",
+            placeholder_text="600",
             width=100
         )
-        self.thumbnail_width_entry.insert(0, "1200")
+        self.thumbnail_width_entry.insert(0, "600")
         self.thumbnail_width_entry.pack(side="left", padx=(0, 5))
         
         ctk.CTkLabel(
@@ -178,10 +178,10 @@ class ImageBatchProcessor(ctk.CTk):
         
         self.thumbnail_height_entry = ctk.CTkEntry(
             thumbnail_size_frame,
-            placeholder_text="800",
+            placeholder_text="400",
             width=100
         )
-        self.thumbnail_height_entry.insert(0, "800")
+        self.thumbnail_height_entry.insert(0, "400")
         self.thumbnail_height_entry.pack(side="left", padx=(0, 10))
         
         ctk.CTkLabel(
@@ -208,12 +208,12 @@ class ImageBatchProcessor(ctk.CTk):
             number_of_steps=99,
             command=self.update_details_quality_label
         )
-        self.details_quality_slider.set(80)
+        self.details_quality_slider.set(75)
         self.details_quality_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
         
         self.details_quality_label = ctk.CTkLabel(
             details_quality_frame,
-            text="80",
+            text="75",
             width=40
         )
         self.details_quality_label.pack(side="right")
@@ -235,12 +235,12 @@ class ImageBatchProcessor(ctk.CTk):
             number_of_steps=99,
             command=self.update_thumbnail_quality_label
         )
-        self.thumbnail_quality_slider.set(80)
+        self.thumbnail_quality_slider.set(60)
         self.thumbnail_quality_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
         
         self.thumbnail_quality_label = ctk.CTkLabel(
             thumbnail_quality_frame,
-            text="80",
+            text="60",
             width=40
         )
         self.thumbnail_quality_label.pack(side="right")
