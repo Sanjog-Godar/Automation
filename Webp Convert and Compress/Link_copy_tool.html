@@ -363,6 +363,59 @@
             font-size: 1.5rem;
         }
 
+        .file-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .file-upload-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             body {
@@ -515,6 +568,16 @@
                     📊 Total Rows: <span class="row-count-value" id="rowCount">10</span>
                 </div>
             </div>
+
+            <div class="file-actions">
+                <label class="file-upload-label">
+                    <input type="file" id="fileInput" accept=".sanjog" style="display: none;" onchange="handleFileUpload(event)">
+                    📂 Upload .sanjog
+                </label>
+                <button class="download-btn" type="button" onclick="downloadLinks()">
+                    💾 Download .sanjog
+                </button>
+            </div>
         </div>
 
         <footer class="footer">
@@ -644,9 +707,108 @@
             document.getElementById('rowCount').textContent = rowCount;
         }
 
-       
-        
-        document.head.appendChild(style);
+        function getAllRowsData() {
+            const inputs = document.querySelectorAll('.url-input');
+            const rowsData = [];
+            inputs.forEach((input, index) => {
+                const rowNumber = index + 1;
+                const value = input.value.trim();
+                rowsData.push({
+                    rowNumber: rowNumber,
+                    url: value
+                });
+            });
+            return rowsData;
+        }
+
+        function downloadLinks() {
+            const rowsData = getAllRowsData();
+
+            if (rowsData.length === 0) {
+                alert('There are no rows to save.');
+                return;
+            }
+
+            const dataToSave = {
+                totalRows: rowsData.length,
+                rows: rowsData
+            };
+
+            const content = JSON.stringify(dataToSave, null, 2);
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.href = url;
+            a.download = `links-${timestamp}.sanjog`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.sanjog')) {
+                alert('Only .sanjog files are supported.');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result || '';
+                    const data = JSON.parse(text);
+
+                    if (!data.rows || !Array.isArray(data.rows)) {
+                        throw new Error('Invalid file format');
+                    }
+
+                    const container = document.getElementById('rowsContainer');
+                    container.innerHTML = '';
+                    rowCount = 0;
+
+                    const totalRows = data.totalRows || data.rows.length;
+
+                    for (let i = 0; i < totalRows; i++) {
+                        rowCount++;
+                        const row = createRow(rowCount, false);
+                        container.appendChild(row);
+                    }
+
+                    data.rows.forEach(rowData => {
+                        const rowNum = rowData.rowNumber;
+                        const input = document.getElementById(`input-${rowNum}`);
+                        if (input && rowData.url) {
+                            input.value = rowData.url;
+                        }
+                    });
+
+                    updateRowCount();
+                    
+                } catch (error) {
+                    alert('Failed to read the file. The file may be corrupted or in an invalid format.');
+                    console.error('File upload error:', error);
+                }
+
+                event.target.value = '';
+            };
+
+            reader.onerror = function() {
+                alert('Failed to read the file. Please try again.');
+                event.target.value = '';
+            };
+
+            reader.readAsText(file);
+        }
     </script>
 </body>
 </html>

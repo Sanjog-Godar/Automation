@@ -11,7 +11,8 @@ class UniversalImageConverter(ctk.CTk):
         
         # Window configuration
         self.title("Universal Image Converter & Compressor")
-        self.geometry("850x720")
+        # Slightly smaller default height and make layout scrollable
+        self.geometry("850x680")
         
         # Set theme
         ctk.set_appearance_mode("dark")
@@ -38,8 +39,8 @@ class UniversalImageConverter(ctk.CTk):
         self.setup_ui()
         
     def setup_ui(self):
-        # Main container
-        main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        # Main container (scrollable so all controls are reachable on small screens)
+        main_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
         main_frame.pack(fill="both", expand=True, padx=25, pady=20)
         
         # Title Section

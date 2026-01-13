@@ -6,16 +6,21 @@ import json
 from tkinter import filedialog, messagebox
 from dotenv import load_dotenv
 from pathlib import Path
+import re
 
 # Load environment variables from .env file
 load_dotenv()
+
+def natural_sort_key(text):
+    """Generate a key for natural sorting (handles numbers properly)"""
+    return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', text)]
 
 # --- CONFIGURATION ---
 ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
 ACCESS_KEY = os.getenv("R2_ACCESS_KEY")
 SECRET_KEY = os.getenv("R2_SECRET_KEY")
 BUCKET_NAME = os.getenv("R2_BUCKET_NAME")
-BASE_URL = "https://cocassets.me"
+BASE_URL = "https://cdn.cocassets.me"
 
 class R2Uploader(ctk.CTk):
     def __init__(self):
@@ -1139,8 +1144,8 @@ class R2Uploader(ctk.CTk):
             self.update_file_count()
             return
         
-        # Sort files by name
-        self.files_to_upload.sort(key=lambda x: x['name'].lower())
+        # Sort files by name using natural sorting (handles numbers properly)
+        self.files_to_upload.sort(key=lambda x: natural_sort_key(x['name']))
         
         # Create checkbox for each file
         for i, file_info in enumerate(self.files_to_upload):
@@ -1243,32 +1248,45 @@ class R2Uploader(ctk.CTk):
         return f"{size_bytes:.2f} TB"
     
     def generate_url_pairs(self, filename, folder_path):
-        """Generate Detail and Thumbnail URL pairs based on filename"""
-        # Build base path with folder if provided
-        if folder_path:
-            base_path = f"{BASE_URL}/{folder_path}"
-        else:
-            base_path = BASE_URL
-        
-        # Check if filename contains '_thumb'
-        if '_thumb' in filename:
-            # This is a thumbnail file
-            thumbnail_url = f"{base_path}/{filename}"
-            # Generate detail URL by removing '_thumb'
-            detail_filename = filename.replace('_thumb', '')
-            detail_url = f"{base_path}/{detail_filename}"
+        """Generate Detail and Thumbnail URL pairs based on folder name"""
+        # Check if folder_path ends with '_thumb' to determine folder type
+        if folder_path and folder_path.endswith('_thumb'):
+            # Uploading to a THUMBNAIL folder (e.g., th18_thumb)
+            # Detail folder: remove '_thumb' suffix from folder
+            detail_folder = folder_path[:-6]  # Remove '_thumb' (6 characters)
+            thumbnail_folder = folder_path
             file_type = "Thumbnail"
+            
+            # Detail filename: remove '_thumb' from filename (e.g., 1_thumb.webp -> 1.webp)
+            detail_filename = filename.replace('_thumb', '')
+            # Thumbnail filename: use as-is (e.g., 1_thumb.webp)
+            thumbnail_filename = filename
         else:
-            # This is a detail file
-            detail_url = f"{base_path}/{filename}"
-            # Generate thumbnail URL by adding '_thumb' before extension
+            # Uploading to a DETAIL folder (e.g., th18) or root
+            # Thumbnail folder: add '_thumb' suffix to folder
+            detail_folder = folder_path if folder_path else ""
+            thumbnail_folder = f"{folder_path}_thumb" if folder_path else "_thumb"
+            file_type = "Detail"
+            
+            # Detail filename: use as-is (e.g., 1.webp)
+            detail_filename = filename
+            # Thumbnail filename: add '_thumb' before extension (e.g., 1.webp -> 1_thumb.webp)
             name_parts = filename.rsplit('.', 1)
             if len(name_parts) == 2:
                 thumbnail_filename = f"{name_parts[0]}_thumb.{name_parts[1]}"
             else:
                 thumbnail_filename = f"{filename}_thumb"
-            thumbnail_url = f"{base_path}/{thumbnail_filename}"
-            file_type = "Detail"
+        
+        # Generate URLs
+        if detail_folder:
+            detail_url = f"{BASE_URL}/{detail_folder}/{detail_filename}"
+        else:
+            detail_url = f"{BASE_URL}/{detail_filename}"
+        
+        if thumbnail_folder:
+            thumbnail_url = f"{BASE_URL}/{thumbnail_folder}/{thumbnail_filename}"
+        else:
+            thumbnail_url = f"{BASE_URL}/{thumbnail_filename}"
         
         return {
             'filename': filename,
@@ -1332,36 +1350,9 @@ class R2Uploader(ctk.CTk):
                 text_color=type_color
             ).pack(side="right")
             
-            # Detail URL
-            detail_frame = ctk.CTkFrame(file_container, fg_color="transparent")
-            detail_frame.pack(fill="x", padx=15, pady=2)
-            
-            ctk.CTkLabel(
-                detail_frame,
-                text="🖼️  Detail:",
-                font=ctk.CTkFont(size=11, weight="bold"),
-                width=80,
-                anchor="w"
-            ).pack(side="left")
-            
-            detail_entry = ctk.CTkEntry(
-                detail_frame,
-                font=ctk.CTkFont(family="Consolas", size=10)
-            )
-            detail_entry.pack(side="left", fill="x", expand=True, padx=5)
-            detail_entry.insert(0, data['detail_url'])
-            detail_entry.configure(state="readonly")
-            
-            ctk.CTkButton(
-                detail_frame,
-                text="📋",
-                width=40,
-                command=lambda url=data['detail_url']: self.copy_to_clipboard(url, popup)
-            ).pack(side="left")
-            
-            # Thumbnail URL
+            # Thumbnail URL (shown first)
             thumb_frame = ctk.CTkFrame(file_container, fg_color="transparent")
-            thumb_frame.pack(fill="x", padx=15, pady=(2, 10))
+            thumb_frame.pack(fill="x", padx=15, pady=2)
             
             ctk.CTkLabel(
                 thumb_frame,
@@ -1384,6 +1375,33 @@ class R2Uploader(ctk.CTk):
                 text="📋",
                 width=40,
                 command=lambda url=data['thumbnail_url']: self.copy_to_clipboard(url, popup)
+            ).pack(side="left")
+            
+            # Detail URL (shown second)
+            detail_frame = ctk.CTkFrame(file_container, fg_color="transparent")
+            detail_frame.pack(fill="x", padx=15, pady=(2, 10))
+            
+            ctk.CTkLabel(
+                detail_frame,
+                text="🖼️  Detail:",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                width=80,
+                anchor="w"
+            ).pack(side="left")
+            
+            detail_entry = ctk.CTkEntry(
+                detail_frame,
+                font=ctk.CTkFont(family="Consolas", size=10)
+            )
+            detail_entry.pack(side="left", fill="x", expand=True, padx=5)
+            detail_entry.insert(0, data['detail_url'])
+            detail_entry.configure(state="readonly")
+            
+            ctk.CTkButton(
+                detail_frame,
+                text="📋",
+                width=40,
+                command=lambda url=data['detail_url']: self.copy_to_clipboard(url, popup)
             ).pack(side="left")
         
         # Button frame

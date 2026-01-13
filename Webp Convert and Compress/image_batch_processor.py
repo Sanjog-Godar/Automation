@@ -22,6 +22,15 @@ class ImageBatchProcessor(ctk.CTk):
         self.details_output_folder = ""
         self.thumbnail_output_folder = ""
         
+        # Selection mode: entire folder or specific files
+        self.selection_mode = "folder"
+        self.selected_files = []
+        
+        # Watermark configuration
+        self.watermark_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "watermark_app.png")
+        self.watermark_x = 624
+        self.watermark_y = 904
+        
         # Setup UI
         self.setup_ui()
         
@@ -46,10 +55,31 @@ class ImageBatchProcessor(ctk.CTk):
         folder_frame = ctk.CTkFrame(main_frame)
         folder_frame.pack(fill="x", pady=(0, 20))
         
-        # Source Folder
+        # Mode selection: folder or files
+        self.mode_var = ctk.StringVar(value="folder")
+        mode_frame = ctk.CTkFrame(folder_frame)
+        mode_frame.pack(fill="x", padx=15, pady=(15, 5))
+        
+        ctk.CTkRadioButton(
+            mode_frame,
+            text="Entire Folder",
+            variable=self.mode_var,
+            value="folder",
+            command=self.on_mode_change
+        ).pack(side="left", padx=(0, 20))
+        
+        ctk.CTkRadioButton(
+            mode_frame,
+            text="Pick Files",
+            variable=self.mode_var,
+            value="files",
+            command=self.on_mode_change
+        ).pack(side="left")
+        
+        # Source (folder or files)
         ctk.CTkLabel(
             folder_frame, 
-            text="Source Folder:",
+            text="Source:",
             font=ctk.CTkFont(size=14)
         ).pack(anchor="w", padx=15, pady=(15, 5))
         
@@ -60,12 +90,13 @@ class ImageBatchProcessor(ctk.CTk):
         )
         self.source_label.pack(anchor="w", padx=15, pady=(0, 5))
         
-        ctk.CTkButton(
+        self.source_button = ctk.CTkButton(
             folder_frame,
             text="Select Source Folder",
             command=self.select_source_folder,
             height=35
-        ).pack(padx=15, pady=(0, 15))
+        )
+        self.source_button.pack(padx=15, pady=(0, 15))
         
         # Details Output Folder
         ctk.CTkLabel(
@@ -287,12 +318,48 @@ class ImageBatchProcessor(ctk.CTk):
         
     def update_thumbnail_quality_label(self, value):
         self.thumbnail_quality_label.configure(text=str(int(value)))
+    
+    def on_mode_change(self):
+        mode = self.mode_var.get()
+        self.selection_mode = mode
+        
+        if mode == "folder":
+            self.source_folder = ""
+            self.selected_files = []
+            self.source_label.configure(text="No folder selected", text_color="gray")
+            self.source_button.configure(text="Select Source Folder")
+        else:
+            self.source_folder = ""
+            self.selected_files = []
+            self.source_label.configure(text="No files selected", text_color="gray")
+            self.source_button.configure(text="Select Image Files")
         
     def select_source_folder(self):
-        folder = filedialog.askdirectory(title="Select Source Folder")
-        if folder:
-            self.source_folder = folder
-            self.source_label.configure(text=folder, text_color="white")
+        if self.selection_mode == "folder":
+            folder = filedialog.askdirectory(title="Select Source Folder")
+            if folder:
+                self.source_folder = folder
+                self.selected_files = []
+                self.source_label.configure(text=folder, text_color="white")
+        else:
+            files = filedialog.askopenfilenames(
+                title="Select Image Files",
+                filetypes=[
+                    ("All Images", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif *.webp"),
+                    ("JPEG", "*.jpg *.jpeg"),
+                    ("PNG", "*.png"),
+                    ("WEBP", "*.webp"),
+                    ("All Files", "*.*")
+                ]
+            )
+            if files:
+                self.selected_files = list(files)
+                self.source_folder = ""
+                count = len(self.selected_files)
+                self.source_label.configure(
+                    text=f"{count} file{'s' if count != 1 else ''} selected",
+                    text_color="white"
+                )
             
     def select_details_folder(self):
         folder = filedialog.askdirectory(title="Select Details Output Folder")
@@ -308,9 +375,14 @@ class ImageBatchProcessor(ctk.CTk):
             
     def start_batch_process(self):
         # Validate inputs
-        if not self.source_folder:
-            messagebox.showerror("Error", "Please select a source folder")
-            return
+        if self.selection_mode == "folder":
+            if not self.source_folder:
+                messagebox.showerror("Error", "Please select a source folder")
+                return
+        else:
+            if not self.selected_files:
+                messagebox.showerror("Error", "Please select image files")
+                return
         
         if not self.details_output_folder:
             messagebox.showerror("Error", "Please select a details output folder")
@@ -337,6 +409,14 @@ class ImageBatchProcessor(ctk.CTk):
         except ValueError:
             messagebox.showerror("Error", "Please enter valid thumbnail dimensions")
             return
+        
+        # Validate watermark file
+        if not os.path.exists(self.watermark_path):
+            messagebox.showerror(
+                "Error",
+                f"Watermark image not found:\n{self.watermark_path}"
+            )
+            return
             
         # Disable start button during processing
         self.start_button.configure(state="disabled")
@@ -353,9 +433,14 @@ class ImageBatchProcessor(ctk.CTk):
             image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
             image_files = []
             
-            for file in os.listdir(self.source_folder):
-                if Path(file).suffix.lower() in image_extensions:
-                    image_files.append(file)
+            if self.selection_mode == "folder":
+                for file in os.listdir(self.source_folder):
+                    if Path(file).suffix.lower() in image_extensions:
+                        image_files.append(os.path.join(self.source_folder, file))
+            else:
+                for file in self.selected_files:
+                    if Path(file).suffix.lower() in image_extensions:
+                        image_files.append(file)
             
             if not image_files:
                 self.after(0, lambda: messagebox.showinfo("Info", "No image files found in source folder"))
@@ -372,14 +457,15 @@ class ImageBatchProcessor(ctk.CTk):
             thumbnail_height = int(self.thumbnail_height_entry.get())
             aggressive_compression = self.aggressive_compression_var.get()
             
+            # Load watermark image once (RGBA for alpha support)
+            watermark_image = Image.open(self.watermark_path).convert("RGBA")
+            
             # Create output folders if they don't exist
             os.makedirs(self.details_output_folder, exist_ok=True)
             os.makedirs(self.thumbnail_output_folder, exist_ok=True)
             
             # Process each image
-            for index, filename in enumerate(image_files):
-                source_path = os.path.join(self.source_folder, filename)
-                
+            for index, source_path in enumerate(image_files):
                 try:
                     # Open image and convert to RGB
                     with Image.open(source_path) as img:
@@ -387,7 +473,7 @@ class ImageBatchProcessor(ctk.CTk):
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
                         
-                        base_name = Path(filename).stem
+                        base_name = Path(source_path).stem
                         
                         # Prepare save options for details image
                         details_save_options = {'format': 'WEBP', 'quality': details_quality}
@@ -413,6 +499,12 @@ class ImageBatchProcessor(ctk.CTk):
                         
                         # Resize to exact dimensions using LANCZOS resampling
                         details_img = img_cropped.resize((details_width, details_height), Image.LANCZOS)
+                        
+                        # Apply watermark to details image at fixed coordinates
+                        details_rgba = details_img.convert("RGBA")
+                        wm = watermark_image.copy()
+                        details_rgba.paste(wm, (self.watermark_x, self.watermark_y), wm)
+                        details_img = details_rgba.convert("RGB")
                         
                         details_filename = f"{base_name}.webp"
                         details_path = os.path.join(self.details_output_folder, details_filename)
@@ -448,7 +540,7 @@ class ImageBatchProcessor(ctk.CTk):
                         thumbnail.save(thumbnail_path, **thumbnail_save_options)
                         
                 except Exception as e:
-                    print(f"Error processing {filename}: {str(e)}")
+                    print(f"Error processing {source_path}: {str(e)}")
                     continue
                 
                 # Update progress
