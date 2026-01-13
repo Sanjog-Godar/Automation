@@ -139,10 +139,10 @@ class ImageBatchProcessor(ctk.CTk):
         
         self.details_height_entry = ctk.CTkEntry(
             details_size_frame,
-            placeholder_text="1080",
+            placeholder_text="1200",
             width=100
         )
-        self.details_height_entry.insert(0, "1080")
+        self.details_height_entry.insert(0, "1200")
         self.details_height_entry.pack(side="left", padx=(0, 10))
         
         ctk.CTkLabel(
