@@ -588,10 +588,11 @@
 
     <script>
         let rowCount = 0;
+        const STORAGE_KEY = 'urlLinkManagerData';
 
         // Initialize with 10 rows on page load
         document.addEventListener('DOMContentLoaded', function() {
-            generateRows(10, false);
+            loadFromLocalStorage();
         });
 
         function generateRows(count, animate = true) {
@@ -604,6 +605,7 @@
             }
             
             updateRowCount();
+            saveToLocalStorage();
             
             // Scroll to bottom if adding new rows
             if (animate) {
@@ -635,6 +637,10 @@
                     <div class="copy-feedback">✓ Copied!</div>
                 </button>
             `;
+            
+            // Add event listener to save data on input change
+            const input = row.querySelector('.url-input');
+            input.addEventListener('input', saveToLocalStorage);
             
             return row;
         }
@@ -705,6 +711,50 @@
 
         function updateRowCount() {
             document.getElementById('rowCount').textContent = rowCount;
+        }
+
+        function saveToLocalStorage() {
+            const rowsData = getAllRowsData();
+            const dataToSave = {
+                totalRows: rowCount,
+                rows: rowsData
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const container = document.getElementById('rowsContainer');
+                    container.innerHTML = '';
+                    rowCount = 0;
+
+                    const totalRows = data.totalRows || data.rows.length;
+
+                    for (let i = 0; i < totalRows; i++) {
+                        rowCount++;
+                        const row = createRow(rowCount, false);
+                        container.appendChild(row);
+                    }
+
+                    data.rows.forEach(rowData => {
+                        const input = document.getElementById(`input-${rowData.rowNumber}`);
+                        if (input && rowData.url) {
+                            input.value = rowData.url;
+                        }
+                    });
+
+                    updateRowCount();
+                } catch (error) {
+                    console.error('Error loading from localStorage:', error);
+                    generateRows(10, false);
+                }
+            } else {
+                generateRows(10, false);
+            }
         }
 
         function getAllRowsData() {
@@ -793,6 +843,7 @@
                     });
 
                     updateRowCount();
+                    saveToLocalStorage();
                     
                 } catch (error) {
                     alert('Failed to read the file. The file may be corrupted or in an invalid format.');

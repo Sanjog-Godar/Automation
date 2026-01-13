@@ -1462,6 +1462,45 @@ class R2Uploader(ctk.CTk):
         self.progress_label.configure(text=f"✓ Copied {len(urls)} {url_type} URLs!")
         self.after(2000, lambda: self.progress_label.configure(text="Ready to upload"))
     
+    def remove_uploaded_files(self, uploaded_paths):
+        """Remove successfully uploaded files from the local selection list"""
+        uploaded_paths_set = set(uploaded_paths)
+        
+        # Filter out uploaded files
+        self.files_to_upload = [
+            file_info for file_info in self.files_to_upload 
+            if file_info['path'] not in uploaded_paths_set
+        ]
+        
+        # Refresh the display
+        if not self.files_to_upload:
+            # All files were uploaded
+            self.selected_folder = ""
+            self.folder_label.configure(text="✅ All files uploaded successfully!", text_color="#4CAF50")
+            
+            # Clear file list
+            for widget in self.file_list_frame.winfo_children():
+                widget.destroy()
+            
+            success_label = ctk.CTkLabel(
+                self.file_list_frame,
+                text="🎉 All files uploaded!\n\nSelect new files or folder to continue",
+                text_color="#4CAF50",
+                font=ctk.CTkFont(size=13, weight="bold")
+            )
+            success_label.pack(pady=40)
+            
+            self.file_checkboxes = {}
+            self.upload_button.configure(state="disabled")
+        else:
+            # Some files remain (failed uploads)
+            remaining_count = len(self.files_to_upload)
+            self.folder_label.configure(
+                text=f"⚠️ {remaining_count} file(s) remaining (upload failed or not selected)",
+                text_color="#FF9800"
+            )
+            self.display_files_with_checkboxes()
+    
     def clear_selection(self):
         """Clear current selection"""
         self.selected_folder = ""
@@ -1536,6 +1575,7 @@ class R2Uploader(ctk.CTk):
         uploaded_count = 0
         failed_files = []
         url_data = []  # Collect URL information for each uploaded file
+        successfully_uploaded_paths = []  # Track successfully uploaded file paths
         
         try:
             for index, file_info in enumerate(selected_files):
@@ -1555,6 +1595,9 @@ class R2Uploader(ctk.CTk):
                     
                     uploaded_count += 1
                     print(f"✓ Uploaded: {remote_key}")
+                    
+                    # Track successfully uploaded file path
+                    successfully_uploaded_paths.append(file_info['path'])
 
                     # Update local cache with the new object to avoid a re-list
                     if self.r2_objects is not None:
@@ -1611,6 +1654,10 @@ class R2Uploader(ctk.CTk):
             # Show URL results popup if any files were uploaded successfully
             if url_data:
                 self.after(0, lambda: self.show_url_results(url_data))
+            
+            # Remove successfully uploaded files from the local list
+            if successfully_uploaded_paths:
+                self.after(0, lambda: self.remove_uploaded_files(successfully_uploaded_paths))
             
         except Exception as e:
             self.after(0, lambda: messagebox.showerror("Error", f"Upload failed: {str(e)}"))
