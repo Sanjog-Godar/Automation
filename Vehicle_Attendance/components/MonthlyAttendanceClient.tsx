@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AttendanceLog, AttendanceStatus } from "@/lib/attendance";
 import { calculateMonthlySummary, DAILY_WAGE, REPLACEMENT_DEDUCTION } from "@/lib/attendance";
 import NepaliDate from "nepali-date-converter";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const API_BASE = "/api/attendance"; // Next.js App Router API route
 
@@ -205,6 +207,25 @@ export function MonthlyAttendanceClient() {
   const [currentNepaliYear, setCurrentNepaliYear] = useState(() => getCurrentNepaliDate().year);
   const [currentNepaliMonth, setCurrentNepaliMonth] = useState(() => getCurrentNepaliDate().month);
 
+  const [tipModal, setTipModal] = useState<{
+    log_date: string;
+    note: string;
+    amount: string;
+  } | null>(null);
+
+  const [toast, setToast] = useState({
+    message: '',
+    nepaliMessage: '',
+    show: false,
+  });
+
+  const showToast = (message: string, nepaliMessage: string) => {
+    setToast({ message, nepaliMessage, show: true });
+    setTimeout(() => {
+      setToast({ message: '', nepaliMessage: '', show: false });
+    }, 4000);
+  };
+
   // Get number of days in current Nepali month by finding when the month changes
   const daysInNepaliMonth = useMemo(() => {
     // Try different day counts (Nepali months have 29-32 days)
@@ -321,6 +342,16 @@ export function MonthlyAttendanceClient() {
     [fullMonthLogs]
   );
 
+  const tipsList = useMemo(() => {
+    return fullMonthLogs
+      .filter((log) => log.extra_tip_amount && log.extra_tip_amount > 0)
+      .map((log) => ({
+        date: log.log_date,
+        note: log.extra_tip_note || "No destination",
+        amount: log.extra_tip_amount || 0,
+      }));
+  }, [fullMonthLogs]);
+
   // Build a calendar-style grid: Sunday first, with leading/trailing blanks.
   // Get the day of week for the first day of the Nepali month
   const { firstDayOfWeek, calendarCells } = useMemo(() => {
@@ -349,6 +380,20 @@ export function MonthlyAttendanceClient() {
   }, [fullMonthLogs, currentNepaliYear, currentNepaliMonth]);
 
   const handleStatusChange = (log_date: string, status: AttendanceStatus) => {
+    // Check if the date is in the future
+    const selectedDate = new Date(log_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate > today) {
+      showToast(
+        'You cannot mark attendance for future dates',
+        'भविष्यको मिति चयन गर्न सकिँदैन'
+      );
+      return;
+    }
+    
     const current = fullMonthLogs.find((l) => l.log_date === log_date);
     if (!current) {
       console.error('Could not find log for date:', log_date);
@@ -373,6 +418,183 @@ export function MonthlyAttendanceClient() {
       status: "present",
       extra_trip_income: extra,
     });
+  };
+
+  const handleOpenTip = (log: AttendanceLog) => {
+    // Check if the date is in the future
+    const selectedDate = new Date(log.log_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate > today) {
+      showToast(
+        'You cannot add tips for future dates',
+        'भविष्यको मिति चयन गर्न सकिँदैन'
+      );
+      return;
+    }
+    
+    setTipModal({
+      log_date: log.log_date,
+      note: (log.extra_tip_note ?? "") as string,
+      amount:
+        log.extra_tip_amount != null && !Number.isNaN(log.extra_tip_amount)
+          ? String(log.extra_tip_amount)
+          : "",
+    });
+  };
+
+  const handleTipSubmit = () => {
+    if (!tipModal) return;
+    const current = fullMonthLogs.find((l) => l.log_date === tipModal.log_date)!;
+    const { isUnselected, ...cleanLog } = current;
+    mutation.mutate({
+      ...cleanLog,
+      extra_tip_amount: tipModal.amount ? Number(tipModal.amount) : 0,
+      extra_tip_note: tipModal.note || null,
+    });
+    setTipModal(null);
+  };
+
+  const handleTipCancel = () => {
+    setTipModal(null);
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Add title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Vehicle Attendance Report", pageWidth / 2, 15, { align: "center" });
+    
+    // Add Nepali month and year
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    const nepaliMonthName = NEPALI_MONTHS[currentNepaliMonth];
+    const monthYearText = `${nepaliMonthName} ${currentNepaliYear}`;
+    doc.text(monthYearText, pageWidth / 2, 25, { align: "center" });
+    
+    // Add generation date
+    doc.setFontSize(10);
+    const today = new Date();
+    const todayNepali = new NepaliDate(today);
+    const generatedText = `Generated: ${todayNepali.format('YYYY-MM-DD')} BS (${today.toISOString().slice(0, 10)} AD)`;
+    doc.text(generatedText, pageWidth / 2, 32, { align: "center" });
+    
+    // Filter only up to today's date
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    
+    const logsUpToToday = fullMonthLogs.filter(log => {
+      const logDate = new Date(log.log_date);
+      logDate.setHours(0, 0, 0, 0);
+      return logDate <= todayDate;
+    });
+    
+    // Calculate summary for logs up to today
+    const summaryUpToToday = calculateMonthlySummary(logsUpToToday);
+    
+    // Create attendance table data
+    const tableData = logsUpToToday.map(log => {
+      // Get Nepali date from AD date
+      const adDate = new Date(log.log_date);
+      const nepaliDate = new NepaliDate(adDate);
+      const nepaliDateStr = `${nepaliDate.getYear()}-${String(nepaliDate.getMonth() + 1).padStart(2, '0')}-${String(nepaliDate.getDate()).padStart(2, '0')}`;
+      
+      const status = log.isUnselected
+        ? "—"
+        : log.status === "present"
+        ? "Present"
+        : log.status === "absent_holiday"
+        ? "Holiday"
+        : "Replace";
+      
+      const extraTrip = log.extra_trip_income || 0;
+      const tip = log.extra_tip_amount || 0;
+      const tipNote = log.extra_tip_note || "";
+      
+      return [
+        log.log_date,
+        nepaliDateStr,
+        status,
+        extraTrip > 0 ? `Rs. ${extraTrip}` : "—",
+        tip > 0 ? `Rs. ${tip}` : "—",
+        tipNote || "—"
+      ];
+    });
+    
+    // Add attendance table
+    autoTable(doc, {
+      startY: 38,
+      head: [['Date (AD)', 'Date (BS)', 'Status', 'Extra Trip', 'Tip', 'Tip Note']],
+      body: tableData,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 'auto' },
+      },
+    });
+    
+    // Get final Y position after table
+    const finalY = (doc as any).lastAutoTable.finalY || 38;
+    
+    // Add summary section
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Monthly Summary (Up to Today)", 14, finalY + 10);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    const summaryLines = [
+      `Present Days: ${summaryUpToToday.totalPresentDays}`,
+      `Holiday Days: ${summaryUpToToday.totalHolidayDays}`,
+      `Replacement Days: ${summaryUpToToday.totalReplacementDays}`,
+      ``,
+      `Daily Wage: Rs. ${DAILY_WAGE.toLocaleString()}`,
+      `Present Income: Rs. ${summaryUpToToday.presentIncome.toLocaleString()}`,
+      `Extra Trip Income: Rs. ${summaryUpToToday.extraTripIncome.toLocaleString()}`,
+      `Total Tips: Rs. ${summaryUpToToday.totalTips.toLocaleString()}`,
+      `Replacement Deduction: -Rs. ${summaryUpToToday.replacementDeduction.toLocaleString()}`,
+      ``,
+      `Net Income: Rs. ${summaryUpToToday.netIncome.toLocaleString()}`,
+    ];
+    
+    let currentY = finalY + 15;
+    summaryLines.forEach(line => {
+      if (line === '') {
+        currentY += 2;
+      } else if (line.startsWith('Net Income')) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(line, 14, currentY);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        currentY += 7;
+      } else {
+        doc.text(line, 14, currentY);
+        currentY += 5;
+      }
+    });
+    
+    // Add footer
+    doc.setFontSize(8);
+    doc.setTextColor(128);
+    const footerY = doc.internal.pageSize.getHeight() - 10;
+    doc.text("Vehicle Attendance Tracking System", pageWidth / 2, footerY, { align: "center" });
+    
+    // Generate filename with Nepali month and year
+    const filename = `Attendance_${nepaliMonthName}_${currentNepaliYear}.pdf`;
+    doc.save(filename);
   };
 
   const handlePrevMonth = () => {
@@ -579,7 +801,7 @@ export function MonthlyAttendanceClient() {
                   onChangeExtra={(extra) =>
                     handleExtraChange(cell.log_date, extra)
                   }
-                  onOpenTip={() => {}}
+                  onOpenTip={() => handleOpenTip(cell)}
                 />
               );
             })}
@@ -633,14 +855,14 @@ export function MonthlyAttendanceClient() {
               <div className="flex justify-end gap-2 text-sm">
                 <button
                   type="button"
-                  onClick={() => setTipModal(null)}
+                  onClick={handleTipCancel}
                   className="rounded border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveTip}
+                  onClick={handleTipSubmit}
                   className="rounded bg-blue-600 px-3 py-1 font-semibold text-white hover:bg-blue-700"
                 >
                   Save tip
@@ -650,10 +872,76 @@ export function MonthlyAttendanceClient() {
           </div>
         )}
 
+        {/* Tips List */}
+        {tipsList.length > 0 && (
+          <section className="mt-4 bg-white rounded-lg p-6 shadow-md">
+            <h3 className="text-lg font-bold mb-4 text-gray-800">
+              Tips Record / टिप रेकर्ड
+            </h3>
+            <div className="space-y-2">
+              {tipsList.map((tip) => {
+                const adDate = new Date(tip.date);
+                const nepaliDate = new NepaliDate(adDate);
+                const nepaliDateStr = `${NEPALI_MONTHS[nepaliDate.getMonth()]} ${toNepaliNumber(nepaliDate.getDate())}, ${toNepaliNumber(nepaliDate.getYear())}`;
+                
+                return (
+                  <div
+                    key={tip.date}
+                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700 font-mukta">
+                          {nepaliDateStr}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ({tip.date})
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {tip.note}
+                      </p>
+                    </div>
+                    <div className="text-right ml-4">
+                      <span className="text-sm font-bold text-green-600">
+                        Rs. {tip.amount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* PDF Download Button */}
         <div className="mt-6 flex justify-center">
+          <button
+            onClick={handleDownloadPDF}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md"
+          >
+            📄 Download PDF Report (Up to Today)
+          </button>
         </div>
       </main>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in">
+          <div className="bg-red-600 text-white px-6 py-4 rounded-lg shadow-2xl max-w-md">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="font-bold text-lg mb-1">Invalid Date Selection</p>
+                <p className="font-mukta text-base mb-2">{toast.nepaliMessage}</p>
+                <p className="text-sm opacity-90">{toast.message}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
