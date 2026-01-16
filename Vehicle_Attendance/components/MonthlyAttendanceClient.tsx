@@ -25,6 +25,21 @@ const NEPALI_MONTHS = [
   "चैत्र",
 ];
 
+const NEPALI_MONTHS_ENGLISH = [
+  "Baisakh",
+  "Jestha",
+  "Ashadh",
+  "Shrawan",
+  "Bhadra",
+  "Ashwin",
+  "Kartik",
+  "Mangsir",
+  "Poush",
+  "Magh",
+  "Falgun",
+  "Chaitra",
+];
+
 // Convert English numbers to Nepali numerals
 function toNepaliNumber(num: number): string {
   const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
@@ -91,6 +106,7 @@ interface DayCardProps {
   onChangeExtra: (extra: number) => void;
    onOpenTip: () => void;
   isSaving: boolean;
+  isToday?: boolean;
 }
 
 function DayCard({
@@ -101,6 +117,7 @@ function DayCard({
   onChangeExtra,
   onOpenTip,
   isSaving,
+  isToday = false,
 }: DayCardProps) {
   const isPresent = log.status === "present";
   const isAbsentHoliday = log.status === "absent_holiday";
@@ -124,7 +141,7 @@ function DayCard({
      : "bg-orange-600 text-white";
 
   return (
-    <div className="border rounded-lg p-2 flex flex-col justify-between bg-white shadow-sm min-h-[110px]">
+    <div className={`border rounded-lg p-2 flex flex-col justify-between shadow-sm min-h-[110px] ${isToday ? 'bg-blue-50 border-blue-300 border-2' : 'bg-white'}`}>
       <div className="flex items-center justify-between mb-1">
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-gray-800 font-mukta">{nepaliDateLabel}</span>
@@ -501,139 +518,257 @@ export function MonthlyAttendanceClient() {
   };
 
   const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Add title
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("Vehicle Attendance Report", pageWidth / 2, 15, { align: "center" });
-    
-    // Add Nepali month and year
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    const nepaliMonthName = NEPALI_MONTHS[currentNepaliMonth];
-    const monthYearText = `${nepaliMonthName} ${currentNepaliYear}`;
-    doc.text(monthYearText, pageWidth / 2, 25, { align: "center" });
-    
-    // Add generation date
-    doc.setFontSize(10);
-    const today = new Date();
-    const todayNepali = new NepaliDate(today);
-    const generatedText = `Generated: ${todayNepali.format('YYYY-MM-DD')} BS (${today.toISOString().slice(0, 10)} AD)`;
-    doc.text(generatedText, pageWidth / 2, 32, { align: "center" });
-    
-    // Filter only up to today's date
-    const todayDate = new Date();
-    todayDate.setHours(0, 0, 0, 0);
-    
-    const logsUpToToday = fullMonthLogs.filter(log => {
-      const logDate = new Date(log.log_date);
-      logDate.setHours(0, 0, 0, 0);
-      return logDate <= todayDate;
-    });
-    
-    // Calculate summary for logs up to today
-    const summaryUpToToday = calculateMonthlySummary(logsUpToToday);
-    
-    // Create attendance table data
-    const tableData = logsUpToToday.map(log => {
-      // Get Nepali date from AD date
-      const adDate = new Date(log.log_date);
-      const nepaliDate = new NepaliDate(adDate);
-      const nepaliDateStr = `${nepaliDate.getYear()}-${String(nepaliDate.getMonth() + 1).padStart(2, '0')}-${String(nepaliDate.getDate()).padStart(2, '0')}`;
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
       
-      const status = log.isUnselected
-        ? "—"
-        : log.status === "present"
-        ? "Present"
-        : log.status === "absent_holiday"
-        ? "Holiday"
-        : "Replace";
+      // Add title - centered
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Monthly Details Sheet", pageWidth / 2, 15, { align: "center" });
       
-      const extraTrip = log.extra_trip_income || 0;
-      const tip = log.extra_tip_amount || 0;
-      const tipNote = log.extra_tip_note || "";
+      // Add Nepali month and year - centered
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      const nepaliMonthNameEnglish = NEPALI_MONTHS_ENGLISH[currentNepaliMonth];
+      const monthYearText = nepaliMonthNameEnglish + " " + String(currentNepaliYear);
+      doc.text(monthYearText, pageWidth / 2, 24, { align: "center" });
       
-      return [
-        log.log_date,
-        nepaliDateStr,
-        status,
-        extraTrip > 0 ? `Rs. ${extraTrip}` : "—",
-        tip > 0 ? `Rs. ${tip}` : "—",
-        tipNote || "—"
+      // Vehicle number
+      doc.setFontSize(11);
+      doc.text("Ga 2 Pa 4066", pageWidth / 2, 31, { align: "center" });
+      
+      let yPos = 42;
+      
+      // Filter only up to today's date
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      
+      const logsUpToToday = fullMonthLogs.filter(log => {
+        if (log.isUnselected) return false;
+        const logDate = new Date(log.log_date);
+        logDate.setHours(0, 0, 0, 0);
+        return logDate <= todayDate;
+      });
+      
+      // Calculate summary
+      const summaryUpToToday = calculateMonthlySummary(logsUpToToday);
+      
+      // Group dates by status
+      const presentDates: number[] = [];
+      const absentDates: number[] = [];
+      const replaceDates: number[] = [];
+      const tipDates: number[] = [];
+      
+      logsUpToToday.forEach(log => {
+        const adDate = new Date(log.log_date);
+        const nepaliDate = new NepaliDate(adDate);
+        const nepaliDay = nepaliDate.getDate();
+        
+        if (log.status === "present") {
+          presentDates.push(nepaliDay);
+        } else if (log.status === "absent_holiday") {
+          absentDates.push(nepaliDay);
+        } else if (log.status === "absent_replacement") {
+          replaceDates.push(nepaliDay);
+        }
+        
+        if ((log.extra_tip_amount && log.extra_tip_amount > 0) || (log.extra_trip_income && log.extra_trip_income > 0)) {
+          if (!tipDates.includes(nepaliDay)) tipDates.push(nepaliDay);
+        }
+      });
+      
+      // Sort dates
+      presentDates.sort((a, b) => a - b);
+      absentDates.sort((a, b) => a - b);
+      replaceDates.sort((a, b) => a - b);
+      tipDates.sort((a, b) => a - b);
+      
+      // Date Lists Section
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      
+      // Present Days
+      const presentDatesStr = presentDates.length > 0 ? presentDates.join(", ") : "None";
+      const presentText = "Total Present Days = " + presentDatesStr + " (Total Days: " + String(presentDates.length) + ")";
+      const presentLines = doc.splitTextToSize(presentText, pageWidth - 28);
+      doc.text(presentLines, 14, yPos);
+      yPos += presentLines.length * 5;
+      
+      // Absent Days
+      const absentDatesStr = absentDates.length > 0 ? absentDates.join(", ") : "None";
+      const absentText = "Absent = " + absentDatesStr + " (" + String(absentDates.length) + ")";
+      const absentLines = doc.splitTextToSize(absentText, pageWidth - 28);
+      doc.text(absentLines, 14, yPos);
+      yPos += absentLines.length * 5;
+      
+      // Replace Days
+      const replaceDatesStr = replaceDates.length > 0 ? replaceDates.join(", ") : "None";
+      const replaceText = "Replace = " + replaceDatesStr + " (" + String(replaceDates.length) + ")";
+      const replaceLines = doc.splitTextToSize(replaceText, pageWidth - 28);
+      doc.text(replaceLines, 14, yPos);
+      yPos += replaceLines.length * 5;
+      
+      // Extra Tips Days
+      const tipDatesStr = tipDates.length > 0 ? tipDates.join(", ") : "None";
+      const tipsText = "Extra tips = " + tipDatesStr;
+      const tipsLines = doc.splitTextToSize(tipsText, pageWidth - 28);
+      doc.text(tipsLines, 14, yPos);
+      yPos += tipsLines.length * 5 + 8;
+      
+      // Earning Sheet Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Earning Sheet", 14, yPos);
+      yPos += 8;
+      
+      // Create Earning Table with formulas
+      const presentIncome = summaryUpToToday.totalPresentDays * DAILY_WAGE;
+      const presentFormula = String(summaryUpToToday.totalPresentDays) + " × " + String(DAILY_WAGE);
+      const replaceFormula = String(summaryUpToToday.totalReplacementDays) + " × " + String(REPLACEMENT_DEDUCTION);
+      const totalEarning = presentIncome - summaryUpToToday.totalDeductions;
+      
+      // Count total holiday days from logs
+      const totalHolidayDays = logsUpToToday.filter(log => log.status === 'absent_holiday').length;
+      
+      const tableData = [
+        [
+          'Present Days',
+          String(summaryUpToToday.totalPresentDays),
+          presentFormula,
+          'Rs ' + String(presentIncome)
+        ],
+        [
+          'Absent Days',
+          String(totalHolidayDays),
+          '-',
+          '-'
+        ],
+        [
+          'Replace Days',
+          String(summaryUpToToday.totalReplacementDays),
+          replaceFormula,
+          'Rs ' + String(summaryUpToToday.totalDeductions)
+        ],
+        [
+          '',
+          '',
+          'Total Earning',
+          'Rs ' + String(totalEarning)
+        ]
       ];
-    });
-    
-    // Add attendance table
-    autoTable(doc, {
-      startY: 38,
-      head: [['Date (AD)', 'Date (BS)', 'Status', 'Extra Trip', 'Tip', 'Tip Note']],
-      body: tableData,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 20 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 20 },
-        5: { cellWidth: 'auto' },
-      },
-    });
-    
-    // Get final Y position after table
-    const finalY = (doc as any).lastAutoTable.finalY || 38;
-    
-    // Add summary section
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Monthly Summary (Up to Today)", 14, finalY + 10);
-    
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    
-    const summaryLines = [
-      `Present Days: ${summaryUpToToday.totalPresentDays}`,
-      `Holiday Days: ${summaryUpToToday.totalHolidayDays}`,
-      `Replacement Days: ${summaryUpToToday.totalReplacementDays}`,
-      ``,
-      `Daily Wage: Rs. ${DAILY_WAGE.toLocaleString()}`,
-      `Present Income: Rs. ${summaryUpToToday.presentIncome.toLocaleString()}`,
-      `Extra Trip Income: Rs. ${summaryUpToToday.extraTripIncome.toLocaleString()}`,
-      `Total Tips: Rs. ${summaryUpToToday.totalTips.toLocaleString()}`,
-      `Replacement Deduction: -Rs. ${summaryUpToToday.replacementDeduction.toLocaleString()}`,
-      ``,
-      `Net Income: Rs. ${summaryUpToToday.netIncome.toLocaleString()}`,
-    ];
-    
-    let currentY = finalY + 15;
-    summaryLines.forEach(line => {
-      if (line === '') {
-        currentY += 2;
-      } else if (line.startsWith('Net Income')) {
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['', 'Total Days', 'Earning', 'Total']],
+        body: tableData,
+        theme: 'grid',
+        styles: { 
+          fontSize: 10,
+          cellPadding: 3,
+          halign: 'center'
+        },
+        headStyles: { 
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          lineWidth: 0.5,
+          lineColor: [0, 0, 0]
+        },
+        columnStyles: {
+          0: { halign: 'left', cellWidth: 40 },
+          1: { halign: 'center', cellWidth: 30 },
+          2: { halign: 'left', cellWidth: 50 },
+          3: { halign: 'right', cellWidth: 40 }
+        },
+        alternateRowStyles: { fillColor: [245, 245, 245] }
+      });
+      
+      // Get position after table
+      const tableEndY = (doc as any).lastAutoTable.finalY || yPos;
+      yPos = tableEndY + 12;
+      
+      // Extra Tips Section
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Extra Tips", 14, yPos);
+      yPos += 7;
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      
+      // Get all tips and calculate total
+      const tipsData = logsUpToToday.filter(log => 
+        log.extra_tip_amount && log.extra_tip_amount > 0
+      );
+      
+      let calculatedTipsTotal = 0;
+      
+      if (tipsData.length > 0) {
+        tipsData.forEach((tip, index) => {
+          const adDate = new Date(tip.log_date);
+          const nepaliDate = new NepaliDate(adDate);
+          
+          // Format dates
+          const nepaliDateStr = String(nepaliDate.getDate()) + " " + 
+                                NEPALI_MONTHS_ENGLISH[nepaliDate.getMonth()] + " " + 
+                                String(nepaliDate.getYear());
+          const adDateStr = String(adDate.getDate()) + " " + 
+                           adDate.toLocaleString('en-US', { month: 'short' }) + " " + 
+                           String(adDate.getFullYear());
+          
+          const destination = tip.extra_tip_note || "No destination";
+          const amount = tip.extra_tip_amount || 0;
+          calculatedTipsTotal += amount;
+          
+          const tipLine = String(index + 1) + ". " + destination + 
+                         " (" + nepaliDateStr + " / " + adDateStr + ")   Rs " + 
+                         String(amount);
+          
+          const tipLines = doc.splitTextToSize(tipLine, pageWidth - 28);
+          doc.text(tipLines, 14, yPos);
+          yPos += tipLines.length * 5;
+        });
+        
+        yPos += 5;
+        
+        // Total Tips Amount
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text(line, 14, currentY);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        currentY += 7;
+        doc.text("Total Tips Amount: Rs " + String(calculatedTipsTotal), 14, yPos);
       } else {
-        doc.text(line, 14, currentY);
-        currentY += 5;
+        doc.text("No extra tips recorded", 14, yPos);
+        yPos += 5;
       }
-    });
-    
-    // Add footer
-    doc.setFontSize(8);
-    doc.setTextColor(128);
-    const footerY = doc.internal.pageSize.getHeight() - 10;
-    doc.text("Vehicle Attendance Tracking System", pageWidth / 2, footerY, { align: "center" });
-    
-    // Generate filename with Nepali month and year
-    const filename = `Attendance_${nepaliMonthName}_${currentNepaliYear}.pdf`;
-    doc.save(filename);
+      
+      // Final calculation note
+      yPos += 10;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("Calculated by earning from total present days - Replace Days", 14, yPos);
+      
+      yPos += 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      const finalTotal = totalEarning + calculatedTipsTotal + summaryUpToToday.totalExtraIncome;
+      doc.text("Net Income: Rs " + String(finalTotal), 14, yPos);
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(128);
+      const footerY = doc.internal.pageSize.getHeight() - 10;
+      doc.text("Generated: " + new Date().toISOString().slice(0, 10), 14, footerY);
+      doc.text("Vehicle Attendance System", pageWidth / 2, footerY, { align: "center" });
+      
+      // Generate filename
+      const filename = "Attendance_" + nepaliMonthNameEnglish + "_" + String(currentNepaliYear) + ".pdf";
+      doc.save(filename);
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      alert("Error generating PDF: " + (error as Error).message);
+    }
   };
 
   const handlePrevMonth = () => {
@@ -766,35 +901,6 @@ export function MonthlyAttendanceClient() {
               </div>
             </div>
           )}
-
-          {!isLoading && tipsList.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                Extra Tips Details
-              </h3>
-              <div className="space-y-1.5">
-                {tipsList.map((tip, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-xs bg-blue-50 rounded px-2 py-1.5"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">{tip.note}</div>
-                      <div className="text-gray-500 text-[10px]">
-                        {new Date(tip.date).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </div>
-                    </div>
-                    <div className="font-semibold text-blue-700">
-                      Rs. {tip.amount.toLocaleString("en-IN")}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </section>
 
         <section className="rounded-lg bg-white p-2 shadow-sm">
@@ -819,6 +925,19 @@ export function MonthlyAttendanceClient() {
                 );
               }
 
+              // Get current date in Nepal timezone (UTC+5:45)
+              const nepalTimeStr = new Date().toLocaleString('en-US', { 
+                timeZone: 'Asia/Kathmandu',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+              });
+              const [month, day, year] = nepalTimeStr.split('/');
+              const todayNepalStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              
+              // Check if this cell's date is today
+              const isToday = cell.log_date === todayNepalStr;
+
               // Get English date for display
               const cellDate = new Date(cell.log_date);
               const englishDay = cellDate.getDate();
@@ -834,6 +953,7 @@ export function MonthlyAttendanceClient() {
                   nepaliDateLabel={toNepaliNumber(nepaliDay)}
                   log={cell}
                   isSaving={mutation.isPending || deleteMutation.isPending}
+                  isToday={isToday}
                   onChangeStatus={(status) =>
                     handleStatusChange(cell.log_date, status)
                   }
