@@ -3,9 +3,34 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AttendanceLog, AttendanceStatus } from "@/lib/attendance";
-import { calculateMonthlySummary } from "@/lib/attendance";
+import { calculateMonthlySummary, DAILY_WAGE, REPLACEMENT_DEDUCTION } from "@/lib/attendance";
+import NepaliDate from "nepali-date-converter";
 
 const API_BASE = "/api/attendance"; // Next.js App Router API route
+
+const NEPALI_MONTHS = [
+  "बैशाख",
+  "जेष्ठ",
+  "अषाढ",
+  "श्रावण",
+  "भाद्र",
+  "आश्विन",
+  "कार्तिक",
+  "मंसिर",
+  "पौष",
+  "माघ",
+  "फाल्गुन",
+  "चैत्र",
+];
+
+// Convert English numbers to Nepali numerals
+function toNepaliNumber(num: number): string {
+  const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  return String(num)
+    .split('')
+    .map(digit => nepaliDigits[parseInt(digit)])
+    .join('');
+}
 
 function getCurrentMonthKey() {
   const now = new Date();
@@ -48,6 +73,7 @@ async function upsertAttendance(log: AttendanceLog): Promise<AttendanceLog> {
 
 interface DayCardProps {
   dateLabel: string;
+  nepaliDateLabel: string;
   log: AttendanceLog & { isUnselected?: boolean };
   onChangeStatus: (status: AttendanceStatus) => void;
   onChangeExtra: (extra: number) => void;
@@ -57,6 +83,7 @@ interface DayCardProps {
 
 function DayCard({
   dateLabel,
+  nepaliDateLabel,
   log,
   onChangeStatus,
   onChangeExtra,
@@ -81,13 +108,16 @@ function DayCard({
      : isPresent
      ? "bg-green-600 text-white"
      : isAbsentHoliday
-     ? "bg-gray-200 text-gray-800"
-     : "bg-red-600 text-white";
+     ? "bg-red-600 text-white"
+     : "bg-orange-600 text-white";
 
   return (
     <div className="border rounded-lg p-2 flex flex-col justify-between bg-white shadow-sm min-h-[110px]">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-semibold text-gray-800">{dateLabel}</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold text-gray-800 font-mukta">{nepaliDateLabel}</span>
+          <span className="text-[9px] text-gray-500">{dateLabel}</span>
+        </div>
         <span
           className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${badgeClass}`}
         >
@@ -112,7 +142,7 @@ function DayCard({
           onClick={() => onChangeStatus("absent_holiday")}
           className={`flex-1 text-[11px] py-1 rounded border transition-colors ${
             isAbsentHoliday && !isUnselected
-              ? "bg-orange-100 text-orange-700 border-orange-300"
+              ? "bg-red-600 text-white border-red-600"
               : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
           }`}
         >
@@ -123,7 +153,7 @@ function DayCard({
           onClick={() => onChangeStatus("absent_replacement")}
           className={`flex-1 text-[11px] py-1 rounded border transition-colors ${
             isAbsentReplacement && !isUnselected
-              ? "bg-red-600 text-white border-red-600"
+              ? "bg-orange-600 text-white border-orange-600"
               : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
           }`}
         >
@@ -162,66 +192,116 @@ function DayCard({
   );
 }
 
+// Helper function to get current Nepali date
+function getCurrentNepaliDate() {
+  const nd = new NepaliDate();
+  return { year: nd.getYear(), month: nd.getMonth() };
+}
+
 export function MonthlyAttendanceClient() {
   const queryClient = useQueryClient();
-  const monthKey = getCurrentMonthKey();
+  
+  // Initialize with current Nepali date
+  const [currentNepaliYear, setCurrentNepaliYear] = useState(() => getCurrentNepaliDate().year);
+  const [currentNepaliMonth, setCurrentNepaliMonth] = useState(() => getCurrentNepaliDate().month);
 
-  const [tipModal, setTipModal] = useState<
-    | {
-        log_date: string;
-        note: string;
-        amount: string;
+  // Get number of days in current Nepali month by finding when the month changes
+  const daysInNepaliMonth = useMemo(() => {
+    // Try different day counts (Nepali months have 29-32 days)
+    for (let day = 32; day >= 29; day--) {
+      try {
+        const testDate = new NepaliDate(currentNepaliYear, currentNepaliMonth, day);
+        if (testDate.getMonth() === currentNepaliMonth) {
+          return day;
+        }
+      } catch {
+        continue;
       }
-    | null
-  >(null);
+    }
+    return 30; // fallback
+  }, [currentNepaliYear, currentNepaliMonth]);
 
-  const [year, monthStr] = monthKey.split("-");
-  const yearNum = Number(year);
-  const monthIndex = Number(monthStr) - 1; // 0-based
-
-  const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
+  // Generate a unique key for querying (we'll fetch all logs for this Nepali month)
+  const nepaliMonthKey = `${currentNepaliYear}-${String(currentNepaliMonth + 1).padStart(2, "0")}`;
 
   const { data: serverLogs = [], isLoading } = useQuery({
-    queryKey: ["attendance", monthKey],
-    queryFn: () => fetchMonthAttendance(monthKey),
+    queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth],
+    queryFn: async () => {
+      // Fetch logs for all dates in this Nepali month
+      // Convert first and last day of Nepali month to AD to get date range
+      const firstNepaliDay = new NepaliDate(currentNepaliYear, currentNepaliMonth, 1);
+      const lastNepaliDay = new NepaliDate(currentNepaliYear, currentNepaliMonth, daysInNepaliMonth);
+      
+      const firstAD = firstNepaliDay.toJsDate();
+      const lastAD = lastNepaliDay.toJsDate();
+      
+      const startMonth = `${firstAD.getFullYear()}-${String(firstAD.getMonth() + 1).padStart(2, "0")}`;
+      const endMonth = `${lastAD.getFullYear()}-${String(lastAD.getMonth() + 1).padStart(2, "0")}`;
+      
+      // Fetch logs for both months if Nepali month spans across two English months
+      const logs: AttendanceLog[] = [];
+      const months = new Set([startMonth, endMonth]);
+      
+      for (const month of months) {
+        const res = await fetch(`${API_BASE}?month=${month}`);
+        if (res.ok) {
+          const json = await res.json();
+          logs.push(...(json.data as AttendanceLog[] ?? []));
+        }
+      }
+      
+      return logs;
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   const mutation = useMutation({
     mutationFn: upsertAttendance,
     onMutate: async (newLog: AttendanceLog) => {
-      await queryClient.cancelQueries({ queryKey: ["attendance", monthKey] });
+      await queryClient.cancelQueries({ queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth] });
       const previous =
-        (queryClient.getQueryData<AttendanceLog[]>(["attendance", monthKey]) ?? []);
+        (queryClient.getQueryData<AttendanceLog[]>(["attendance", nepaliMonthKey, daysInNepaliMonth]) ?? []);
 
       const updated = [
         ...previous.filter((l) => l.log_date !== newLog.log_date),
         newLog,
       ];
 
-      queryClient.setQueryData(["attendance", monthKey], updated);
+      queryClient.setQueryData(["attendance", nepaliMonthKey, daysInNepaliMonth], updated);
 
       return { previous };
     },
     onError: (_err, _newLog, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(["attendance", monthKey], context.previous);
+        queryClient.setQueryData(["attendance", nepaliMonthKey, daysInNepaliMonth], context.previous);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["attendance", monthKey] });
+      queryClient.invalidateQueries({ queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth] });
     },
   });
 
+  // Build logs for each Nepali day of the month
   const fullMonthLogs: AttendanceLog[] = useMemo(() => {
     const byDate = new Map(serverLogs.map((l) => [l.log_date, l] as const));
     const result: AttendanceLog[] = [];
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = formatDate(yearNum, monthIndex, day);
+    for (let nepaliDay = 1; nepaliDay <= daysInNepaliMonth; nepaliDay++) {
+      // Convert Nepali date to AD
+      const nepaliDateObj = new NepaliDate(currentNepaliYear, currentNepaliMonth, nepaliDay);
+      const adDate = nepaliDateObj.toJsDate();
+      const dateStr = formatDate(adDate.getFullYear(), adDate.getMonth(), adDate.getDate());
+      
       const existing = byDate.get(dateStr);
       if (existing) {
-        result.push(existing);
+        // If record exists in database, it's user-selected (NOT unselected)
+        result.push({
+          ...existing,
+          isUnselected: false,
+        });
       } else {
+        // If record doesn't exist in database, it's truly unselected
         result.push({
           log_date: dateStr,
           status: "absent_holiday" as AttendanceStatus,
@@ -234,7 +314,7 @@ export function MonthlyAttendanceClient() {
     }
 
     return result;
-  }, [serverLogs, daysInMonth, yearNum, monthIndex]);
+  }, [serverLogs, daysInNepaliMonth, currentNepaliYear, currentNepaliMonth]);
 
   const summary = useMemo(
     () => calculateMonthlySummary(fullMonthLogs),
@@ -242,13 +322,16 @@ export function MonthlyAttendanceClient() {
   );
 
   // Build a calendar-style grid: Sunday first, with leading/trailing blanks.
-  const firstDayOfWeek = new Date(yearNum, monthIndex, 1).getDay(); // 0 (Sun) - 6 (Sat)
+  // Get the day of week for the first day of the Nepali month
+  const { firstDayOfWeek, calendarCells } = useMemo(() => {
+    const firstNepaliDayOfMonth = new NepaliDate(currentNepaliYear, currentNepaliMonth, 1);
+    const firstADDate = firstNepaliDayOfMonth.toJsDate();
+    const firstDay = firstADDate.getDay(); // 0 (Sun) - 6 (Sat)
 
-  const calendarCells: (AttendanceLog | null)[] = useMemo(() => {
     const cells: (AttendanceLog | null)[] = [];
 
     // Leading empty cells before the 1st day of the month
-    for (let i = 0; i < firstDayOfWeek; i++) {
+    for (let i = 0; i < firstDay; i++) {
       cells.push(null);
     }
 
@@ -262,13 +345,20 @@ export function MonthlyAttendanceClient() {
       cells.push(null);
     }
 
-    return cells;
-  }, [fullMonthLogs, firstDayOfWeek]);
+    return { firstDayOfWeek: firstDay, calendarCells: cells };
+  }, [fullMonthLogs, currentNepaliYear, currentNepaliMonth]);
 
   const handleStatusChange = (log_date: string, status: AttendanceStatus) => {
-    const current = fullMonthLogs.find((l) => l.log_date === log_date)!;
+    const current = fullMonthLogs.find((l) => l.log_date === log_date);
+    if (!current) {
+      console.error('Could not find log for date:', log_date);
+      return;
+    }
+    
+    // Create clean log entry without isUnselected flag
+    const { isUnselected, ...cleanLog } = current;
     mutation.mutate({
-      ...current,
+      ...cleanLog,
       status,
       extra_trip_income:
         status === "present" ? current.extra_trip_income ?? 0 : 0,
@@ -277,54 +367,97 @@ export function MonthlyAttendanceClient() {
 
   const handleExtraChange = (log_date: string, extra: number) => {
     const current = fullMonthLogs.find((l) => l.log_date === log_date)!;
+    const { isUnselected, ...cleanLog } = current;
     mutation.mutate({
-      ...current,
+      ...cleanLog,
       status: "present",
       extra_trip_income: extra,
     });
   };
 
-  const handleOpenTip = (log: AttendanceLog) => {
-    setTipModal({
-      log_date: log.log_date,
-      note: (log.extra_tip_note ?? "") as string,
-      amount:
-        log.extra_tip_amount != null && !Number.isNaN(log.extra_tip_amount)
-          ? String(log.extra_tip_amount)
-          : "",
-    });
+  const handlePrevMonth = () => {
+    let newMonth = currentNepaliMonth - 1;
+    let newYear = currentNepaliYear;
+    
+    if (newMonth < 0) {
+      newMonth = 11; // Chaitra (last month)
+      newYear = newYear - 1;
+    }
+    
+    setCurrentNepaliMonth(newMonth);
+    setCurrentNepaliYear(newYear);
   };
 
-  const handleSaveTip = () => {
-    if (!tipModal) return;
-    const current = fullMonthLogs.find((l) => l.log_date === tipModal.log_date);
-    if (!current) return;
-
-    const amountNumber = Number(tipModal.amount || 0);
-
-    mutation.mutate({
-      ...current,
-      extra_tip_note: tipModal.note.trim() || null,
-      extra_tip_amount: Number.isNaN(amountNumber) ? 0 : amountNumber,
-    });
-
-    setTipModal(null);
+  const handleNextMonth = () => {
+    let newMonth = currentNepaliMonth + 1;
+    let newYear = currentNepaliYear;
+    
+    if (newMonth > 11) {
+      newMonth = 0; // Baisakh (first month)
+      newYear = newYear + 1;
+    }
+    
+    setCurrentNepaliMonth(newMonth);
+    setCurrentNepaliYear(newYear);
   };
 
-  const monthName = new Date(yearNum, monthIndex, 1).toLocaleString("default", {
-    month: "long",
-  });
+  const handleToday = () => {
+    const today = new NepaliDate();
+    setCurrentNepaliYear(today.getYear());
+    setCurrentNepaliMonth(today.getMonth());
+  };
+
+  // Get corresponding English month/year for display
+  const firstDayBS = new NepaliDate(currentNepaliYear, currentNepaliMonth, 1);
+  const firstDayAD = firstDayBS.toJsDate();
+  const englishMonthName = firstDayAD.toLocaleString("default", { month: "long" });
+  const englishYear = firstDayAD.getFullYear();
 
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="w-full max-w-6xl mx-auto px-6 py-6 pb-12">
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Vehicle Attendance & Earnings
           </h1>
-          <p className="text-sm text-gray-600">
-            {monthName} {yearNum}
-          </p>
+          
+          {/* Month Display and Navigation */}
+          <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-6 py-4 shadow-lg">
+            <button
+              type="button"
+              onClick={handlePrevMonth}
+              className="px-4 py-2 text-sm font-semibold bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+            >
+              ← Previous
+            </button>
+            
+            <div className="text-center">
+              <div className="text-3xl font-bold mb-1 font-mukta">
+                {NEPALI_MONTHS[currentNepaliMonth]} {toNepaliNumber(currentNepaliYear)}
+              </div>
+              <div className="text-sm opacity-90">
+                {englishMonthName} {englishYear}
+              </div>
+            </div>
+            
+            <button
+              type="button"
+              onClick={handleNextMonth}
+              className="px-4 py-2 text-sm font-semibold bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+          
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={handleToday}
+              className="px-4 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100"
+            >
+              Go to Today
+            </button>
+          </div>
         </header>
 
         <section className="mb-4 rounded-lg bg-white p-3 shadow-sm">
@@ -372,6 +505,35 @@ export function MonthlyAttendanceClient() {
               </div>
             </div>
           )}
+
+          {!isLoading && tipsList.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                Extra Tips Details
+              </h3>
+              <div className="space-y-1.5">
+                {tipsList.map((tip, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between text-xs bg-blue-50 rounded px-2 py-1.5"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800">{tip.note}</div>
+                      <div className="text-gray-500 text-[10px]">
+                        {new Date(tip.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </div>
+                    <div className="font-semibold text-blue-700">
+                      Rs. {tip.amount.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="rounded-lg bg-white p-2 shadow-sm">
@@ -396,12 +558,19 @@ export function MonthlyAttendanceClient() {
                 );
               }
 
-              const dayNumber = new Date(cell.log_date).getDate();
+              // Get English date for display
+              const cellDate = new Date(cell.log_date);
+              const englishDay = cellDate.getDate();
+              
+              // Get Nepali date for this specific day
+              const nepaliDateObj = new NepaliDate(cellDate);
+              const nepaliDay = nepaliDateObj.getDate();
 
               return (
                 <DayCard
                   key={cell.log_date}
-                  dateLabel={String(dayNumber)}
+                  dateLabel={String(englishDay)}
+                  nepaliDateLabel={toNepaliNumber(nepaliDay)}
                   log={cell}
                   isSaving={mutation.isPending}
                   onChangeStatus={(status) =>
@@ -410,7 +579,7 @@ export function MonthlyAttendanceClient() {
                   onChangeExtra={(extra) =>
                     handleExtraChange(cell.log_date, extra)
                   }
-                  onOpenTip={() => handleOpenTip(cell)}
+                  onOpenTip={() => {}}
                 />
               );
             })}
@@ -480,6 +649,10 @@ export function MonthlyAttendanceClient() {
             </div>
           </div>
         )}
+
+        {/* PDF Download Button */}
+        <div className="mt-6 flex justify-center">
+        </div>
       </main>
     </div>
   );
