@@ -92,3 +92,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// DELETE /api/attendance?log_date=YYYY-MM-DD
+export async function DELETE(req: NextRequest) {
+  const supabase = supabaseServerClient();
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const log_date = searchParams.get('log_date');
+
+    if (!log_date) {
+      return NextResponse.json({ error: 'log_date query param (YYYY-MM-DD) is required' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('attendance_logs')
+      .delete()
+      .eq('log_date', log_date);
+
+    if (error) {
+      console.error('Supabase delete error', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (err: any) {
+    console.error('Unexpected error in DELETE /api/attendance', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

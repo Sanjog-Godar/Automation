@@ -73,6 +73,16 @@ async function upsertAttendance(log: AttendanceLog): Promise<AttendanceLog> {
   return json.data as AttendanceLog;
 }
 
+async function deleteAttendance(log_date: string): Promise<void> {
+  const res = await fetch(`${API_BASE}?log_date=${log_date}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to delete attendance");
+  }
+}
+
 interface DayCardProps {
   dateLabel: string;
   nepaliDateLabel: string;
@@ -303,6 +313,29 @@ export function MonthlyAttendanceClient() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteAttendance,
+    onMutate: async (log_date: string) => {
+      await queryClient.cancelQueries({ queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth] });
+      const previous =
+        (queryClient.getQueryData<AttendanceLog[]>(["attendance", nepaliMonthKey, daysInNepaliMonth]) ?? []);
+
+      const updated = previous.filter((l) => l.log_date !== log_date);
+
+      queryClient.setQueryData(["attendance", nepaliMonthKey, daysInNepaliMonth], updated);
+
+      return { previous };
+    },
+    onError: (_err, _log_date, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["attendance", nepaliMonthKey, daysInNepaliMonth], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth] });
+    },
+  });
+
   // Build logs for each Nepali day of the month
   const fullMonthLogs: AttendanceLog[] = useMemo(() => {
     const byDate = new Map(serverLogs.map((l) => [l.log_date, l] as const));
@@ -397,6 +430,12 @@ export function MonthlyAttendanceClient() {
     const current = fullMonthLogs.find((l) => l.log_date === log_date);
     if (!current) {
       console.error('Could not find log for date:', log_date);
+      return;
+    }
+    
+    // Toggle feature: if clicking the same status button, delete the entry
+    if (!current.isUnselected && current.status === status) {
+      deleteMutation.mutate(log_date);
       return;
     }
     
@@ -794,7 +833,7 @@ export function MonthlyAttendanceClient() {
                   dateLabel={String(englishDay)}
                   nepaliDateLabel={toNepaliNumber(nepaliDay)}
                   log={cell}
-                  isSaving={mutation.isPending}
+                  isSaving={mutation.isPending || deleteMutation.isPending}
                   onChangeStatus={(status) =>
                     handleStatusChange(cell.log_date, status)
                   }
