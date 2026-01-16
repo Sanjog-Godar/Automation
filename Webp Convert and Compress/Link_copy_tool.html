@@ -589,6 +589,7 @@
     <script>
         let rowCount = 0;
         const STORAGE_KEY = 'urlLinkManagerData';
+        let lastCopiedButton = null;
 
         // Initialize with 10 rows on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -656,6 +657,24 @@
             }, 150);
         }
 
+        function setCopiedButtonState(button) {
+            if (lastCopiedButton && lastCopiedButton !== button) {
+                const lastTextSpan = lastCopiedButton.querySelector('span');
+                if (lastTextSpan) {
+                    lastTextSpan.textContent = 'Copy';
+                }
+                lastCopiedButton.classList.remove('copied');
+            }
+
+            const currentTextSpan = button.querySelector('span');
+            if (currentTextSpan) {
+                currentTextSpan.textContent = 'Copied';
+            }
+
+            button.classList.add('copied');
+            lastCopiedButton = button;
+        }
+
         function copyToClipboard(rowNumber, button) {
             const input = document.getElementById(`input-${rowNumber}`);
             const text = input.value;
@@ -676,36 +695,30 @@
             
             // Copy to clipboard
             navigator.clipboard.writeText(text).then(() => {
-                // Success feedback
-                button.classList.add('copied');
+                setCopiedButtonState(button);
+
                 const feedback = button.querySelector('.copy-feedback');
-                feedback.classList.add('show');
-                
-                // Update button text temporarily
-                const btnText = button.querySelector('span');
-                const originalText = btnText.textContent;
-                btnText.textContent = 'Copied!';
-                
-                setTimeout(() => {
-                    button.classList.remove('copied');
-                    feedback.classList.remove('show');
-                    btnText.textContent = originalText;
-                }, 1500);
-                
+                if (feedback) {
+                    feedback.classList.add('show');
+                    setTimeout(() => {
+                        feedback.classList.remove('show');
+                    }, 1500);
+                }
+
             }).catch(err => {
                 // Fallback for older browsers
                 input.select();
                 document.execCommand('copy');
-                
-                // Success feedback
-                button.classList.add('copied');
+
+                setCopiedButtonState(button);
+
                 const feedback = button.querySelector('.copy-feedback');
-                feedback.classList.add('show');
-                
-                setTimeout(() => {
-                    button.classList.remove('copied');
-                    feedback.classList.remove('show');
-                }, 1500);
+                if (feedback) {
+                    feedback.classList.add('show');
+                    setTimeout(() => {
+                        feedback.classList.remove('show');
+                    }, 1500);
+                }
             });
         }
 

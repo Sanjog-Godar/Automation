@@ -3,6 +3,7 @@ import boto3
 import os
 import threading
 import json
+import csv
 from tkinter import filedialog, messagebox
 from dotenv import load_dotenv
 from pathlib import Path
@@ -1296,11 +1297,19 @@ class R2Uploader(ctk.CTk):
         }
     
     def show_url_results(self, url_data):
-        """Display URL results in a new popup window"""
+        """Display URL results in a tabular format with editable Title and Base Link fields"""
+        # Sort url_data by filename (numerical sorting)
+        def extract_number(filename):
+            """Extract number from filename for sorting"""
+            numbers = re.findall(r'\d+', filename)
+            return int(numbers[0]) if numbers else 0
+        
+        sorted_url_data = sorted(url_data, key=lambda x: extract_number(x['filename']))
+        
         # Create popup window
         popup = ctk.CTkToplevel(self)
-        popup.title("📋 Upload Results - Generated URLs")
-        popup.geometry("900x600")
+        popup.title("📋 COC Base Bulk Upload Form")
+        popup.geometry("1400x750")
         popup.transient(self)
         popup.grab_set()
         
@@ -1310,133 +1319,244 @@ class R2Uploader(ctk.CTk):
         
         ctk.CTkLabel(
             header_frame,
-            text="✅ Upload Complete - Generated URLs",
-            font=ctk.CTkFont(size=20, weight="bold")
+            text="🎮 COC Base Bulk Upload Form",
+            font=ctk.CTkFont(size=24, weight="bold")
         ).pack(pady=10)
         
         ctk.CTkLabel(
             header_frame,
-            text=f"Total files: {len(url_data)}",
+            text=f"Total Bases: {len(sorted_url_data)} | Fill in Title and Base Link, then export to CSV",
             font=ctk.CTkFont(size=13),
             text_color="gray"
         ).pack()
         
-        # Scrollable results
-        results_frame = ctk.CTkScrollableFrame(popup)
-        results_frame.pack(fill="both", expand=True, padx=20, pady=10)
-        results_frame._parent_canvas.configure(yscrollincrement=40)
+        # Main scrollable area
+        main_scroll = ctk.CTkScrollableFrame(popup)
+        main_scroll.pack(fill="both", expand=True, padx=20, pady=10)
+        main_scroll._parent_canvas.configure(yscrollincrement=40)
         
-        # Display each file's URLs
-        for i, data in enumerate(url_data, 1):
-            file_container = ctk.CTkFrame(results_frame)
-            file_container.pack(fill="x", pady=10, padx=5)
-            
-            # File header
-            file_header = ctk.CTkFrame(file_container, fg_color="transparent")
-            file_header.pack(fill="x", padx=15, pady=(10, 5))
-            
-            type_color = "#4CAF50" if data['type'] == "Detail" else "#FF9800"
+        # Table container
+        table_frame = ctk.CTkFrame(main_scroll)
+        table_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Table header
+        header_row = ctk.CTkFrame(table_frame, fg_color="#1f6aa5")
+        header_row.pack(fill="x", pady=(0, 2))
+        
+        # Header columns with fixed widths
+        headers = [
+            ("Base", 60),
+            ("Title", 280),
+            ("Thumbnail URL", 350),
+            ("Full Image URL", 350),
+            ("Base Link", 350)
+        ]
+        
+        for header_text, width in headers:
             ctk.CTkLabel(
-                file_header,
-                text=f"{i}. {data['filename']}",
+                header_row,
+                text=header_text,
                 font=ctk.CTkFont(size=13, weight="bold"),
-                anchor="w"
-            ).pack(side="left")
+                width=width,
+                anchor="center",
+                text_color="white"
+            ).pack(side="left", padx=2, pady=8)
+        
+        # Store entry widgets for CSV export
+        entry_widgets = []
+        
+        # Data rows
+        for i, data in enumerate(sorted_url_data, 1):
+            row_frame = ctk.CTkFrame(table_frame, fg_color="#2b2b2b" if i % 2 == 0 else "#1e1e1e")
+            row_frame.pack(fill="x", pady=1)
             
-            ctk.CTkLabel(
-                file_header,
-                text=f"[{data['type']}]",
-                font=ctk.CTkFont(size=11, weight="bold"),
-                text_color=type_color
-            ).pack(side="right")
+            # Serial number
+            serial_label = ctk.CTkLabel(
+                row_frame,
+                text=str(i),
+                font=ctk.CTkFont(size=12, weight="bold"),
+                width=60,
+                anchor="center",
+                text_color="#4CAF50"
+            )
+            serial_label.pack(side="left", padx=2, pady=6)
             
-            # Thumbnail URL (shown first)
-            thumb_frame = ctk.CTkFrame(file_container, fg_color="transparent")
-            thumb_frame.pack(fill="x", padx=15, pady=2)
+            # Title entry (editable)
+            title_entry = ctk.CTkEntry(
+                row_frame,
+                placeholder_text='e.g., "TH16 War Base Anti 3 Star"',
+                width=280,
+                font=ctk.CTkFont(size=11),
+                height=32
+            )
+            title_entry.pack(side="left", padx=2, pady=6)
             
-            ctk.CTkLabel(
-                thumb_frame,
-                text="🔍 Thumb:",
-                font=ctk.CTkFont(size=11, weight="bold"),
-                width=80,
-                anchor="w"
-            ).pack(side="left")
-            
+            # Thumbnail URL (read-only)
             thumb_entry = ctk.CTkEntry(
-                thumb_frame,
-                font=ctk.CTkFont(family="Consolas", size=10)
+                row_frame,
+                width=350,
+                font=ctk.CTkFont(family="Consolas", size=10),
+                height=32
             )
-            thumb_entry.pack(side="left", fill="x", expand=True, padx=5)
             thumb_entry.insert(0, data['thumbnail_url'])
-            thumb_entry.configure(state="readonly")
+            thumb_entry.configure(state="readonly", fg_color="#2d2d2d")
+            thumb_entry.pack(side="left", padx=2, pady=6)
             
-            ctk.CTkButton(
-                thumb_frame,
-                text="📋",
-                width=40,
-                command=lambda url=data['thumbnail_url']: self.copy_to_clipboard(url, popup)
-            ).pack(side="left")
-            
-            # Detail URL (shown second)
-            detail_frame = ctk.CTkFrame(file_container, fg_color="transparent")
-            detail_frame.pack(fill="x", padx=15, pady=(2, 10))
-            
-            ctk.CTkLabel(
-                detail_frame,
-                text="🖼️  Detail:",
-                font=ctk.CTkFont(size=11, weight="bold"),
-                width=80,
-                anchor="w"
-            ).pack(side="left")
-            
+            # Full Image URL (read-only)
             detail_entry = ctk.CTkEntry(
-                detail_frame,
-                font=ctk.CTkFont(family="Consolas", size=10)
+                row_frame,
+                width=350,
+                font=ctk.CTkFont(family="Consolas", size=10),
+                height=32
             )
-            detail_entry.pack(side="left", fill="x", expand=True, padx=5)
             detail_entry.insert(0, data['detail_url'])
-            detail_entry.configure(state="readonly")
+            detail_entry.configure(state="readonly", fg_color="#2d2d2d")
+            detail_entry.pack(side="left", padx=2, pady=6)
             
-            ctk.CTkButton(
-                detail_frame,
-                text="📋",
-                width=40,
-                command=lambda url=data['detail_url']: self.copy_to_clipboard(url, popup)
-            ).pack(side="left")
+            # Base Link entry (editable)
+            baselink_entry = ctk.CTkEntry(
+                row_frame,
+                placeholder_text="https://link.clashofclans.com/...",
+                width=350,
+                font=ctk.CTkFont(family="Consolas", size=10),
+                height=32
+            )
+            baselink_entry.pack(side="left", padx=2, pady=6)
+            
+            # Store widget references
+            entry_widgets.append({
+                'serial': i,
+                'title': title_entry,
+                'thumbnail': thumb_entry,
+                'detail': detail_entry,
+                'baselink': baselink_entry
+            })
         
         # Button frame
         button_frame = ctk.CTkFrame(popup)
         button_frame.pack(fill="x", padx=20, pady=(10, 20))
         
+        # Export to CSV button
         ctk.CTkButton(
             button_frame,
-            text="📋 Copy All Detail URLs",
-            command=lambda: self.copy_all_urls(url_data, 'detail', popup),
-            height=35,
+            text="💾 Export to CSV",
+            command=lambda: self.export_table_to_csv(entry_widgets, popup),
+            height=45,
             width=200,
-            fg_color="#2196F3",
-            hover_color="#1976D2"
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color="#2B8A3E",
+            hover_color="#1E6329"
         ).pack(side="left", padx=5)
         
+        # Validation helper button
         ctk.CTkButton(
             button_frame,
-            text="📋 Copy All Thumbnail URLs",
-            command=lambda: self.copy_all_urls(url_data, 'thumbnail', popup),
-            height=35,
-            width=200,
-            fg_color="#FF9800",
-            hover_color="#F57C00"
+            text="✓ Validate All",
+            command=lambda: self.validate_all_entries(entry_widgets),
+            height=45,
+            width=180,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color="#0066CC",
+            hover_color="#004D99"
         ).pack(side="left", padx=5)
         
+        # Close button
         ctk.CTkButton(
             button_frame,
             text="✅ Close",
             command=popup.destroy,
-            height=35,
-            width=120,
-            fg_color="#4CAF50",
-            hover_color="#388E3C"
+            height=45,
+            width=150,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color="#6b6b6b",
+            hover_color="#4a4a4a"
         ).pack(side="right", padx=5)
+    
+    def validate_all_entries(self, entry_widgets):
+        """Validate all Title and Base Link entries"""
+        empty_titles = []
+        empty_baselinks = []
+        invalid_baselinks = []
+        
+        for entry in entry_widgets:
+            serial = entry['serial']
+            title = entry['title'].get().strip()
+            baselink = entry['baselink'].get().strip()
+            
+            if not title:
+                empty_titles.append(serial)
+            
+            if not baselink:
+                empty_baselinks.append(serial)
+            elif not baselink.startswith("https://link.clashofclans.com/"):
+                invalid_baselinks.append(serial)
+        
+        issues = []
+        if empty_titles:
+            issues.append(f"❌ Empty Titles in rows: {', '.join(map(str, empty_titles))}")
+        if empty_baselinks:
+            issues.append(f"❌ Empty Base Links in rows: {', '.join(map(str, empty_baselinks))}")
+        if invalid_baselinks:
+            issues.append(f"⚠️ Invalid Base Links (must start with https://link.clashofclans.com/) in rows: {', '.join(map(str, invalid_baselinks))}")
+        
+        if issues:
+            messagebox.showwarning("Validation Issues", "\n\n".join(issues))
+        else:
+            messagebox.showinfo("Validation Success", "✅ All entries are valid!\n\nYou can now export to CSV.")
+    
+    def export_table_to_csv(self, entry_widgets, parent_window):
+        """Export the table data to CSV file"""
+        # Validate before export
+        empty_count = 0
+        for entry in entry_widgets:
+            if not entry['title'].get().strip() or not entry['baselink'].get().strip():
+                empty_count += 1
+        
+        if empty_count > 0:
+            confirm = messagebox.askyesno(
+                "Incomplete Data",
+                f"⚠️ {empty_count} row(s) have empty Title or Base Link fields.\n\n"
+                "Do you want to export anyway?"
+            )
+            if not confirm:
+                return
+        
+        # Ask for save location
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialfile="coc_base_bulk_upload.csv"
+        )
+        
+        if not file_path:
+            return
+        
+        try:
+            with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Write header
+                writer.writerow(['Base', 'Title', 'Thumbnail URL', 'Full Image URL', 'Base Link'])
+                
+                # Write data rows
+                for entry in entry_widgets:
+                    writer.writerow([
+                        entry['serial'],
+                        entry['title'].get().strip(),
+                        entry['thumbnail'].get(),
+                        entry['detail'].get(),
+                        entry['baselink'].get().strip()
+                    ])
+            
+            messagebox.showinfo(
+                "Export Successful",
+                f"✅ Data exported successfully!\n\n"
+                f"📁 Saved to:\n{file_path}\n\n"
+                f"Total rows: {len(entry_widgets)}"
+            )
+            
+        except Exception as e:
+            messagebox.showerror("Export Failed", f"Failed to export CSV:\n\n{str(e)}")
     
     def copy_to_clipboard(self, text, parent_window):
         """Copy text to clipboard"""
