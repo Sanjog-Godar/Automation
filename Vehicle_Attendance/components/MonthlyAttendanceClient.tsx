@@ -7,6 +7,7 @@ import { calculateMonthlySummary, DAILY_WAGE, REPLACEMENT_DEDUCTION } from "@/li
 import NepaliDate from "nepali-date-converter";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { LogoutButton } from "./LogoutButton";
 
 const API_BASE = "/api/attendance"; // Next.js App Router API route
 const FUEL_BILLS_API = "/api/fuel-bills";
@@ -1037,9 +1038,12 @@ export function MonthlyAttendanceClient() {
     <div className="min-h-screen bg-gray-50">
       <main className="w-full max-w-6xl mx-auto px-6 py-6 pb-12">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Vehicle Attendance & Earnings
-          </h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Vehicle Attendance & Earnings
+            </h1>
+            <LogoutButton />
+          </div>
           
           {/* Month Display and Navigation */}
           <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-6 py-4 shadow-lg">
