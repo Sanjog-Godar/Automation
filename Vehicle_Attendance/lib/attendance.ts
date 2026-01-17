@@ -18,6 +18,18 @@ export interface AttendanceLog {
    * Short note about where the tip came from.
    */
   extra_tip_note?: string | null;
+  /**
+   * Starting kilometer reading for the day.
+   */
+  km_start?: number | null;
+  /**
+   * Ending kilometer reading for the day.
+   */
+  km_end?: number | null;
+  /**
+   * Total kilometers run for the day (km_end - km_start).
+   */
+  km_total?: number | null;
 }
 
 export interface MonthlySummary {
@@ -25,9 +37,20 @@ export interface MonthlySummary {
   totalReplacementDays: number;
   totalExtraIncome: number;
   totalExtraTips: number;
+  totalKm: number;
   grossIncome: number;
   totalDeductions: number;
   netIncome: number;
+}
+
+export interface FuelBill {
+  id?: number;
+  start_date: string; // YYYY-MM-DD
+  end_date: string; // YYYY-MM-DD
+  total_km: number;
+  expected_liters: number;
+  actual_liters?: number | null;
+  created_at?: string;
 }
 
 export const DAILY_WAGE = 1200;
@@ -38,6 +61,7 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
   let totalReplacementDays = 0;
   let totalExtraIncome = 0;
    let totalExtraTips = 0;
+   let totalKm = 0;
 
   for (const log of logs) {
     if (log.status === 'present') {
@@ -48,6 +72,7 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
     }
 
     totalExtraTips += Number((log.extra_tip_amount ?? 0) || 0);
+    totalKm += Number((log.km_total ?? 0) || 0);
   }
 
   const grossIncome = totalPresentDays * DAILY_WAGE + totalExtraIncome;
@@ -59,6 +84,7 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
     totalReplacementDays,
     totalExtraIncome,
     totalExtraTips,
+    totalKm,
     grossIncome,
     totalDeductions,
     netIncome,
