@@ -442,9 +442,9 @@ export function MonthlyAttendanceClient() {
   });
 
   // Build logs for each Nepali day of the month
-  const fullMonthLogs: AttendanceLog[] = useMemo(() => {
+  const fullMonthLogs: (AttendanceLog & { isUnselected?: boolean })[] = useMemo(() => {
     const byDate = new Map(serverLogs.map((l) => [l.log_date, l] as const));
-    const result: AttendanceLog[] = [];
+    const result: (AttendanceLog & { isUnselected?: boolean })[] = [];
 
     for (let nepaliDay = 1; nepaliDay <= daysInNepaliMonth; nepaliDay++) {
       // Convert Nepali date to AD
