@@ -1,21 +1,46 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(req: NextRequest) {
-  // Check for auth token in cookies
-  const token = req.cookies.get('sb-access-token');
+  let supabaseResponse = NextResponse.next({
+    request: req,
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value);
+            supabaseResponse.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  // Refresh session if expired
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   // If user is not logged in and trying to access protected routes, redirect to login
-  if (!token && req.nextUrl.pathname !== '/login') {
+  if (!session && req.nextUrl.pathname !== '/login') {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
   // If user is logged in and trying to access login page, redirect to home
-  if (token && req.nextUrl.pathname === '/login') {
+  if (session && req.nextUrl.pathname === '/login') {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {
