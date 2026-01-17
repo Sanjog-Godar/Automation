@@ -68,7 +68,12 @@ function formatDate(year: number, monthIndex: number, day: number): string {
 async function fetchMonthAttendance(monthKey: string): Promise<AttendanceLog[]> {
   const res = await fetch(`${API_BASE}?month=${monthKey}`);
   if (!res.ok) {
-    throw new Error("Failed to fetch attendance");
+    let message = "Failed to fetch attendance";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
   }
   const json = await res.json();
   return (json.data as AttendanceLog[]) ?? [];
@@ -84,7 +89,12 @@ async function upsertAttendance(log: AttendanceLog): Promise<AttendanceLog> {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to save attendance");
+    let message = "Failed to save attendance";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
   }
   const json = await res.json();
   return json.data as AttendanceLog;
@@ -96,14 +106,24 @@ async function deleteAttendance(log_date: string): Promise<void> {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to delete attendance");
+    let message = "Failed to delete attendance";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
   }
 }
 
 async function fetchFuelBills(): Promise<FuelBill[]> {
   const res = await fetch(FUEL_BILLS_API);
   if (!res.ok) {
-    throw new Error("Failed to fetch fuel bills");
+    let message = "Failed to fetch fuel bills";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
   }
   const json = await res.json();
   return (json.data as FuelBill[]) ?? [];
@@ -119,7 +139,12 @@ async function createFuelBill(bill: Omit<FuelBill, 'id' | 'created_at'>): Promis
   });
 
   if (!res.ok) {
-    throw new Error("Failed to create fuel bill");
+    let message = "Failed to create fuel bill";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
   }
   const json = await res.json();
   return json.data as FuelBill;
@@ -188,14 +213,14 @@ function DayCard({
   }
 
   return (
-    <div className={`${borderClass} rounded-lg p-2 flex flex-col justify-between shadow-sm min-h-[110px] ${bgClass}`}>
-      <div className="flex items-center justify-between mb-1">
+    <div className={`${borderClass} rounded-lg p-1.5 sm:p-2 flex flex-col justify-between shadow-sm min-h-[110px] ${bgClass}`}>
+      <div className="flex items-center justify-between mb-1 gap-1">
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-gray-800 font-mukta">{nepaliDateLabel}</span>
-          <span className="text-[9px] text-gray-500">{dateLabel}</span>
+          <span className="text-xs sm:text-sm font-semibold text-gray-800 font-mukta">{nepaliDateLabel}</span>
+          <span className="text-[9px] text-gray-500 leading-tight">{dateLabel}</span>
         </div>
         <span
-          className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${badgeClass}`}
+          className={`px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold whitespace-nowrap ${badgeClass}`}
         >
           {badgeLabel}
         </span>
@@ -257,18 +282,18 @@ function DayCard({
         </p>
       )}
 
-      <div className="mt-1 flex items-center justify-end gap-2">
+      <div className="mt-1 flex flex-wrap justify-between gap-1">
         <button
           type="button"
           onClick={onOpenTip}
-          className="rounded-full border border-blue-500 px-2 py-0.5 text-[10px] font-medium text-blue-600 hover:bg-blue-50"
+          className="flex-1 min-w-[40px] rounded-full border border-blue-500 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-medium text-blue-600 hover:bg-blue-50 text-center"
         >
           Extra Tip
         </button>
         <button
           type="button"
           onClick={onOpenKm}
-          className="rounded-full border border-purple-500 px-2 py-0.5 text-[10px] font-medium text-purple-600 hover:bg-purple-50"
+          className="flex-1 min-w-[40px] rounded-full border border-purple-500 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-medium text-purple-600 hover:bg-purple-50 text-center"
         >
           {log.km_total && log.km_total > 0 ? `${log.km_total} Km` : 'KM'}
         </button>
@@ -401,10 +426,12 @@ export function MonthlyAttendanceClient() {
 
       return { previous };
     },
-    onError: (_err, _newLog, context) => {
+    onError: (err, _newLog, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["attendance", nepaliMonthKey, daysInNepaliMonth], context.previous);
       }
+      const message = err instanceof Error ? err.message : "Failed to save attendance";
+      showToast(`Save failed: ${message}`, 'सेभ गर्दा समस्या आयो');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth] });
@@ -424,10 +451,12 @@ export function MonthlyAttendanceClient() {
 
       return { previous };
     },
-    onError: (_err, _log_date, context) => {
+    onError: (err, _log_date, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["attendance", nepaliMonthKey, daysInNepaliMonth], context.previous);
       }
+      const message = err instanceof Error ? err.message : "Failed to delete attendance";
+      showToast(`Delete failed: ${message}`, 'मेट्दा समस्या आयो');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance", nepaliMonthKey, daysInNepaliMonth] });
@@ -438,6 +467,10 @@ export function MonthlyAttendanceClient() {
     mutationFn: createFuelBill,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuelBills"] });
+    },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : "Failed to create fuel bill";
+      showToast(`Fuel bill failed: ${message}`, 'फ्युल बिल बनाउन समस्या आयो');
     },
   });
 
@@ -508,7 +541,7 @@ export function MonthlyAttendanceClient() {
     const firstADDate = firstNepaliDayOfMonth.toJsDate();
     const firstDay = firstADDate.getDay(); // 0 (Sun) - 6 (Sat)
 
-    const cells: (AttendanceLog | null)[] = [];
+    const cells: ((AttendanceLog & { isUnselected?: boolean }) | null)[] = [];
 
     // Leading empty cells before the 1st day of the month
     for (let i = 0; i < firstDay; i++) {
@@ -1036,27 +1069,27 @@ export function MonthlyAttendanceClient() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="w-full max-w-6xl mx-auto px-6 py-6 pb-12">
+      <main className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-20">
         <header className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               Vehicle Attendance & Earnings
             </h1>
             <LogoutButton />
           </div>
           
           {/* Month Display and Navigation */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-6 py-4 shadow-lg">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-4 py-3 sm:px-6 sm:py-4 shadow-lg">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="px-4 py-2 text-sm font-semibold bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-center"
             >
               ← Previous
             </button>
             
             <div className="text-center">
-              <div className="text-3xl font-bold mb-1 font-mukta">
+              <div className="text-2xl sm:text-3xl font-bold mb-1 font-mukta">
                 {NEPALI_MONTHS[currentNepaliMonth]} {toNepaliNumber(currentNepaliYear)}
               </div>
               <div className="text-sm opacity-90">
@@ -1067,7 +1100,7 @@ export function MonthlyAttendanceClient() {
             <button
               type="button"
               onClick={handleNextMonth}
-              className="px-4 py-2 text-sm font-semibold bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-center"
             >
               Next →
             </button>
@@ -1137,18 +1170,19 @@ export function MonthlyAttendanceClient() {
           )}
         </section>
 
-        <section className="rounded-lg bg-white p-2 shadow-sm">
-          <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-600 mb-1">
-            <span>Sun</span>
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-          </div>
+        <section className="rounded-lg bg-white p-2 shadow-sm overflow-x-auto">
+          <div className="min-w-[560px] sm:min-w-0">
+            <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-gray-600 mb-1">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
 
-          <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1">
             {calendarCells.map((cell, index) => {
               if (!cell) {
                 return (
@@ -1207,12 +1241,13 @@ export function MonthlyAttendanceClient() {
                 />
               );
             })}
+            </div>
           </div>
         </section>
 
         {tipModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+            <div className="w-full max-w-sm mx-4 rounded-lg bg-white p-4 shadow-lg">
               <h3 className="mb-2 text-base font-semibold text-gray-900">
                 Extra Tip Details
               </h3>
@@ -1276,7 +1311,7 @@ export function MonthlyAttendanceClient() {
 
         {kmModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+            <div className="w-full max-w-sm mx-4 rounded-lg bg-white p-4 shadow-lg">
               <h3 className="mb-2 text-base font-semibold text-gray-900">
                 Kilometer Details
               </h3>
@@ -1349,7 +1384,7 @@ export function MonthlyAttendanceClient() {
 
         {fuelBillModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+            <div className="w-full max-w-md mx-4 rounded-lg bg-white p-4 sm:p-6 shadow-lg">
               <h3 className="mb-3 text-lg font-bold text-gray-900">
                 ⛽ Generate Fuel Bill
               </h3>
@@ -1457,8 +1492,8 @@ export function MonthlyAttendanceClient() {
         {/* KM List Modal */}
         {showKmListModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-2xl max-h-[80vh] rounded-lg bg-white shadow-lg overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-gray-200">
+            <div className="w-full max-w-2xl max-h-[80vh] mx-4 rounded-lg bg-white shadow-lg overflow-hidden flex flex-col">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold text-gray-900">
                     📊 Kilometer Record / किलोमिटर रेकर्ड
@@ -1475,7 +1510,7 @@ export function MonthlyAttendanceClient() {
                 </p>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 <div className="space-y-3">
                   {kmList.map((km) => {
                     const adDate = new Date(km.date);
@@ -1534,7 +1569,7 @@ export function MonthlyAttendanceClient() {
 
         {/* Tips List */}
         {tipsList.length > 0 && (
-          <section className="mt-4 bg-white rounded-lg p-6 shadow-md">
+          <section className="mt-4 bg-white rounded-lg p-4 sm:p-6 shadow-md">
             <h3 className="text-lg font-bold mb-4 text-gray-800">
               Tips Record / टिप रेकर्ड
             </h3>
@@ -1576,7 +1611,7 @@ export function MonthlyAttendanceClient() {
 
         {/* Fuel Bill Records */}
         {fuelBills.length > 0 && (
-          <section className="mt-4 bg-white rounded-lg p-6 shadow-md">
+          <section className="mt-4 bg-white rounded-lg p-4 sm:p-6 shadow-md">
             <h3 className="text-lg font-bold mb-4 text-gray-800">
               Fuel Bill Records / ईंधन बिल रेकर्ड
             </h3>
@@ -1615,7 +1650,7 @@ export function MonthlyAttendanceClient() {
 
         {/* Action Buttons Section */}
         <section className="mt-8 mb-8">
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-lg border border-gray-200">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-200">
             <h3 className="text-center text-lg font-bold text-gray-800 mb-6">
               Quick Actions / छिटो कार्यहरू
             </h3>
@@ -1674,8 +1709,8 @@ export function MonthlyAttendanceClient() {
 
       {/* Toast Notification */}
       {toast.show && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in">
-          <div className="bg-red-600 text-white px-6 py-4 rounded-lg shadow-2xl max-w-md">
+        <div className="fixed top-4 inset-x-4 sm:right-4 sm:left-auto sm:inset-x-auto z-50 animate-slide-in">
+          <div className="bg-red-600 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-lg shadow-2xl max-w-md mx-auto sm:mx-0">
             <div className="flex items-start gap-3">
               <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />

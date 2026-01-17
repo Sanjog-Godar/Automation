@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,8 +12,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Supabase client
-    const supabase = createSupabaseServerClient();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Supabase environment variables are not configured on the server.' },
+        { status: 500 }
+      );
+    }
+
+    // Create Supabase client (no SSR cookie handling needed here)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
