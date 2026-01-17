@@ -311,6 +311,8 @@ export function MonthlyAttendanceClient() {
     actual_liters: string;
   } | null>(null);
 
+  const [showKmListModal, setShowKmListModal] = useState(false);
+
   const [toast, setToast] = useState({
     message: '',
     nepaliMessage: '',
@@ -1448,6 +1450,84 @@ export function MonthlyAttendanceClient() {
           </div>
         )}
 
+        {/* KM List Modal */}
+        {showKmListModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="w-full max-w-2xl max-h-[80vh] rounded-lg bg-white shadow-lg overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    📊 Kilometer Record / किलोमिटर रेकर्ड
+                  </h3>
+                  <button
+                    onClick={() => setShowKmListModal(false)}
+                    className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Total records: {kmList.length}
+                </p>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-3">
+                  {kmList.map((km) => {
+                    const adDate = new Date(km.date);
+                    const nepaliDate = new NepaliDate(adDate);
+                    const nepaliDateStr = `${NEPALI_MONTHS[nepaliDate.getMonth()]} ${toNepaliNumber(nepaliDate.getDate())}, ${toNepaliNumber(nepaliDate.getYear())}`;
+                    
+                    return (
+                      <div
+                        key={km.date}
+                        className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-white rounded-lg border border-purple-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-base font-bold text-gray-800 font-mukta">
+                              {nepaliDateStr}
+                            </span>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              {km.date}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">Start:</span>
+                              <span className="font-semibold text-purple-600">{km.km_start.toLocaleString()} km</span>
+                            </span>
+                            <span className="text-gray-400">→</span>
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">End:</span>
+                              <span className="font-semibold text-purple-600">{km.km_end.toLocaleString()} km</span>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4 bg-purple-100 px-4 py-2 rounded-lg">
+                          <div className="text-xs text-purple-600 font-medium">Total</div>
+                          <div className="text-lg font-bold text-purple-700">
+                            {km.km_total.toLocaleString()} km
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={() => setShowKmListModal(false)}
+                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tips List */}
         {tipsList.length > 0 && (
           <section className="mt-4 bg-white rounded-lg p-6 shadow-md">
@@ -1481,48 +1561,6 @@ export function MonthlyAttendanceClient() {
                     <div className="text-right ml-4">
                       <span className="text-sm font-bold text-green-600">
                         Rs. {tip.amount.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* KM List */}
-        {kmList.length > 0 && (
-          <section className="mt-4 bg-white rounded-lg p-6 shadow-md">
-            <h3 className="text-lg font-bold mb-4 text-gray-800">
-              Kilometer Record / किलोमिटर रेकर्ड
-            </h3>
-            <div className="space-y-2">
-              {kmList.map((km) => {
-                const adDate = new Date(km.date);
-                const nepaliDate = new NepaliDate(adDate);
-                const nepaliDateStr = `${NEPALI_MONTHS[nepaliDate.getMonth()]} ${toNepaliNumber(nepaliDate.getDate())}, ${toNepaliNumber(nepaliDate.getYear())}`;
-                
-                return (
-                  <div
-                    key={km.date}
-                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-700 font-mukta">
-                          {nepaliDateStr}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          ({km.date})
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Start: {km.km_start.toLocaleString()} km → End: {km.km_end.toLocaleString()} km
-                      </p>
-                    </div>
-                    <div className="text-right ml-4">
-                      <span className="text-sm font-bold text-purple-600">
-                        {km.km_total.toLocaleString()} km
                       </span>
                     </div>
                   </div>
@@ -1571,25 +1609,63 @@ export function MonthlyAttendanceClient() {
           </section>
         )}
 
-        {/* Generate Fuel Bill Button */}
-        <div className="mt-6 flex justify-center gap-4">
-          <button
-            onClick={handleOpenFuelBill}
-            className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold shadow-md"
-          >
-            ⛽ Generate Fuel Bill
-          </button>
-        </div>
-
-        {/* PDF Download Button */}
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={handleDownloadPDF}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md"
-          >
-            📄 Download PDF Report (Up to Today)
-          </button>
-        </div>
+        {/* Action Buttons Section */}
+        <section className="mt-8 mb-8">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-lg border border-gray-200">
+            <h3 className="text-center text-lg font-bold text-gray-800 mb-6">
+              Quick Actions / छिटो कार्यहरू
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* KM Record Button */}
+              {kmList.length > 0 && (
+                <button
+                  onClick={() => setShowKmListModal(true)}
+                  className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl p-4 hover:from-purple-700 hover:to-purple-800 transition-all duration-300 shadow-md hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white opacity-10"></div>
+                  <div className="relative">
+                    <div className="text-3xl mb-2">📊</div>
+                    <div className="font-bold text-base mb-1">Kilometer Record</div>
+                    <div className="text-sm opacity-90">
+                      {kmList.length} {kmList.length === 1 ? 'entry' : 'entries'}
+                    </div>
+                  </div>
+                </button>
+              )}
+              
+              {/* Fuel Bill Button */}
+              <button
+                onClick={handleOpenFuelBill}
+                className="group relative overflow-hidden bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl p-4 hover:from-orange-700 hover:to-orange-800 transition-all duration-300 shadow-md hover:shadow-xl transform hover:-translate-y-1"
+              >
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white opacity-10"></div>
+                <div className="relative">
+                  <div className="text-3xl mb-2">⛽</div>
+                  <div className="font-bold text-base mb-1">Generate Fuel Bill</div>
+                  <div className="text-sm opacity-90">
+                    Calculate consumption
+                  </div>
+                </div>
+              </button>
+              
+              {/* PDF Download Button */}
+              <button
+                onClick={handleDownloadPDF}
+                className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-xl transform hover:-translate-y-1"
+              >
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white opacity-10"></div>
+                <div className="relative">
+                  <div className="text-3xl mb-2">📄</div>
+                  <div className="font-bold text-base mb-1">Download Report</div>
+                  <div className="text-sm opacity-90">
+                    PDF format (up to today)
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Toast Notification */}
