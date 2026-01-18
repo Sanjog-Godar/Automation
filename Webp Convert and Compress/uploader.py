@@ -28,8 +28,8 @@ class R2Uploader(ctk.CTk):
         super().__init__()
         
         # Window configuration
-        self.title("Cloudflare R2 Uploader - Advanced")
-        self.geometry("1100x850")
+        self.title("Cloudflare R2 Uploader - Dual Upload Mode")
+        self.geometry("1400x900")
         
         # Set theme
         ctk.set_appearance_mode("dark")
@@ -48,6 +48,14 @@ class R2Uploader(ctk.CTk):
         self.r2_objects = []  # Cached list of all objects in bucket
         self.cache_file = Path(__file__).with_name("r2_cache.json")
         self.cache_loaded = False
+        
+        # Dual upload variables
+        self.detail_files = []  # Files for detail images
+        self.detail_checkboxes = {}  # Checkboxes for detail files
+        self.detail_r2_path = ""  # R2 destination for detail images
+        self.thumbnail_files = []  # Files for thumbnail images
+        self.thumbnail_checkboxes = {}  # Checkboxes for thumbnail files
+        self.thumbnail_r2_path = ""  # R2 destination for thumbnail images
         
         # Initialize R2 client
         self.init_r2_client()
@@ -89,10 +97,99 @@ class R2Uploader(ctk.CTk):
         # Title
         title_label = ctk.CTkLabel(
             main_frame, 
-            text="🌐 Cloudflare R2 Uploader",
+            text="🌐 Cloudflare R2 Dual Uploader",
             font=ctk.CTkFont(size=26, weight="bold")
         )
-        title_label.pack(pady=(0, 20))
+        title_label.pack(pady=(0, 10))
+        
+        subtitle_label = ctk.CTkLabel(
+            main_frame,
+            text="Upload Detail Images and Thumbnail Images to separate R2 destinations simultaneously",
+            font=ctk.CTkFont(size=12),
+            text_color="gray"
+        )
+        subtitle_label.pack(pady=(0, 15))
+        
+        # === DUAL R2 DESTINATION SECTION ===
+        dual_dest_frame = ctk.CTkFrame(main_frame)
+        dual_dest_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        dual_dest_header = ctk.CTkLabel(
+            dual_dest_frame,
+            text="📁 Select R2 Destinations",
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        dual_dest_header.pack(pady=(15, 10))
+        
+        # Create two side-by-side R2 destination selectors
+        destinations_container = ctk.CTkFrame(dual_dest_frame)
+        destinations_container.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # === DETAIL IMAGES R2 DESTINATION ===
+        detail_r2_frame = ctk.CTkFrame(destinations_container)
+        detail_r2_frame.pack(side="left", fill="both", expand=True, padx=(0, 7))
+        
+        detail_r2_header = ctk.CTkFrame(detail_r2_frame)
+        detail_r2_header.pack(fill="x", padx=10, pady=(10, 5))
+        
+        ctk.CTkLabel(
+            detail_r2_header,
+            text="🖼️ Detail Images Destination",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color="#2196F3"
+        ).pack(side="left")
+        
+        ctk.CTkButton(
+            detail_r2_header,
+            text="Set Here",
+            command=lambda: self.set_detail_destination(),
+            height=26,
+            width=80,
+            fg_color="#2196F3",
+            hover_color="#1976D2"
+        ).pack(side="right")
+        
+        self.detail_dest_label = ctk.CTkLabel(
+            detail_r2_frame,
+            text=f"{BUCKET_NAME}/ (root)",
+            font=ctk.CTkFont(family="Consolas", size=10),
+            text_color="#90CAF9",
+            wraplength=300
+        )
+        self.detail_dest_label.pack(padx=10, pady=(0, 10))
+        
+        # === THUMBNAIL IMAGES R2 DESTINATION ===
+        thumb_r2_frame = ctk.CTkFrame(destinations_container)
+        thumb_r2_frame.pack(side="right", fill="both", expand=True, padx=(7, 0))
+        
+        thumb_r2_header = ctk.CTkFrame(thumb_r2_frame)
+        thumb_r2_header.pack(fill="x", padx=10, pady=(10, 5))
+        
+        ctk.CTkLabel(
+            thumb_r2_header,
+            text="🖼️ Thumbnail Images Destination",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color="#FF9800"
+        ).pack(side="left")
+        
+        ctk.CTkButton(
+            thumb_r2_header,
+            text="Set Here",
+            command=lambda: self.set_thumbnail_destination(),
+            height=26,
+            width=80,
+            fg_color="#FF9800",
+            hover_color="#F57C00"
+        ).pack(side="right")
+        
+        self.thumb_dest_label = ctk.CTkLabel(
+            thumb_r2_frame,
+            text=f"{BUCKET_NAME}/ (root)",
+            font=ctk.CTkFont(family="Consolas", size=10),
+            text_color="#FFB74D",
+            wraplength=300
+        )
+        self.thumb_dest_label.pack(padx=10, pady=(0, 10))
         
         # === R2 BUCKET BROWSER SECTION ===
         r2_browser_frame = ctk.CTkFrame(main_frame)
@@ -215,7 +312,7 @@ class R2Uploader(ctk.CTk):
         
         ctk.CTkLabel(
             upload_dest_frame,
-            text="📤 Files will be uploaded to:",
+            text="� Current Navigator Location:",
             font=ctk.CTkFont(size=12, weight="bold")
         ).pack(side="left", padx=(0, 10))
         
@@ -228,93 +325,198 @@ class R2Uploader(ctk.CTk):
         )
         self.upload_dest_label.pack(side="left", fill="x", expand=True)
         
-        # === LOCAL FILES SELECTION SECTION ===
-        local_frame = ctk.CTkFrame(main_frame)
-        local_frame.pack(fill="both", expand=True, pady=(0, 15))
+        # === DUAL LOCAL FILES SELECTION SECTION ===
+        dual_files_container = ctk.CTkFrame(main_frame)
+        dual_files_container.pack(fill="both", expand=True, pady=(0, 15))
         
-        local_header = ctk.CTkFrame(local_frame)
-        local_header.pack(fill="x", padx=15, pady=(15, 10))
+        dual_files_header = ctk.CTkLabel(
+            dual_files_container,
+            text="💾 Select Local Files to Upload",
+            font=ctk.CTkFont(size=18, weight="bold")
+        )
+        dual_files_header.pack(pady=(15, 10))
+        
+        # Container for two side-by-side file selection sections
+        files_sections_container = ctk.CTkFrame(dual_files_container)
+        files_sections_container.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # === DETAIL IMAGES FILE SELECTION ===
+        detail_files_frame = ctk.CTkFrame(files_sections_container)
+        detail_files_frame.pack(side="left", fill="both", expand=True, padx=(0, 7))
+        
+        detail_files_header = ctk.CTkFrame(detail_files_frame)
+        detail_files_header.pack(fill="x", padx=10, pady=(10, 5))
         
         ctk.CTkLabel(
-            local_header,
-            text="💾 Local Files to Upload",
-            font=ctk.CTkFont(size=16, weight="bold")
+            detail_files_header,
+            text="🖼️ Detail Images",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color="#2196F3"
         ).pack(side="left")
         
-        # Button container for file/folder selection
-        btn_container = ctk.CTkFrame(local_header)
-        btn_container.pack(side="right")
+        detail_btn_container = ctk.CTkFrame(detail_files_header)
+        detail_btn_container.pack(side="right")
         
         ctk.CTkButton(
-            btn_container,
-            text="📁 Select Folder",
-            command=self.select_folder,
-            height=32,
-            width=140,
+            detail_btn_container,
+            text="📁 Folder",
+            command=lambda: self.select_detail_folder(),
+            height=26,
+            width=80,
             fg_color="#2196F3",
             hover_color="#1976D2"
-        ).pack(side="left", padx=3)
+        ).pack(side="left", padx=2)
         
         ctk.CTkButton(
-            btn_container,
-            text="📄 Select Files",
-            command=self.select_files,
-            height=32,
-            width=140,
+            detail_btn_container,
+            text="📄 Files",
+            command=lambda: self.select_detail_files(),
+            height=26,
+            width=80,
             fg_color="#4CAF50",
             hover_color="#388E3C"
-        ).pack(side="left", padx=3)
+        ).pack(side="left", padx=2)
         
-        self.folder_label = ctk.CTkLabel(
-            local_frame,
+        self.detail_folder_label = ctk.CTkLabel(
+            detail_files_frame,
             text="No files selected",
             text_color="gray",
-            wraplength=1000
+            wraplength=400,
+            font=ctk.CTkFont(size=10)
         )
-        self.folder_label.pack(anchor="w", padx=15, pady=(0, 10))
+        self.detail_folder_label.pack(anchor="w", padx=10, pady=(0, 5))
         
-        # File selection controls
-        file_controls = ctk.CTkFrame(local_frame)
-        file_controls.pack(fill="x", padx=15, pady=(0, 10))
+        # Detail file controls
+        detail_file_controls = ctk.CTkFrame(detail_files_frame)
+        detail_file_controls.pack(fill="x", padx=10, pady=(0, 5))
         
-        self.file_count_label = ctk.CTkLabel(
-            file_controls,
-            text="0 files selected",
-            font=ctk.CTkFont(size=12, weight="bold"),
+        self.detail_file_count_label = ctk.CTkLabel(
+            detail_file_controls,
+            text="0 files",
+            font=ctk.CTkFont(size=11, weight="bold"),
             text_color="gray"
         )
-        self.file_count_label.pack(side="left")
+        self.detail_file_count_label.pack(side="left")
         
-        btn_controls = ctk.CTkFrame(file_controls)
-        btn_controls.pack(side="right")
-        
-        ctk.CTkButton(
-            btn_controls,
-            text="✓ Select All",
-            command=self.select_all_files,
-            height=28,
-            width=110,
-            fg_color="#4a4a4a",
-            hover_color="#3a3a3a"
-        ).pack(side="left", padx=2)
+        detail_btn_controls = ctk.CTkFrame(detail_file_controls)
+        detail_btn_controls.pack(side="right")
         
         ctk.CTkButton(
-            btn_controls,
-            text="✗ Deselect All",
-            command=self.deselect_all_files,
-            height=28,
-            width=110,
+            detail_btn_controls,
+            text="✓ All",
+            command=self.select_all_detail_files,
+            height=24,
+            width=60,
             fg_color="#4a4a4a",
             hover_color="#3a3a3a"
-        ).pack(side="left", padx=2)
+        ).pack(side="left", padx=1)
         
-        # Scrollable file list with checkboxes
-        self.file_list_frame = ctk.CTkScrollableFrame(
-            local_frame,
-            height=220
+        ctk.CTkButton(
+            detail_btn_controls,
+            text="✗ None",
+            command=self.deselect_all_detail_files,
+            height=24,
+            width=60,
+            fg_color="#4a4a4a",
+            hover_color="#3a3a3a"
+        ).pack(side="left", padx=1)
+        
+        # Detail files list
+        self.detail_file_list_frame = ctk.CTkScrollableFrame(
+            detail_files_frame,
+            height=180
         )
-        self.file_list_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        self.file_list_frame._parent_canvas.configure(yscrollincrement=40)
+        self.detail_file_list_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        self.detail_file_list_frame._parent_canvas.configure(yscrollincrement=40)
+        
+        # === THUMBNAIL IMAGES FILE SELECTION ===
+        thumb_files_frame = ctk.CTkFrame(files_sections_container)
+        thumb_files_frame.pack(side="right", fill="both", expand=True, padx=(7, 0))
+        
+        thumb_files_header = ctk.CTkFrame(thumb_files_frame)
+        thumb_files_header.pack(fill="x", padx=10, pady=(10, 5))
+        
+        ctk.CTkLabel(
+            thumb_files_header,
+            text="🖼️ Thumbnail Images",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color="#FF9800"
+        ).pack(side="left")
+        
+        thumb_btn_container = ctk.CTkFrame(thumb_files_header)
+        thumb_btn_container.pack(side="right")
+        
+        ctk.CTkButton(
+            thumb_btn_container,
+            text="📁 Folder",
+            command=lambda: self.select_thumbnail_folder(),
+            height=26,
+            width=80,
+            fg_color="#FF9800",
+            hover_color="#F57C00"
+        ).pack(side="left", padx=2)
+        
+        ctk.CTkButton(
+            thumb_btn_container,
+            text="📄 Files",
+            command=lambda: self.select_thumbnail_files(),
+            height=26,
+            width=80,
+            fg_color="#4CAF50",
+            hover_color="#388E3C"
+        ).pack(side="left", padx=2)
+        
+        self.thumb_folder_label = ctk.CTkLabel(
+            thumb_files_frame,
+            text="No files selected",
+            text_color="gray",
+            wraplength=400,
+            font=ctk.CTkFont(size=10)
+        )
+        self.thumb_folder_label.pack(anchor="w", padx=10, pady=(0, 5))
+        
+        # Thumbnail file controls
+        thumb_file_controls = ctk.CTkFrame(thumb_files_frame)
+        thumb_file_controls.pack(fill="x", padx=10, pady=(0, 5))
+        
+        self.thumb_file_count_label = ctk.CTkLabel(
+            thumb_file_controls,
+            text="0 files",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color="gray"
+        )
+        self.thumb_file_count_label.pack(side="left")
+        
+        thumb_btn_controls = ctk.CTkFrame(thumb_file_controls)
+        thumb_btn_controls.pack(side="right")
+        
+        ctk.CTkButton(
+            thumb_btn_controls,
+            text="✓ All",
+            command=self.select_all_thumbnail_files,
+            height=24,
+            width=60,
+            fg_color="#4a4a4a",
+            hover_color="#3a3a3a"
+        ).pack(side="left", padx=1)
+        
+        ctk.CTkButton(
+            thumb_btn_controls,
+            text="✗ None",
+            command=self.deselect_all_thumbnail_files,
+            height=24,
+            width=60,
+            fg_color="#4a4a4a",
+            hover_color="#3a3a3a"
+        ).pack(side="left", padx=1)
+        
+        # Thumbnail files list
+        self.thumb_file_list_frame = ctk.CTkScrollableFrame(
+            thumb_files_frame,
+            height=180
+        )
+        self.thumb_file_list_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        self.thumb_file_list_frame._parent_canvas.configure(yscrollincrement=40)
         
         # === SEARCH & DELETE SECTION ===
         search_frame = ctk.CTkFrame(main_frame)
@@ -846,6 +1048,340 @@ class R2Uploader(ctk.CTk):
         # This method is no longer used with new navigation system
         pass
     
+    # === DUAL UPLOAD DESTINATION METHODS ===
+    def set_detail_destination(self):
+        """Set the current R2 path as destination for detail images"""
+        self.detail_r2_path = self.current_r2_path
+        if self.detail_r2_path:
+            self.detail_dest_label.configure(
+                text=f"{BUCKET_NAME}/{self.detail_r2_path}/",
+                text_color="#2196F3"
+            )
+        else:
+            self.detail_dest_label.configure(
+                text=f"{BUCKET_NAME}/ (root)",
+                text_color="#90CAF9"
+            )
+        messagebox.showinfo("Destination Set", f"✅ Detail images will be uploaded to:\n\n{BUCKET_NAME}/{self.detail_r2_path}/" if self.detail_r2_path else f"✅ Detail images will be uploaded to:\n\n{BUCKET_NAME}/ (root)")
+        self.update_upload_button_state()
+    
+    def set_thumbnail_destination(self):
+        """Set the current R2 path as destination for thumbnail images"""
+        self.thumbnail_r2_path = self.current_r2_path
+        if self.thumbnail_r2_path:
+            self.thumb_dest_label.configure(
+                text=f"{BUCKET_NAME}/{self.thumbnail_r2_path}/",
+                text_color="#FF9800"
+            )
+        else:
+            self.thumb_dest_label.configure(
+                text=f"{BUCKET_NAME}/ (root)",
+                text_color="#FFB74D"
+            )
+        messagebox.showinfo("Destination Set", f"✅ Thumbnail images will be uploaded to:\n\n{BUCKET_NAME}/{self.thumbnail_r2_path}/" if self.thumbnail_r2_path else f"✅ Thumbnail images will be uploaded to:\n\n{BUCKET_NAME}/ (root)")
+        self.update_upload_button_state()
+    
+    # === DETAIL FILES SELECTION METHODS ===
+    def select_detail_folder(self):
+        """Select folder for detail images"""
+        folder = filedialog.askdirectory(title="Select Folder with Detail Images")
+        if not folder:
+            return
+        
+        self.detail_folder_label.configure(text=f"📁 {folder}", text_color="white")
+        self.scan_detail_files(folder)
+    
+    def select_detail_files(self):
+        """Select individual detail files"""
+        files = filedialog.askopenfilenames(
+            title="Select Detail Image Files",
+            filetypes=[
+                ("All Files", "*.*"),
+                ("Images", "*.jpg *.jpeg *.png *.webp *.gif *.bmp"),
+            ]
+        )
+        
+        if not files:
+            return
+        
+        self.detail_folder_label.configure(text=f"📄 {len(files)} file(s) selected", text_color="white")
+        
+        self.detail_files = []
+        for file_path in files:
+            file_info = {
+                'path': file_path,
+                'name': os.path.basename(file_path),
+                'size': os.path.getsize(file_path)
+            }
+            self.detail_files.append(file_info)
+        
+        self.display_detail_files()
+    
+    def scan_detail_files(self, folder):
+        """Scan folder for detail files"""
+        self.detail_files = []
+        
+        try:
+            for file_path in Path(folder).rglob('*'):
+                if file_path.is_file():
+                    file_info = {
+                        'path': str(file_path),
+                        'name': file_path.name,
+                        'size': file_path.stat().st_size
+                    }
+                    self.detail_files.append(file_info)
+            
+            self.display_detail_files()
+            
+        except Exception as e:
+            messagebox.showerror("Scan Error", f"Failed to scan folder: {str(e)}")
+    
+    def display_detail_files(self):
+        """Display detail files with checkboxes"""
+        for widget in self.detail_file_list_frame.winfo_children():
+            widget.destroy()
+        
+        self.detail_checkboxes = {}
+        
+        if not self.detail_files:
+            empty_label = ctk.CTkLabel(
+                self.detail_file_list_frame,
+                text="No files selected",
+                text_color="gray"
+            )
+            empty_label.pack(pady=20)
+            self.update_detail_file_count()
+            return
+        
+        self.detail_files.sort(key=lambda x: natural_sort_key(x['name']))
+        
+        for i, file_info in enumerate(self.detail_files):
+            file_frame = ctk.CTkFrame(self.detail_file_list_frame)
+            file_frame.pack(fill="x", pady=2, padx=5)
+            
+            var = ctk.BooleanVar(value=True)
+            self.detail_checkboxes[i] = var
+            
+            checkbox = ctk.CTkCheckBox(
+                file_frame,
+                text="",
+                variable=var,
+                width=20,
+                command=self.update_detail_file_count
+            )
+            checkbox.pack(side="left", padx=(5, 10))
+            
+            ext = os.path.splitext(file_info['name'])[1].lower()
+            icon = self.get_file_icon(ext)
+            
+            ctk.CTkLabel(
+                file_frame,
+                text=f"{icon} {file_info['name']}",
+                anchor="w",
+                font=ctk.CTkFont(size=11)
+            ).pack(side="left", fill="x", expand=True)
+            
+            size_str = self.format_size(file_info['size'])
+            ctk.CTkLabel(
+                file_frame,
+                text=size_str,
+                text_color="gray",
+                width=80,
+                font=ctk.CTkFont(size=10)
+            ).pack(side="right", padx=5)
+        
+        self.update_detail_file_count()
+        self.update_upload_button_state()
+    
+    def select_all_detail_files(self):
+        """Select all detail files"""
+        for var in self.detail_checkboxes.values():
+            var.set(True)
+        self.update_detail_file_count()
+    
+    def deselect_all_detail_files(self):
+        """Deselect all detail files"""
+        for var in self.detail_checkboxes.values():
+            var.set(False)
+        self.update_detail_file_count()
+    
+    def update_detail_file_count(self):
+        """Update detail file count label"""
+        selected = sum(1 for var in self.detail_checkboxes.values() if var.get())
+        total = len(self.detail_checkboxes)
+        
+        if selected == 0:
+            self.detail_file_count_label.configure(text="0 files", text_color="gray")
+        else:
+            total_size = sum(
+                self.detail_files[i]['size']
+                for i, var in self.detail_checkboxes.items()
+                if var.get()
+            )
+            size_str = self.format_size(total_size)
+            self.detail_file_count_label.configure(
+                text=f"{selected}/{total} files ({size_str})",
+                text_color="#2196F3"
+            )
+        
+        self.update_upload_button_state()
+    
+    # === THUMBNAIL FILES SELECTION METHODS ===
+    def select_thumbnail_folder(self):
+        """Select folder for thumbnail images"""
+        folder = filedialog.askdirectory(title="Select Folder with Thumbnail Images")
+        if not folder:
+            return
+        
+        self.thumb_folder_label.configure(text=f"📁 {folder}", text_color="white")
+        self.scan_thumbnail_files(folder)
+    
+    def select_thumbnail_files(self):
+        """Select individual thumbnail files"""
+        files = filedialog.askopenfilenames(
+            title="Select Thumbnail Image Files",
+            filetypes=[
+                ("All Files", "*.*"),
+                ("Images", "*.jpg *.jpeg *.png *.webp *.gif *.bmp"),
+            ]
+        )
+        
+        if not files:
+            return
+        
+        self.thumb_folder_label.configure(text=f"📄 {len(files)} file(s) selected", text_color="white")
+        
+        self.thumbnail_files = []
+        for file_path in files:
+            file_info = {
+                'path': file_path,
+                'name': os.path.basename(file_path),
+                'size': os.path.getsize(file_path)
+            }
+            self.thumbnail_files.append(file_info)
+        
+        self.display_thumbnail_files()
+    
+    def scan_thumbnail_files(self, folder):
+        """Scan folder for thumbnail files"""
+        self.thumbnail_files = []
+        
+        try:
+            for file_path in Path(folder).rglob('*'):
+                if file_path.is_file():
+                    file_info = {
+                        'path': str(file_path),
+                        'name': file_path.name,
+                        'size': file_path.stat().st_size
+                    }
+                    self.thumbnail_files.append(file_info)
+            
+            self.display_thumbnail_files()
+            
+        except Exception as e:
+            messagebox.showerror("Scan Error", f"Failed to scan folder: {str(e)}")
+    
+    def display_thumbnail_files(self):
+        """Display thumbnail files with checkboxes"""
+        for widget in self.thumb_file_list_frame.winfo_children():
+            widget.destroy()
+        
+        self.thumbnail_checkboxes = {}
+        
+        if not self.thumbnail_files:
+            empty_label = ctk.CTkLabel(
+                self.thumb_file_list_frame,
+                text="No files selected",
+                text_color="gray"
+            )
+            empty_label.pack(pady=20)
+            self.update_thumbnail_file_count()
+            return
+        
+        self.thumbnail_files.sort(key=lambda x: natural_sort_key(x['name']))
+        
+        for i, file_info in enumerate(self.thumbnail_files):
+            file_frame = ctk.CTkFrame(self.thumb_file_list_frame)
+            file_frame.pack(fill="x", pady=2, padx=5)
+            
+            var = ctk.BooleanVar(value=True)
+            self.thumbnail_checkboxes[i] = var
+            
+            checkbox = ctk.CTkCheckBox(
+                file_frame,
+                text="",
+                variable=var,
+                width=20,
+                command=self.update_thumbnail_file_count
+            )
+            checkbox.pack(side="left", padx=(5, 10))
+            
+            ext = os.path.splitext(file_info['name'])[1].lower()
+            icon = self.get_file_icon(ext)
+            
+            ctk.CTkLabel(
+                file_frame,
+                text=f"{icon} {file_info['name']}",
+                anchor="w",
+                font=ctk.CTkFont(size=11)
+            ).pack(side="left", fill="x", expand=True)
+            
+            size_str = self.format_size(file_info['size'])
+            ctk.CTkLabel(
+                file_frame,
+                text=size_str,
+                text_color="gray",
+                width=80,
+                font=ctk.CTkFont(size=10)
+            ).pack(side="right", padx=5)
+        
+        self.update_thumbnail_file_count()
+        self.update_upload_button_state()
+    
+    def select_all_thumbnail_files(self):
+        """Select all thumbnail files"""
+        for var in self.thumbnail_checkboxes.values():
+            var.set(True)
+        self.update_thumbnail_file_count()
+    
+    def deselect_all_thumbnail_files(self):
+        """Deselect all thumbnail files"""
+        for var in self.thumbnail_checkboxes.values():
+            var.set(False)
+        self.update_thumbnail_file_count()
+    
+    def update_thumbnail_file_count(self):
+        """Update thumbnail file count label"""
+        selected = sum(1 for var in self.thumbnail_checkboxes.values() if var.get())
+        total = len(self.thumbnail_checkboxes)
+        
+        if selected == 0:
+            self.thumb_file_count_label.configure(text="0 files", text_color="gray")
+        else:
+            total_size = sum(
+                self.thumbnail_files[i]['size']
+                for i, var in self.thumbnail_checkboxes.items()
+                if var.get()
+            )
+            size_str = self.format_size(total_size)
+            self.thumb_file_count_label.configure(
+                text=f"{selected}/{total} files ({size_str})",
+                text_color="#FF9800"
+            )
+        
+        self.update_upload_button_state()
+    
+    def update_upload_button_state(self):
+        """Enable/disable upload button based on selections"""
+        detail_selected = sum(1 for var in self.detail_checkboxes.values() if var.get()) if self.detail_checkboxes else 0
+        thumb_selected = sum(1 for var in self.thumbnail_checkboxes.values() if var.get()) if self.thumbnail_checkboxes else 0
+        
+        # Enable if at least one file is selected from either category
+        if detail_selected > 0 or thumb_selected > 0:
+            self.upload_button.configure(state="normal")
+        else:
+            self.upload_button.configure(state="disabled")
+    
     def search_files(self):
         """Search for files in R2 bucket"""
         search_term = self.search_entry.get().strip()
@@ -1056,133 +1592,136 @@ class R2Uploader(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Delete Error", f"Failed to delete file:\n{str(e)}")
     
-    def select_folder(self):
-        """Open folder selection dialog"""
-        folder = filedialog.askdirectory(title="Select Folder to Upload")
-        if not folder:
-            return
-        
-        self.selected_folder = folder
-        self.folder_label.configure(text=f"📁 Folder: {folder}", text_color="white")
-        
-        # Scan and preview files
-        self.scan_files()
+    # === OLD SINGLE UPLOAD METHODS (DEPRECATED - kept for reference) ===
+    # These methods are no longer used in dual upload mode
     
-    def select_files(self):
-        """Open file selection dialog for multiple files"""
-        files = filedialog.askopenfilenames(
-            title="Select Files to Upload",
-            filetypes=[
-                ("All Files", "*.*"),
-                ("Images", "*.jpg *.jpeg *.png *.webp *.gif *.bmp"),
-                ("Documents", "*.pdf *.doc *.docx *.txt"),
-                ("Videos", "*.mp4 *.avi *.mov *.mkv")
-            ]
-        )
-        
-        if not files:
-            return
-        
-        self.selected_folder = ""
-        self.folder_label.configure(text=f"📄 Selected {len(files)} individual file(s)", text_color="white")
-        
-        # Convert to file info format
-        self.files_to_upload = []
-        for file_path in files:
-            if os.path.isfile(file_path):
-                file_size = os.path.getsize(file_path)
-                self.files_to_upload.append({
-                    'name': os.path.basename(file_path),
-                    'path': file_path,
-                    'size': file_size,
-                    'selected': True
-                })
-        
-        self.display_files_with_checkboxes()
-        
-    def scan_files(self):
-        """Scan selected folder and list files"""
-        if not self.selected_folder:
-            return
-        
-        self.files_to_upload = []
-        
-        # Get all files in the folder
-        try:
-            for filename in os.listdir(self.selected_folder):
-                file_path = os.path.join(self.selected_folder, filename)
-                if os.path.isfile(file_path):
-                    file_size = os.path.getsize(file_path)
-                    self.files_to_upload.append({
-                        'name': filename,
-                        'path': file_path,
-                        'size': file_size,
-                        'selected': True
-                    })
-            
-            self.display_files_with_checkboxes()
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to scan folder: {str(e)}")
+    # def select_folder(self):
+    #     """Open folder selection dialog"""
+    #     folder = filedialog.askdirectory(title="Select Folder to Upload")
+    #     if not folder:
+    #         return
+    #     
+    #     self.selected_folder = folder
+    #     self.folder_label.configure(text=f"📁 Folder: {folder}", text_color="white")
+    #     
+    #     # Scan and preview files
+    #     self.scan_files()
     
-    def display_files_with_checkboxes(self):
-        """Display files with checkboxes for selection"""
-        # Clear previous checkboxes
-        for widget in self.file_list_frame.winfo_children():
-            widget.destroy()
-        
-        self.file_checkboxes = {}
-        
-        if not self.files_to_upload:
-            no_files_label = ctk.CTkLabel(
-                self.file_list_frame,
-                text="📭 No files to display\n\nSelect files or a folder to get started",
-                text_color="gray",
-                font=ctk.CTkFont(size=13)
-            )
-            no_files_label.pack(pady=40)
-            self.upload_button.configure(state="disabled")
-            self.update_file_count()
-            return
-        
-        # Sort files by name using natural sorting (handles numbers properly)
-        self.files_to_upload.sort(key=lambda x: natural_sort_key(x['name']))
-        
-        # Create checkbox for each file
-        for i, file_info in enumerate(self.files_to_upload):
-            file_frame = ctk.CTkFrame(self.file_list_frame, fg_color="transparent")
-            file_frame.pack(fill="x", padx=5, pady=3)
-            
-            var = ctk.BooleanVar(value=file_info.get('selected', True))
-            self.file_checkboxes[i] = var
-            
-            checkbox = ctk.CTkCheckBox(
-                file_frame,
-                text="",
-                variable=var,
-                width=25,
-                command=self.update_file_count
-            )
-            checkbox.pack(side="left", padx=(5, 10))
-            
-            size_str = self.format_size(file_info['size'])
-            
-            # Get file extension for icon
-            ext = Path(file_info['name']).suffix.lower()
-            icon = self.get_file_icon(ext)
-            
-            label_text = f"{icon} {file_info['name']} ({size_str})"
-            
-            file_label = ctk.CTkLabel(
-                file_frame,
-                text=label_text,
-                anchor="w",
-                font=ctk.CTkFont(family="Consolas", size=11)
-            )
-            file_label.pack(side="left", fill="x", expand=True, padx=5)
-        
-        self.update_file_count()
-        self.upload_button.configure(state="normal")
+    # def select_files(self):
+    #     """Open file selection dialog for multiple files"""
+    #     files = filedialog.askopenfilenames(
+    #         title="Select Files to Upload",
+    #         filetypes=[
+    #             ("All Files", "*.*"),
+    #             ("Images", "*.jpg *.jpeg *.png *.webp *.gif *.bmp"),
+    #             ("Documents", "*.pdf *.doc *.docx *.txt"),
+    #             ("Videos", "*.mp4 *.avi *.mov *.mkv")
+    #         ]
+    #     )
+    #     
+    #     if not files:
+    #         return
+    #     
+    #     self.selected_folder = ""
+    #     self.folder_label.configure(text=f"📄 Selected {len(files)} individual file(s)", text_color="white")
+    #     
+    #     # Convert to file info format
+    #     self.files_to_upload = []
+    #     for file_path in files:
+    #         if os.path.isfile(file_path):
+    #             file_size = os.path.getsize(file_path)
+    #             self.files_to_upload.append({
+    #                 'name': os.path.basename(file_path),
+    #                 'path': file_path,
+    #                 'size': file_size,
+    #                 'selected': True
+    #             })
+    #     
+    #     self.display_files_with_checkboxes()
+    
+    # def scan_files(self):
+    #     """Scan selected folder and list files"""
+    #     if not self.selected_folder:
+    #         return
+    #     
+    #     self.files_to_upload = []
+    #     
+    #     # Get all files in the folder
+    #     try:
+    #         for filename in os.listdir(self.selected_folder):
+    #             file_path = os.path.join(self.selected_folder, filename)
+    #             if os.path.isfile(file_path):
+    #                 file_size = os.path.getsize(file_path)
+    #                 self.files_to_upload.append({
+    #                     'name': filename,
+    #                     'path': file_path,
+    #                     'size': file_size,
+    #                     'selected': True
+    #                 })
+    #         
+    #         self.display_files_with_checkboxes()
+    #         
+    #     except Exception as e:
+    #         messagebox.showerror("Error", f"Failed to scan folder: {str(e)}")
+    
+    # def display_files_with_checkboxes(self):
+    #     """Display files with checkboxes for selection"""
+    #     # Clear previous checkboxes
+    #     for widget in self.file_list_frame.winfo_children():
+    #         widget.destroy()
+    #     
+    #     self.file_checkboxes = {}
+    #     
+    #     if not self.files_to_upload:
+    #         no_files_label = ctk.CTkLabel(
+    #             self.file_list_frame,
+    #             text="📭 No files to display\n\nSelect files or a folder to get started",
+    #             text_color="gray",
+    #             font=ctk.CTkFont(size=13)
+    #         )
+    #         no_files_label.pack(pady=40)
+    #         self.upload_button.configure(state="disabled")
+    #         self.update_file_count()
+    #         return
+    #     
+    #     # Sort files by name using natural sorting (handles numbers properly)
+    #     self.files_to_upload.sort(key=lambda x: natural_sort_key(x['name']))
+    #     
+    #     # Create checkbox for each file
+    #     for i, file_info in enumerate(self.files_to_upload):
+    #         file_frame = ctk.CTkFrame(self.file_list_frame, fg_color="transparent")
+    #         file_frame.pack(fill="x", padx=5, pady=3)
+    #         
+    #         var = ctk.BooleanVar(value=file_info.get('selected', True))
+    #         self.file_checkboxes[i] = var
+    #         
+    #         checkbox = ctk.CTkCheckBox(
+    #             file_frame,
+    #             text="",
+    #             variable=var,
+    #             width=25,
+    #             command=self.update_file_count
+    #         )
+    #         checkbox.pack(side="left", padx=(5, 10))
+    #         
+    #         size_str = self.format_size(file_info['size'])
+    #         
+    #         # Get file extension for icon
+    #         ext = Path(file_info['name']).suffix.lower()
+    #         icon = self.get_file_icon(ext)
+    #         
+    #         label_text = f"{icon} {file_info['name']} ({size_str})"
+    #         
+    #         file_label = ctk.CTkLabel(
+    #             file_frame,
+    #             text=label_text,
+    #             anchor="w",
+    #             font=ctk.CTkFont(family="Consolas", size=11)
+    #         )
+    #         file_label.pack(side="left", fill="x", expand=True, padx=5)
+    #     
+    #     self.update_file_count()
+    #     self.upload_button.configure(state="normal")
     
     def get_file_icon(self, ext):
         """Get icon for file type"""
@@ -1199,46 +1738,8 @@ class R2Uploader(ctk.CTk):
         else:
             return "📎"
     
-    def select_all_files(self):
-        """Select all files"""
-        for var in self.file_checkboxes.values():
-            var.set(True)
-        self.update_file_count()
-    
-    def deselect_all_files(self):
-        """Deselect all files"""
-        for var in self.file_checkboxes.values():
-            var.set(False)
-        self.update_file_count()
-    
-    def update_file_count(self):
-        """Update the file count label"""
-        selected_count = sum(1 for var in self.file_checkboxes.values() if var.get())
-        total_count = len(self.file_checkboxes)
-        
-        if selected_count == 0:
-            self.upload_button.configure(state="disabled")
-        else:
-            self.upload_button.configure(state="normal")
-        
-        # Calculate total size of selected files
-        total_size = 0
-        for i, var in self.file_checkboxes.items():
-            if var.get() and i < len(self.files_to_upload):
-                total_size += self.files_to_upload[i]['size']
-        
-        size_str = self.format_size(total_size)
-        
-        if selected_count == 0:
-            self.file_count_label.configure(
-                text=f"No files selected",
-                text_color="gray"
-            )
-        else:
-            self.file_count_label.configure(
-                text=f"✓ {selected_count} / {total_count} files selected ({size_str})",
-                text_color="#4CAF50"
-            )
+    # Old select_all_files, deselect_all_files, update_file_count are deprecated
+    # New dual upload versions exist for detail and thumbnail files separately
     
     def format_size(self, size_bytes):
         """Format file size in human-readable format"""
@@ -1621,31 +2122,51 @@ class R2Uploader(ctk.CTk):
             self.display_files_with_checkboxes()
     
     def clear_selection(self):
-        """Clear current selection"""
-        self.selected_folder = ""
-        self.files_to_upload = []
-        self.folder_label.configure(text="No files selected", text_color="gray")
-        self.file_count_label.configure(text="0 files selected", text_color="gray")
-        self.new_folder_entry.delete(0, "end")
+        """Clear current selection - dual upload version"""
+        # Clear detail files
+        self.detail_files = []
+        self.detail_folder_label.configure(text="No files selected", text_color="gray")
+        self.detail_file_count_label.configure(text="0 files", text_color="gray")
         
-        # Clear file list
-        for widget in self.file_list_frame.winfo_children():
+        for widget in self.detail_file_list_frame.winfo_children():
             widget.destroy()
+        self.detail_checkboxes = {}
         
-        self.file_checkboxes = {}
+        # Clear thumbnail files
+        self.thumbnail_files = []
+        self.thumb_folder_label.configure(text="No files selected", text_color="gray")
+        self.thumb_file_count_label.configure(text="0 files", text_color="gray")
+        
+        for widget in self.thumb_file_list_frame.winfo_children():
+            widget.destroy()
+        self.thumbnail_checkboxes = {}
+        
+        # Clear destinations
+        self.detail_r2_path = ""
+        self.thumbnail_r2_path = ""
+        self.detail_dest_label.configure(text=f"{BUCKET_NAME}/ (root)", text_color="#90CAF9")
+        self.thumb_dest_label.configure(text=f"{BUCKET_NAME}/ (root)", text_color="#FFB74D")
+        
+        self.new_folder_entry.delete(0, "end")
         self.upload_button.configure(state="disabled")
         self.progress_bar.set(0)
         self.progress_label.configure(text="Ready to upload")
     
     def confirm_upload(self):
-        """Show confirmation dialog before uploading"""
-        # Get selected files
-        selected_files = []
-        for i, var in self.file_checkboxes.items():
-            if var.get() and i < len(self.files_to_upload):
-                selected_files.append(self.files_to_upload[i])
+        """Show confirmation dialog before uploading - dual upload version"""
+        # Get selected detail files
+        detail_selected = []
+        for i, var in self.detail_checkboxes.items():
+            if var.get() and i < len(self.detail_files):
+                detail_selected.append(self.detail_files[i])
         
-        if not selected_files:
+        # Get selected thumbnail files
+        thumb_selected = []
+        for i, var in self.thumbnail_checkboxes.items():
+            if var.get() and i < len(self.thumbnail_files):
+                thumb_selected.append(self.thumbnail_files[i])
+        
+        if not detail_selected and not thumb_selected:
             messagebox.showerror("Error", "No files selected for upload")
             return
         
@@ -1653,28 +2174,34 @@ class R2Uploader(ctk.CTk):
             messagebox.showerror("Error", "R2 client not initialized. Check your .env credentials.")
             return
         
-        # Use current navigation path as destination
-        dest_path = self.current_r2_path
+        # Build confirmation message
+        message_parts = ["📤 Ready to upload:\n"]
         
-        file_count = len(selected_files)
-        total_size = sum(f['size'] for f in selected_files)
+        if detail_selected:
+            detail_size = sum(f['size'] for f in detail_selected)
+            detail_dest = f"{BUCKET_NAME}/{self.detail_r2_path}/" if self.detail_r2_path else f"{BUCKET_NAME}/ (root)"
+            message_parts.append(f"\n🖼️  Detail Images: {len(detail_selected)} file(s) ({self.format_size(detail_size)})")
+            message_parts.append(f"    → Destination: {detail_dest}")
         
-        # Build destination display
-        if dest_path:
-            dest_display = f"{BUCKET_NAME}/{dest_path}/"
-        else:
-            dest_display = f"{BUCKET_NAME}/  (root)"
+        if thumb_selected:
+            thumb_size = sum(f['size'] for f in thumb_selected)
+            thumb_dest = f"{BUCKET_NAME}/{self.thumbnail_r2_path}/" if self.thumbnail_r2_path else f"{BUCKET_NAME}/ (root)"
+            message_parts.append(f"\n🖼️  Thumbnail Images: {len(thumb_selected)} file(s) ({self.format_size(thumb_size)})")
+            message_parts.append(f"    → Destination: {thumb_dest}")
         
-        # Confirmation message
-        message = (f"📤 Upload {file_count} file(s) ({self.format_size(total_size)}) to:\n\n"
-                   f"🪣 Destination: {dest_display}\n\n"
-                   f"Are you sure you want to proceed?")
+        total_files = len(detail_selected) + len(thumb_selected)
+        total_size = sum(f['size'] for f in detail_selected) + sum(f['size'] for f in thumb_selected)
+        
+        message_parts.append(f"\n\n📊 Total: {total_files} file(s) ({self.format_size(total_size)})")
+        message_parts.append("\n\nProceed with upload?")
+        
+        message = '\n'.join(message_parts)
         
         if messagebox.askyesno("Confirm Upload", message):
-            self.start_upload(dest_path, selected_files)
+            self.start_dual_upload(detail_selected, thumb_selected)
     
-    def start_upload(self, dest_path, selected_files):
-        """Start the upload process in a separate thread"""
+    def start_dual_upload(self, detail_files, thumb_files):
+        """Start the dual upload process in a separate thread"""
         self.upload_button.configure(state="disabled")
         self.cancel_button.configure(state="disabled")
         self.progress_bar.set(0)
@@ -1682,28 +2209,34 @@ class R2Uploader(ctk.CTk):
         
         # Start upload in background thread
         thread = threading.Thread(
-            target=self.upload_files,
-            args=(dest_path, selected_files),
+            target=self.upload_dual_files,
+            args=(detail_files, thumb_files),
             daemon=True
         )
         thread.start()
     
-    def upload_files(self, dest_path, selected_files):
-        """Upload files to R2"""
-        total_files = len(selected_files)
+    def upload_dual_files(self, detail_files, thumb_files):
+        """Upload both detail and thumbnail files to their respective R2 destinations"""
+        total_files = len(detail_files) + len(thumb_files)
         uploaded_count = 0
         failed_files = []
-        url_data = []  # Collect URL information for each uploaded file
-        successfully_uploaded_paths = []  # Track successfully uploaded file paths
+        url_data = []
+        successfully_uploaded_paths = []
         
         try:
-            for index, file_info in enumerate(selected_files):
+            # Upload detail files
+            for index, file_info in enumerate(detail_files):
                 try:
                     # Create remote key
-                    if dest_path:
-                        remote_key = f"{dest_path}/{file_info['name']}"
+                    if self.detail_r2_path:
+                        remote_key = f"{self.detail_r2_path}/{file_info['name']}"
                     else:
                         remote_key = file_info['name']
+                    
+                    # Update progress
+                    self.after(0, lambda: self.progress_label.configure(
+                        text=f"Uploading detail image {index + 1}/{len(detail_files)}: {file_info['name']}"
+                    ))
                     
                     # Upload file
                     self.s3_client.upload_file(
@@ -1713,79 +2246,151 @@ class R2Uploader(ctk.CTk):
                     )
                     
                     uploaded_count += 1
-                    print(f"✓ Uploaded: {remote_key}")
-                    
-                    # Track successfully uploaded file path
                     successfully_uploaded_paths.append(file_info['path'])
-
-                    # Update local cache with the new object to avoid a re-list
-                    if self.r2_objects is not None:
-                        # Remove any old entry for this key first
-                        self.r2_objects = [
-                            o for o in self.r2_objects
-                            if (o.get('key') or o.get('Key')) != remote_key
-                        ]
-                        self.r2_objects.append({
-                            'key': remote_key,
-                            'size': file_info.get('size', 0),
-                            'last_modified': None
-                        })
                     
-                    # Generate URL pairs for this file
-                    url_info = self.generate_url_pairs(file_info['name'], dest_path)
+                    # Generate URL data
+                    url_info = self.generate_url_pairs(file_info['name'], self.detail_r2_path)
                     url_data.append(url_info)
                     
+                    # Update progress bar
+                    progress = uploaded_count / total_files
+                    self.after(0, lambda p=progress: self.progress_bar.set(p))
+                    
                 except Exception as e:
-                    failed_files.append(f"{file_info['name']}: {str(e)}")
-                    print(f"✗ Failed: {file_info['name']} - {str(e)}")
+                    failed_files.append((file_info['name'], str(e)))
+                    print(f"Failed to upload {file_info['name']}: {str(e)}")
+            
+            # Upload thumbnail files
+            for index, file_info in enumerate(thumb_files):
+                try:
+                    # Create remote key
+                    if self.thumbnail_r2_path:
+                        remote_key = f"{self.thumbnail_r2_path}/{file_info['name']}"
+                    else:
+                        remote_key = file_info['name']
+                    
+                    # Update progress
+                    self.after(0, lambda: self.progress_label.configure(
+                        text=f"Uploading thumbnail image {index + 1}/{len(thumb_files)}: {file_info['name']}"
+                    ))
+                    
+                    # Upload file
+                    self.s3_client.upload_file(
+                        file_info['path'],
+                        BUCKET_NAME,
+                        remote_key
+                    )
+                    
+                    uploaded_count += 1
+                    successfully_uploaded_paths.append(file_info['path'])
+                    
+                    # Update progress bar
+                    progress = uploaded_count / total_files
+                    self.after(0, lambda p=progress: self.progress_bar.set(p))
+                    
+                except Exception as e:
+                    failed_files.append((file_info['name'], str(e)))
+                    print(f"Failed to upload {file_info['name']}: {str(e)}")
+            
+            # Update cache with newly uploaded objects
+            if self.r2_objects is not None:
+                for file_info in detail_files:
+                    if self.detail_r2_path:
+                        key = f"{self.detail_r2_path}/{file_info['name']}"
+                    else:
+                        key = file_info['name']
+                    
+                    self.r2_objects.append({
+                        'key': key,
+                        'size': file_info['size'],
+                        'last_modified': None
+                    })
                 
-                # Update progress
-                progress = (index + 1) / total_files
-                self.after(0, lambda p=progress: self.progress_bar.set(p))
-                self.after(0, lambda idx=index+1, total=total_files: 
-                          self.progress_label.configure(text=f"Uploading: {idx}/{total} files"))
+                for file_info in thumb_files:
+                    if self.thumbnail_r2_path:
+                        key = f"{self.thumbnail_r2_path}/{file_info['name']}"
+                    else:
+                        key = file_info['name']
+                    
+                    self.r2_objects.append({
+                        'key': key,
+                        'size': file_info['size'],
+                        'last_modified': None
+                    })
+                
+                self.rebuild_folder_cache()
+                self.save_cache_to_disk()
             
             # Show completion message
-            if failed_files:
-                error_msg = "\n".join(failed_files[:5])  # Show first 5 errors
-                if len(failed_files) > 5:
-                    error_msg += f"\n... and {len(failed_files) - 5} more errors"
+            def show_results():
+                self.progress_bar.set(1.0)
                 
-                self.after(0, lambda: messagebox.showwarning(
-                    "Upload Complete with Errors",
-                    f"✓ Uploaded: {uploaded_count}/{total_files} files\n\n"
-                    f"✗ Failed files:\n{error_msg}"
-                ))
-            else:
-                dest_display = f"{BUCKET_NAME}/{dest_path}/" if dest_path else f"{BUCKET_NAME}/ (root)"
-                self.after(0, lambda: messagebox.showinfo(
-                    "Success! 🎉",
-                    f"Successfully uploaded all {uploaded_count} files to:\n\n"
-                    f"📍 {dest_display}"
-                ))
+                if failed_files:
+                    error_msg = f"✅ Uploaded {uploaded_count}/{total_files} files\n\n❌ Failed files:\n"
+                    for filename, error in failed_files[:5]:
+                        error_msg += f"  • {filename}: {error}\n"
+                    if len(failed_files) > 5:
+                        error_msg += f"  ... and {len(failed_files) - 5} more"
+                    self.progress_label.configure(text=f"Upload completed with {len(failed_files)} errors")
+                    messagebox.showwarning("Upload Completed with Errors", error_msg)
+                else:
+                    self.progress_label.configure(text=f"✅ Successfully uploaded {uploaded_count} files!")
+                    messagebox.showinfo("Upload Successful", f"✅ Successfully uploaded {uploaded_count} files!")
                 
-                # Refresh folder view from local cache instead of re-listing
-                def _refresh_from_cache():
-                    self.rebuild_folder_cache()
-                    self._update_r2_folders_display()
-                self.after(100, _refresh_from_cache)
+                # Show URL results if detail files were uploaded
+                if url_data:
+                    self.show_url_results(url_data)
+                
+                # Remove successfully uploaded files from display
+                self.remove_dual_uploaded_files(successfully_uploaded_paths)
+                
+                # Re-enable buttons
+                self.upload_button.configure(state="normal")
+                self.cancel_button.configure(state="normal")
             
-            # Show URL results popup if any files were uploaded successfully
-            if url_data:
-                self.after(0, lambda: self.show_url_results(url_data))
-            
-            # Remove successfully uploaded files from the local list
-            if successfully_uploaded_paths:
-                self.after(0, lambda: self.remove_uploaded_files(successfully_uploaded_paths))
+            self.after(0, show_results)
             
         except Exception as e:
-            self.after(0, lambda: messagebox.showerror("Error", f"Upload failed: {str(e)}"))
-        
-        finally:
-            # Re-enable buttons
+            self.after(0, lambda: messagebox.showerror("Upload Error", f"Upload failed: {str(e)}"))
+            self.after(0, lambda: self.progress_label.configure(text="Upload failed"))
             self.after(0, lambda: self.upload_button.configure(state="normal"))
             self.after(0, lambda: self.cancel_button.configure(state="normal"))
-            self.after(0, lambda: self.progress_label.configure(text="Upload complete"))
+    
+    def remove_dual_uploaded_files(self, uploaded_paths):
+        """Remove successfully uploaded files from both detail and thumbnail lists"""
+        uploaded_set = set(uploaded_paths)
+        
+        # Remove from detail files
+        self.detail_files = [f for f in self.detail_files if f['path'] not in uploaded_set]
+        if self.detail_files:
+            self.display_detail_files()
+        else:
+            for widget in self.detail_file_list_frame.winfo_children():
+                widget.destroy()
+            self.detail_checkboxes = {}
+            self.detail_folder_label.configure(text="No files selected", text_color="gray")
+            self.update_detail_file_count()
+        
+        # Remove from thumbnail files
+        self.thumbnail_files = [f for f in self.thumbnail_files if f['path'] not in uploaded_set]
+        if self.thumbnail_files:
+            self.display_thumbnail_files()
+        else:
+            for widget in self.thumb_file_list_frame.winfo_children():
+                widget.destroy()
+            self.thumbnail_checkboxes = {}
+            self.thumb_folder_label.configure(text="No files selected", text_color="gray")
+            self.update_thumbnail_file_count()
+        
+        self.update_upload_button_state()
+    
+    def format_size(self, size_bytes):
+        """Format file size in human-readable format"""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024.0:
+                return f"{size_bytes:.2f} {unit}"
+            size_bytes /= 1024.0
+        return f"{size_bytes:.2f} TB"
 
 if __name__ == "__main__":
     app = R2Uploader()

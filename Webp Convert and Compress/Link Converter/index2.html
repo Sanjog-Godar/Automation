@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Link Manager - Base Layout</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #e1f5fe 100%);
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            border: 4px solid #2c3e50;
+            border-radius: 20px;
+            box-shadow: 
+                8px 8px 0 #2c3e50,
+                12px 12px 20px rgba(0, 0, 0, 0.15);
+            margin: 20px auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .main-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #3498db, #2ecc71, #f39c12, #e74c3c, #9b59b6);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            padding: 25px 30px;
+            border-bottom: 4px solid #2c3e50;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.8rem;
+            color: #ffffff;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h1::before {
+            content: '📋';
+            font-size: 2.2rem;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            padding: 25px;
+        }
+
+        .table-container {
+            border: 3px solid #2c3e50;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #fafafa;
+            box-shadow: 4px 4px 0 rgba(44, 62, 80, 0.3);
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px;
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            padding: 15px 20px;
+            border-bottom: 3px solid #2c3e50;
+        }
+
+        .table-header span {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .table-header span:nth-child(2) {
+            text-align: left;
+            padding-left: 10px;
+        }
+
+        .rows-container {
+            /* Let the first 10 rows be fully visible without an inner scrollbar.
+               The page itself can scroll if needed when more rows are added. */
+            padding-right: 4px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px;
+            padding: 12px 20px;
+            border-bottom: 2px dashed #bdc3c7;
+            align-items: center;
+            transition: all 0.3s ease;
+            background: #ffffff;
+        }
+
+        .row:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .row:hover {
+            background: #e8f6ff;
+           
+        }
+
+        .row:last-child {
+            border-bottom: none;
+        }
+
+        .row.new-row {
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .serial-number {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            background: linear-gradient(135deg, #ecf0f1 0%, #d5dbdb 100%);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #2c3e50;
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+            margin: 0 auto;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 12px 18px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            border: 3px solid #2c3e50;
+            border-radius: 10px;
+            background: #ffffff;
+            transition: all 0.3s ease;
+            box-shadow: 3px 3px 0 rgba(44, 62, 80, 0.2);
+        }
+
+        .url-input:focus,
+        .url-input:hover {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 
+                3px 3px 0 rgba(52, 152, 219, 0.4),
+                0 0 15px rgba(52, 152, 219, 0.2);
+            
+            font-family: 'Inter', sans-serif;
+        }
+
+        .url-input::placeholder {
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border: 3px solid #2c3e50;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .copy-btn:hover {
+           
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        .copy-btn:active {
+            transform: translateY(1px);
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .copy-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .copy-feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2c3e50;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .copy-feedback.show {
+            animation: feedbackPop 1.5s ease-out forwards;
+        }
+
+        @keyframes feedbackPop {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            30% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -80%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -100%) scale(0.8);
+            }
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+            gap: 15px;
+        }
+
+        .add-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 40px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            border: 4px solid #2c3e50;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .add-btn:hover {
+           
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        }
+
+        .add-btn:active {
+            transform: translateY(2px);
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .add-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 3px dashed #bdc3c7;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .footer span {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            color: #3498db;
+        }
+
+        .row-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: #ffffff;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            border: 3px solid #2c3e50;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+            margin-top: 15px;
+        }
+
+        .row-count-value {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+        }
+
+        .file-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .file-upload-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.35);
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .main-container {
+                border-radius: 15px;
+                box-shadow: 4px 4px 0 #2c3e50;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .table-header {
+                grid-template-columns: 60px 1fr 80px;
+                padding: 12px 15px;
+            }
+
+            .table-header span {
+                font-size: 1.2rem;
+            }
+
+            .row {
+                grid-template-columns: 60px 1fr 80px;
+                padding: 10px 15px;
+                gap: 10px;
+            }
+
+            .serial-number {
+                width: 38px;
+                height: 38px;
+                font-size: 1.3rem;
+            }
+
+            .url-input {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .copy-btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .copy-btn span {
+                display: none;
+            }
+
+            .add-btn {
+                padding: 12px 30px;
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .header h1::before {
+                font-size: 1.6rem;
+            }
+
+            .table-header {
+                grid-template-columns: 50px 1fr 50px;
+            }
+
+            .row {
+                grid-template-columns: 50px 1fr 50px;
+            }
+
+            .serial-number {
+                width: 32px;
+                height: 32px;
+                font-size: 1.1rem;
+                border-width: 2px;
+            }
+
+            .url-input {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+                border-width: 2px;
+            }
+
+            .copy-btn {
+                padding: 8px;
+                border-width: 2px;
+            }
+
+            .copy-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        /* Decorative elements */
+        .decoration {
+            position: absolute;
+            opacity: 0.1;
+            font-size: 4rem;
+            pointer-events: none;
+        }
+
+        .decoration.top-right {
+            top: 80px;
+            right: 20px;
+        }
+
+        .decoration.bottom-left {
+            bottom: 80px;
+            left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="decoration top-right">🔗</div>
+        <div class="decoration bottom-left">✨</div>
+        
+        <header class="header">
+            <h1>Base Layout</h1>
+            <p>Manage and copy your URLs with ease</p>
+        </header>
+
+        <div class="content">
+            <div class="table-container">
+                <div class="table-header">
+                    <span>Base No</span>
+                    <span>Link</span>
+                    <span>Action</span>
+                </div>
+                <div class="rows-container" id="rowsContainer">
+                    <!-- Rows will be generated here -->
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button class="add-btn" id="addBtn" onclick="addRows()">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                    </svg>
+                    ADD 5 Rows
+                </button>
+            </div>
+
+            <div style="text-align: center;">
+                <div class="row-count">
+                    📊 Total Rows: <span class="row-count-value" id="rowCount">10</span>
+                </div>
+            </div>
+
+            <div class="file-actions">
+                <label class="file-upload-label">
+                    <input type="file" id="fileInput" accept=".sanjog" style="display: none;" onchange="handleFileUpload(event)">
+                    📂 Upload .sanjog
+                </label>
+                <button class="download-btn" type="button" onclick="downloadLinks()">
+                    💾 Download .sanjog
+                </button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Made with ❤️ | <span>URL Link Manager</span></p>
+            <p style="margin-top: 5px; font-size: 0.8rem;">Stateless • Refresh to reset</p>
+        </footer>
+    </div>
+
+    <script>
+        let rowCount = 0;
+        const STORAGE_KEY = 'urlLinkManagerData';
+        let lastCopiedButton = null;
+
+        // Initialize with 10 rows on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+        });
+
+        function generateRows(count, animate = true) {
+            const container = document.getElementById('rowsContainer');
+            
+            for (let i = 0; i < count; i++) {
+                rowCount++;
+                const row = createRow(rowCount, animate);
+                container.appendChild(row);
+            }
+            
+            updateRowCount();
+            saveToLocalStorage();
+            
+            // Scroll to bottom if adding new rows
+            if (animate) {
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 100);
+            }
+        }
+
+        function createRow(number, animate) {
+            const row = document.createElement('div');
+            row.className = 'row' + (animate ? ' new-row' : '');
+            
+            row.innerHTML = `
+                <div class="serial-number">${number}</div>
+                <input 
+                    type="url" 
+                    class="url-input" 
+                    id="input-${number}"
+                    placeholder="Enter URL here (e.g., https://example.com)"
+                    spellcheck="false"
+                    autocomplete="off"
+                >
+                <button class="copy-btn" onclick="copyToClipboard(${number}, this)">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    <span>Copy</span>
+                    <div class="copy-feedback">✓ Copied!</div>
+                </button>
+            `;
+            
+            // Add event listener to save data on input change
+            const input = row.querySelector('.url-input');
+            input.addEventListener('input', saveToLocalStorage);
+            
+            return row;
+        }
+
+        function addRows() {
+            generateRows(5, true);
+            
+            // Add button animation
+            const addBtn = document.getElementById('addBtn');
+            addBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                addBtn.style.transform = '';
+            }, 150);
+        }
+
+        function setCopiedButtonState(button) {
+            if (lastCopiedButton && lastCopiedButton !== button) {
+                const lastTextSpan = lastCopiedButton.querySelector('span');
+                if (lastTextSpan) {
+                    lastTextSpan.textContent = 'Copy';
+                }
+                lastCopiedButton.classList.remove('copied');
+            }
+
+            const currentTextSpan = button.querySelector('span');
+            if (currentTextSpan) {
+                currentTextSpan.textContent = 'Copied';
+            }
+
+            button.classList.add('copied');
+            lastCopiedButton = button;
+        }
+
+        function copyToClipboard(rowNumber, button) {
+            const input = document.getElementById(`input-${rowNumber}`);
+            const text = input.value;
+            
+            if (!text.trim()) {
+                // Visual feedback for empty input
+                input.style.borderColor = '#e74c3c';
+                input.style.animation = 'shake 0.5s ease';
+                input.placeholder = 'Please enter a URL first!';
+                
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                    input.style.animation = '';
+                    input.placeholder = 'Enter URL here (e.g., https://example.com)';
+                }, 1500);
+                return;
+            }
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                setCopiedButtonState(button);
+
+                const feedback = button.querySelector('.copy-feedback');
+                if (feedback) {
+                    feedback.classList.add('show');
+                    setTimeout(() => {
+                        feedback.classList.remove('show');
+                    }, 1500);
+                }
+
+            }).catch(err => {
+                // Fallback for older browsers
+                input.select();
+                document.execCommand('copy');
+
+                setCopiedButtonState(button);
+
+                const feedback = button.querySelector('.copy-feedback');
+                if (feedback) {
+                    feedback.classList.add('show');
+                    setTimeout(() => {
+                        feedback.classList.remove('show');
+                    }, 1500);
+                }
+            });
+        }
+
+        function updateRowCount() {
+            document.getElementById('rowCount').textContent = rowCount;
+        }
+
+        function saveToLocalStorage() {
+            const rowsData = getAllRowsData();
+            const dataToSave = {
+                totalRows: rowCount,
+                rows: rowsData
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const container = document.getElementById('rowsContainer');
+                    container.innerHTML = '';
+                    rowCount = 0;
+
+                    const totalRows = data.totalRows || data.rows.length;
+
+                    for (let i = 0; i < totalRows; i++) {
+                        rowCount++;
+                        const row = createRow(rowCount, false);
+                        container.appendChild(row);
+                    }
+
+                    data.rows.forEach(rowData => {
+                        const input = document.getElementById(`input-${rowData.rowNumber}`);
+                        if (input && rowData.url) {
+                            input.value = rowData.url;
+                        }
+                    });
+
+                    updateRowCount();
+                } catch (error) {
+                    console.error('Error loading from localStorage:', error);
+                    generateRows(10, false);
+                }
+            } else {
+                generateRows(10, false);
+            }
+        }
+
+        function getAllRowsData() {
+            const inputs = document.querySelectorAll('.url-input');
+            const rowsData = [];
+            inputs.forEach((input, index) => {
+                const rowNumber = index + 1;
+                const value = input.value.trim();
+                rowsData.push({
+                    rowNumber: rowNumber,
+                    url: value
+                });
+            });
+            return rowsData;
+        }
+
+        function downloadLinks() {
+            const rowsData = getAllRowsData();
+
+            if (rowsData.length === 0) {
+                alert('There are no rows to save.');
+                return;
+            }
+
+            const dataToSave = {
+                totalRows: rowsData.length,
+                rows: rowsData
+            };
+
+            const content = JSON.stringify(dataToSave, null, 2);
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.href = url;
+            a.download = `links-${timestamp}.sanjog`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith('.sanjog')) {
+                alert('Only .sanjog files are supported.');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result || '';
+                    const data = JSON.parse(text);
+
+                    if (!data.rows || !Array.isArray(data.rows)) {
+                        throw new Error('Invalid file format');
+                    }
+
+                    const container = document.getElementById('rowsContainer');
+                    container.innerHTML = '';
+                    rowCount = 0;
+
+                    const totalRows = data.totalRows || data.rows.length;
+
+                    for (let i = 0; i < totalRows; i++) {
+                        rowCount++;
+                        const row = createRow(rowCount, false);
+                        container.appendChild(row);
+                    }
+
+                    data.rows.forEach(rowData => {
+                        const rowNum = rowData.rowNumber;
+                        const input = document.getElementById(`input-${rowNum}`);
+                        if (input && rowData.url) {
+                            input.value = rowData.url;
+                        }
+                    });
+
+                    updateRowCount();
+                    saveToLocalStorage();
+                    
+                } catch (error) {
+                    alert('Failed to read the file. The file may be corrupted or in an invalid format.');
+                    console.error('File upload error:', error);
+                }
+
+                event.target.value = '';
+            };
+
+            reader.onerror = function() {
+                alert('Failed to read the file. Please try again.');
+                event.target.value = '';
+            };
+
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
