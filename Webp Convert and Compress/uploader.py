@@ -1346,10 +1346,10 @@ class R2Uploader(ctk.CTk):
         # Header columns with fixed widths
         headers = [
             ("Base", 60),
-            ("Title", 280),
-            ("Thumbnail URL", 350),
-            ("Full Image URL", 350),
-            ("Base Link", 350)
+            ("title", 280),
+            ("thumbnailUrl", 350),
+            ("fullImageUrl", 350),
+            ("baseLink", 350)
         ]
         
         for header_text, width in headers:
@@ -1536,12 +1536,11 @@ class R2Uploader(ctk.CTk):
                 writer = csv.writer(csvfile)
                 
                 # Write header
-                writer.writerow(['Base', 'Title', 'Thumbnail URL', 'Full Image URL', 'Base Link'])
+                writer.writerow(['title', 'thumbnailUrl', 'fullImageUrl', 'baseLink'])
                 
                 # Write data rows
                 for entry in entry_widgets:
                     writer.writerow([
-                        entry['serial'],
                         entry['title'].get().strip(),
                         entry['thumbnail'].get(),
                         entry['detail'].get(),

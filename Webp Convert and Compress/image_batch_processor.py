@@ -97,6 +97,27 @@ class ImageBatchProcessor(ctk.CTk):
             height=35
         )
         self.source_button.pack(padx=15, pady=(0, 15))
+       
+        # Thumbnail Output Folder
+        ctk.CTkLabel(
+            folder_frame,
+            text="Thumbnail Output Folder:",
+            font=ctk.CTkFont(size=14)
+        ).pack(anchor="w", padx=15, pady=(5, 5))
+        
+        self.thumbnail_label = ctk.CTkLabel(
+            folder_frame,
+            text="No folder selected",
+            text_color="gray"
+        )
+        self.thumbnail_label.pack(anchor="w", padx=15, pady=(0, 5))
+        
+        ctk.CTkButton(
+            folder_frame,
+            text="Select Thumbnail Output Folder",
+            command=self.select_thumbnail_folder,
+            height=35
+        ).pack(padx=15, pady=(0, 15))
         
         # Details Output Folder
         ctk.CTkLabel(
@@ -119,26 +140,6 @@ class ImageBatchProcessor(ctk.CTk):
             height=35
         ).pack(padx=15, pady=(0, 15))
         
-        # Thumbnail Output Folder
-        ctk.CTkLabel(
-            folder_frame,
-            text="Thumbnail Output Folder:",
-            font=ctk.CTkFont(size=14)
-        ).pack(anchor="w", padx=15, pady=(5, 5))
-        
-        self.thumbnail_label = ctk.CTkLabel(
-            folder_frame,
-            text="No folder selected",
-            text_color="gray"
-        )
-        self.thumbnail_label.pack(anchor="w", padx=15, pady=(0, 5))
-        
-        ctk.CTkButton(
-            folder_frame,
-            text="Select Thumbnail Output Folder",
-            command=self.select_thumbnail_folder,
-            height=35
-        ).pack(padx=15, pady=(0, 15))
         
         # Settings Section
         settings_frame = ctk.CTkFrame(main_frame)
