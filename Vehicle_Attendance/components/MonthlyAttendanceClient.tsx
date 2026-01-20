@@ -150,6 +150,27 @@ async function createFuelBill(bill: Omit<FuelBill, 'id' | 'created_at'>): Promis
   return json.data as FuelBill;
 }
 
+async function updateFuelBill(id: number, updates: { start_date?: string; end_date?: string }): Promise<FuelBill> {
+  const res = await fetch(FUEL_BILLS_API, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id, ...updates }),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to update fuel bill";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data as FuelBill;
+}
+
 interface DayCardProps {
   dateLabel: string;
   nepaliDateLabel: string;
@@ -339,6 +360,9 @@ export function MonthlyAttendanceClient() {
 
   const [showKmListModal, setShowKmListModal] = useState(false);
 
+  const [isEditingStartDate, setIsEditingStartDate] = useState(false);
+  const [lockedStartDate, setLockedStartDate] = useState<string | null>(null);
+
   const [toast, setToast] = useState({
     message: '',
     nepaliMessage: '',
@@ -473,6 +497,8 @@ export function MonthlyAttendanceClient() {
       showToast(`Fuel bill failed: ${message}`, 'फ्युल बिल बनाउन समस्या आयो');
     },
   });
+
+
 
   // Build logs for each Nepali day of the month
   const fullMonthLogs: (AttendanceLog & { isUnselected?: boolean })[] = useMemo(() => {
@@ -698,13 +724,21 @@ export function MonthlyAttendanceClient() {
   };
 
   const handleOpenFuelBill = () => {
-    // Get the last bill's end_date or default to "2026-01-15"
-    const lastBillEndDate = fuelBills.length > 0 ? fuelBills[0].end_date : "2026-01-15";
+    // Use locked date if available, otherwise calculate from last bill
+    let startDate: string;
     
-    // Calculate next day after last bill
-    const lastDate = new Date(lastBillEndDate);
-    lastDate.setDate(lastDate.getDate() + 1);
-    const startDate = lastDate.toISOString().slice(0, 10);
+    if (lockedStartDate) {
+      // Use the previously locked/edited date
+      startDate = lockedStartDate;
+    } else {
+      // Get the last bill's end_date or default to "2026-01-15"
+      const lastBillEndDate = fuelBills.length > 0 ? fuelBills[0].end_date : "2026-01-15";
+      
+      // Calculate next day after last bill
+      const lastDate = new Date(lastBillEndDate);
+      lastDate.setDate(lastDate.getDate() + 1);
+      startDate = lastDate.toISOString().slice(0, 10);
+    }
     
     // Default end date is today
     const today = new Date();
@@ -750,6 +784,7 @@ export function MonthlyAttendanceClient() {
 
   const handleFuelBillCancel = () => {
     setFuelBillModal(null);
+    setIsEditingStartDate(false);
   };
 
   // Calculate KM for fuel bill modal
@@ -1393,15 +1428,41 @@ export function MonthlyAttendanceClient() {
               </p>
               
               <div className="mb-3 flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Last Bill Date (Auto-set)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-gray-700">Last Bill Date (Auto-set)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isEditingStartDate && fuelBillModal) {
+                        // Locking: save the current edited date
+                        setLockedStartDate(fuelBillModal.start_date);
+                      }
+                      setIsEditingStartDate(!isEditingStartDate);
+                    }}
+                    className="text-xs font-medium text-orange-600 hover:text-orange-700 px-2 py-1 rounded border border-orange-300 hover:bg-orange-50"
+                  >
+                    {isEditingStartDate ? '🔒 Lock' : '✏️ Edit'}
+                  </button>
+                </div>
                 <input
                   type="date"
                   value={fuelBillModal.start_date}
-                  readOnly
-                  className="w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600 cursor-not-allowed"
+                  onChange={(e) =>
+                    setFuelBillModal((prev) =>
+                      prev
+                        ? { ...prev, start_date: e.target.value }
+                        : prev
+                    )
+                  }
+                  readOnly={!isEditingStartDate}
+                  className={`w-full rounded border px-3 py-2 text-sm ${
+                    isEditingStartDate
+                      ? 'border-orange-400 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500'
+                      : 'border-gray-300 bg-gray-50 text-gray-600 cursor-not-allowed'
+                  }`}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Automatically set based on previous bill
+                  {isEditingStartDate ? 'Edit to correct any previous mistake' : lockedStartDate ? 'Locked at your edited date' : 'Automatically set based on previous bill'}
                 </p>
               </div>
 
