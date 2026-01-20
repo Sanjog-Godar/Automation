@@ -19,8 +19,8 @@ class ImageBatchProcessor(ctk.CTk):
         
         # Initialize variables
         self.source_folder = ""
-        self.details_output_folder = ""
-        self.thumbnail_output_folder = ""
+        self.details_output_folder = r"C:\Users\Sanzog\Pictures\Screenshots\Details"
+        self.thumbnail_output_folder = r"C:\Users\Sanzog\Pictures\Screenshots\Thumbnail"
         
         # Selection mode: entire folder or specific files
         self.selection_mode = "folder"
@@ -107,8 +107,8 @@ class ImageBatchProcessor(ctk.CTk):
         
         self.thumbnail_label = ctk.CTkLabel(
             folder_frame,
-            text="No folder selected",
-            text_color="gray"
+            text=self.thumbnail_output_folder,
+            text_color="white"
         )
         self.thumbnail_label.pack(anchor="w", padx=15, pady=(0, 5))
         
@@ -128,8 +128,8 @@ class ImageBatchProcessor(ctk.CTk):
         
         self.details_label = ctk.CTkLabel(
             folder_frame,
-            text="No folder selected",
-            text_color="gray"
+            text=self.details_output_folder,
+            text_color="white"
         )
         self.details_label.pack(anchor="w", padx=15, pady=(0, 5))
         
@@ -276,6 +276,16 @@ class ImageBatchProcessor(ctk.CTk):
             width=40
         )
         self.thumbnail_quality_label.pack(side="right")
+        
+        # Keep Original Size Checkbox
+        self.keep_original_size_var = ctk.BooleanVar(value=False)
+        self.keep_original_size_checkbox = ctk.CTkCheckBox(
+            settings_frame,
+            text="Keep Original Size for Full Image (no crop/resize)",
+            variable=self.keep_original_size_var,
+            font=ctk.CTkFont(size=14)
+        )
+        self.keep_original_size_checkbox.pack(anchor="w", padx=15, pady=(5, 10))
         
         # Aggressive Compression Checkbox
         self.aggressive_compression_var = ctk.BooleanVar(value=False)
@@ -457,6 +467,7 @@ class ImageBatchProcessor(ctk.CTk):
             thumbnail_width = int(self.thumbnail_width_entry.get())
             thumbnail_height = int(self.thumbnail_height_entry.get())
             aggressive_compression = self.aggressive_compression_var.get()
+            keep_original_size = self.keep_original_size_var.get()
             
             # Load watermark image once (RGBA for alpha support)
             watermark_image = Image.open(self.watermark_path).convert("RGBA")
@@ -482,29 +493,40 @@ class ImageBatchProcessor(ctk.CTk):
                             details_save_options['optimize'] = True
                             details_save_options['method'] = 6
                         
-                        # Create full image (1920x1080 - 16:9 aspect ratio)
-                        # Calculate crop to fit 16:9 aspect ratio
-                        target_ratio = details_width / details_height  # 16:9 = 1.778
-                        current_ratio = img.width / img.height
-                        
-                        if current_ratio > target_ratio:
-                            # Image is wider - crop width
-                            new_width = int(img.height * target_ratio)
-                            left = (img.width - new_width) // 2
-                            img_cropped = img.crop((left, 0, left + new_width, img.height))
+                        # Create full image
+                        if keep_original_size:
+                            # Keep original size without cropping or resizing
+                            details_img = img.copy()
                         else:
-                            # Image is taller - crop height
-                            new_height = int(img.width / target_ratio)
-                            top = (img.height - new_height) // 2
-                            img_cropped = img.crop((0, top, img.width, top + new_height))
+                            # Calculate crop to fit 16:9 aspect ratio
+                            target_ratio = details_width / details_height  # 16:9 = 1.778
+                            current_ratio = img.width / img.height
+                            
+                            if current_ratio > target_ratio:
+                                # Image is wider - crop width
+                                new_width = int(img.height * target_ratio)
+                                left = (img.width - new_width) // 2
+                                img_cropped = img.crop((left, 0, left + new_width, img.height))
+                            else:
+                                # Image is taller - crop height
+                                new_height = int(img.width / target_ratio)
+                                top = (img.height - new_height) // 2
+                                img_cropped = img.crop((0, top, img.width, top + new_height))
+                            
+                            # Resize to exact dimensions using LANCZOS resampling
+                            details_img = img_cropped.resize((details_width, details_height), Image.LANCZOS)
                         
-                        # Resize to exact dimensions using LANCZOS resampling
-                        details_img = img_cropped.resize((details_width, details_height), Image.LANCZOS)
-                        
-                        # Apply watermark to details image at fixed coordinates
+                        # Apply watermark to details image
                         details_rgba = details_img.convert("RGBA")
                         wm = watermark_image.copy()
-                        details_rgba.paste(wm, (self.watermark_x, self.watermark_y), wm)
+                        # Calculate watermark position (bottom-right with padding)
+                        if keep_original_size:
+                            wm_x = max(0, details_img.width - wm.width - 20)
+                            wm_y = max(0, details_img.height - wm.height - 20)
+                        else:
+                            wm_x = self.watermark_x
+                            wm_y = self.watermark_y
+                        details_rgba.paste(wm, (wm_x, wm_y), wm)
                         details_img = details_rgba.convert("RGB")
                         
                         details_filename = f"{base_name}.webp"
