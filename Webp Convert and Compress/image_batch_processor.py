@@ -28,8 +28,6 @@ class ImageBatchProcessor(ctk.CTk):
         
         # Watermark configuration
         self.watermark_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "watermark_app.png")
-        self.watermark_x = 624
-        self.watermark_y = 904
         
         # Setup UI
         self.setup_ui()
@@ -145,12 +143,37 @@ class ImageBatchProcessor(ctk.CTk):
         settings_frame = ctk.CTkFrame(main_frame)
         settings_frame.pack(fill="x", pady=(0, 20))
         
+        # Full Image Resize Mode
+        ctk.CTkLabel(
+            settings_frame,
+            text="Full Image Resize Mode:",
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+        
+        self.details_resize_mode_var = ctk.StringVar(value="crop")
+        details_mode_frame = ctk.CTkFrame(settings_frame)
+        details_mode_frame.pack(fill="x", padx=15, pady=(0, 10))
+        
+        ctk.CTkRadioButton(
+            details_mode_frame,
+            text="Crop to Fit (exact aspect ratio)",
+            variable=self.details_resize_mode_var,
+            value="crop"
+        ).pack(side="left", padx=(0, 20))
+        
+        ctk.CTkRadioButton(
+            details_mode_frame,
+            text="Scale to Fit (preserve all content)",
+            variable=self.details_resize_mode_var,
+            value="scale"
+        ).pack(side="left")
+        
         # Details Image Size
         ctk.CTkLabel(
             settings_frame,
             text="Full Image Size (16:9):",
             font=ctk.CTkFont(size=14)
-        ).pack(anchor="w", padx=15, pady=(15, 5))
+        ).pack(anchor="w", padx=15, pady=(5, 5))
         
         details_size_frame = ctk.CTkFrame(settings_frame)
         details_size_frame.pack(fill="x", padx=15, pady=(0, 10))
@@ -182,6 +205,31 @@ class ImageBatchProcessor(ctk.CTk):
             text="px (for detail views)",
             font=ctk.CTkFont(size=11),
             text_color="gray"
+        ).pack(side="left")
+        
+        # Thumbnail Resize Mode
+        ctk.CTkLabel(
+            settings_frame,
+            text="Thumbnail Resize Mode:",
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(10, 5))
+        
+        self.thumbnail_resize_mode_var = ctk.StringVar(value="crop")
+        thumbnail_mode_frame = ctk.CTkFrame(settings_frame)
+        thumbnail_mode_frame.pack(fill="x", padx=15, pady=(0, 10))
+        
+        ctk.CTkRadioButton(
+            thumbnail_mode_frame,
+            text="Crop to Fit (exact aspect ratio)",
+            variable=self.thumbnail_resize_mode_var,
+            value="crop"
+        ).pack(side="left", padx=(0, 20))
+        
+        ctk.CTkRadioButton(
+            thumbnail_mode_frame,
+            text="Scale to Fit (preserve all content)",
+            variable=self.thumbnail_resize_mode_var,
+            value="scale"
         ).pack(side="left")
         
         # Thumbnail Size
@@ -468,6 +516,8 @@ class ImageBatchProcessor(ctk.CTk):
             thumbnail_height = int(self.thumbnail_height_entry.get())
             aggressive_compression = self.aggressive_compression_var.get()
             keep_original_size = self.keep_original_size_var.get()
+            details_resize_mode = self.details_resize_mode_var.get()
+            thumbnail_resize_mode = self.thumbnail_resize_mode_var.get()
             
             # Load watermark image once (RGBA for alpha support)
             watermark_image = Image.open(self.watermark_path).convert("RGBA")
@@ -497,9 +547,14 @@ class ImageBatchProcessor(ctk.CTk):
                         if keep_original_size:
                             # Keep original size without cropping or resizing
                             details_img = img.copy()
+                        elif details_resize_mode == "scale":
+                            # Scale to fit - resize to fit within dimensions without cropping
+                            # This preserves all content like Photoshop's Image Size
+                            img.thumbnail((details_width, details_height), Image.LANCZOS)
+                            details_img = img.copy()
                         else:
-                            # Calculate crop to fit 16:9 aspect ratio
-                            target_ratio = details_width / details_height  # 16:9 = 1.778
+                            # Crop to fit - crop to exact aspect ratio then resize
+                            target_ratio = details_width / details_height
                             current_ratio = img.width / img.height
                             
                             if current_ratio > target_ratio:
@@ -519,13 +574,11 @@ class ImageBatchProcessor(ctk.CTk):
                         # Apply watermark to details image
                         details_rgba = details_img.convert("RGBA")
                         wm = watermark_image.copy()
-                        # Calculate watermark position (bottom-right with padding)
-                        if keep_original_size:
-                            wm_x = max(0, details_img.width - wm.width - 20)
-                            wm_y = max(0, details_img.height - wm.height - 20)
-                        else:
-                            wm_x = self.watermark_x
-                            wm_y = self.watermark_y
+                        # Calculate watermark position dynamically
+                        # Horizontal: center of image
+                        # Vertical: 3/4 down from top
+                        wm_x = max(0, (details_img.width - wm.width) // 2)
+                        wm_y = max(0, int(details_img.height * 0.75) - wm.height // 2)
                         details_rgba.paste(wm, (wm_x, wm_y), wm)
                         details_img = details_rgba.convert("RGB")
                         
@@ -539,24 +592,34 @@ class ImageBatchProcessor(ctk.CTk):
                             thumbnail_save_options['optimize'] = True
                             thumbnail_save_options['method'] = 6
                         
-                        # Create thumbnail (1200x800 - 3:2 aspect ratio)
-                        # Calculate crop to fit 3:2 aspect ratio
-                        thumb_target_ratio = thumbnail_width / thumbnail_height  # 3:2 = 1.5
-                        thumb_current_ratio = img.width / img.height
-                        
-                        if thumb_current_ratio > thumb_target_ratio:
-                            # Image is wider - crop width
-                            thumb_new_width = int(img.height * thumb_target_ratio)
-                            thumb_left = (img.width - thumb_new_width) // 2
-                            thumb_cropped = img.crop((thumb_left, 0, thumb_left + thumb_new_width, img.height))
-                        else:
-                            # Image is taller - crop height
-                            thumb_new_height = int(img.width / thumb_target_ratio)
-                            thumb_top = (img.height - thumb_new_height) // 2
-                            thumb_cropped = img.crop((0, thumb_top, img.width, thumb_top + thumb_new_height))
-                        
-                        # Resize to exact dimensions using LANCZOS resampling
-                        thumbnail = thumb_cropped.resize((thumbnail_width, thumbnail_height), Image.LANCZOS)
+                        # Create thumbnail
+                        # Re-open the original image for thumbnail processing
+                        with Image.open(source_path) as img_thumb:
+                            if img_thumb.mode != 'RGB':
+                                img_thumb = img_thumb.convert('RGB')
+                            
+                            if thumbnail_resize_mode == "scale":
+                                # Scale to fit - resize to fit within dimensions without cropping
+                                img_thumb.thumbnail((thumbnail_width, thumbnail_height), Image.LANCZOS)
+                                thumbnail = img_thumb.copy()
+                            else:
+                                # Crop to fit - crop to exact aspect ratio then resize
+                                thumb_target_ratio = thumbnail_width / thumbnail_height
+                                thumb_current_ratio = img_thumb.width / img_thumb.height
+                                
+                                if thumb_current_ratio > thumb_target_ratio:
+                                    # Image is wider - crop width
+                                    thumb_new_width = int(img_thumb.height * thumb_target_ratio)
+                                    thumb_left = (img_thumb.width - thumb_new_width) // 2
+                                    thumb_cropped = img_thumb.crop((thumb_left, 0, thumb_left + thumb_new_width, img_thumb.height))
+                                else:
+                                    # Image is taller - crop height
+                                    thumb_new_height = int(img_thumb.width / thumb_target_ratio)
+                                    thumb_top = (img_thumb.height - thumb_new_height) // 2
+                                    thumb_cropped = img_thumb.crop((0, thumb_top, img_thumb.width, thumb_top + thumb_new_height))
+                                
+                                # Resize to exact dimensions using LANCZOS resampling
+                                thumbnail = thumb_cropped.resize((thumbnail_width, thumbnail_height), Image.LANCZOS)
                         
                         thumbnail_filename = f"{base_name}_thumb.webp"
                         thumbnail_path = os.path.join(self.thumbnail_output_folder, thumbnail_filename)

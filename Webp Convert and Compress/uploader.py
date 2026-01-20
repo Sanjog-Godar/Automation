@@ -801,8 +801,8 @@ class R2Uploader(ctk.CTk):
             )
             empty_label.pack(pady=40)
         else:
-            # Display each folder with navigation button
-            for folder_name in sorted(current_folders):
+            # Display each folder with navigation button (sorted naturally by name)
+            for folder_name in sorted(current_folders, key=natural_sort_key):
                 folder_frame = ctk.CTkFrame(self.r2_folders_frame)
                 folder_frame.pack(fill="x", padx=5, pady=5)
                 
