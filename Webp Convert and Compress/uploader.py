@@ -1797,6 +1797,17 @@ class R2Uploader(ctk.CTk):
             'thumbnail_url': thumbnail_url
         }
     
+    def paste_from_clipboard(self, entry_widget):
+        """Paste clipboard content into the given entry widget"""
+        try:
+            clipboard_content = self.clipboard_get()
+            if clipboard_content:
+                entry_widget.delete(0, 'end')
+                entry_widget.insert(0, clipboard_content)
+        except Exception as e:
+            # Silently ignore if clipboard is empty or inaccessible
+            pass
+    
     def show_url_results(self, url_data):
         """Display URL results in a tabular format with editable Title and Base Link fields"""
         # Sort url_data by filename (numerical sorting)
@@ -1846,11 +1857,12 @@ class R2Uploader(ctk.CTk):
         
         # Header columns with fixed widths
         headers = [
-            ("Base", 60),
-            ("title", 280),
-            ("thumbnailUrl", 350),
-            ("fullImageUrl", 350),
-            ("baseLink", 350)
+            ("Base", 50),
+            ("title", 220),
+            ("thumbnailUrl", 270),
+            ("fullImageUrl", 270),
+            ("baseLink", 270),
+            ("Paste", 70)
         ]
         
         for header_text, width in headers:
@@ -1876,7 +1888,7 @@ class R2Uploader(ctk.CTk):
                 row_frame,
                 text=str(i),
                 font=ctk.CTkFont(size=12, weight="bold"),
-                width=60,
+                width=50,
                 anchor="center",
                 text_color="#4CAF50"
             )
@@ -1885,9 +1897,9 @@ class R2Uploader(ctk.CTk):
             # Title entry (editable)
             title_entry = ctk.CTkEntry(
                 row_frame,
-                placeholder_text='e.g., "TH16 War Base Anti 3 Star"',
-                width=280,
-                font=ctk.CTkFont(size=11),
+                placeholder_text='e.g., "TH16 War Base"',
+                width=220,
+                font=ctk.CTkFont(size=10),
                 height=32
             )
             title_entry.pack(side="left", padx=2, pady=6)
@@ -1895,8 +1907,8 @@ class R2Uploader(ctk.CTk):
             # Thumbnail URL (read-only)
             thumb_entry = ctk.CTkEntry(
                 row_frame,
-                width=350,
-                font=ctk.CTkFont(family="Consolas", size=10),
+                width=270,
+                font=ctk.CTkFont(family="Consolas", size=9),
                 height=32
             )
             thumb_entry.insert(0, data['thumbnail_url'])
@@ -1906,8 +1918,8 @@ class R2Uploader(ctk.CTk):
             # Full Image URL (read-only)
             detail_entry = ctk.CTkEntry(
                 row_frame,
-                width=350,
-                font=ctk.CTkFont(family="Consolas", size=10),
+                width=270,
+                font=ctk.CTkFont(family="Consolas", size=9),
                 height=32
             )
             detail_entry.insert(0, data['detail_url'])
@@ -1918,11 +1930,24 @@ class R2Uploader(ctk.CTk):
             baselink_entry = ctk.CTkEntry(
                 row_frame,
                 placeholder_text="https://link.clashofclans.com/...",
-                width=350,
-                font=ctk.CTkFont(family="Consolas", size=10),
+                width=270,
+                font=ctk.CTkFont(family="Consolas", size=9),
                 height=32
             )
             baselink_entry.pack(side="left", padx=2, pady=6)
+            
+            # Paste button
+            paste_button = ctk.CTkButton(
+                row_frame,
+                text="📋",
+                command=lambda entry=baselink_entry: self.paste_from_clipboard(entry),
+                width=70,
+                height=32,
+                font=ctk.CTkFont(size=12),
+                fg_color="#4CAF50",
+                hover_color="#388E3C"
+            )
+            paste_button.pack(side="left", padx=2, pady=6)
             
             # Store widget references
             entry_widgets.append({
