@@ -343,7 +343,34 @@ class ImageBatchProcessor(ctk.CTk):
             variable=self.aggressive_compression_var,
             font=ctk.CTkFont(size=14)
         )
-        self.aggressive_compression_checkbox.pack(anchor="w", padx=15, pady=(5, 15))
+        self.aggressive_compression_checkbox.pack(anchor="w", padx=15, pady=(5, 10))
+        
+        # Watermark Opacity Slider
+        ctk.CTkLabel(
+            settings_frame,
+            text="Watermark Opacity:",
+            font=ctk.CTkFont(size=14)
+        ).pack(anchor="w", padx=15, pady=(5, 5))
+        
+        watermark_opacity_frame = ctk.CTkFrame(settings_frame)
+        watermark_opacity_frame.pack(fill="x", padx=15, pady=(0, 15))
+        
+        self.watermark_opacity_slider = ctk.CTkSlider(
+            watermark_opacity_frame,
+            from_=0,
+            to=100,
+            number_of_steps=100,
+            command=self.update_watermark_opacity_label
+        )
+        self.watermark_opacity_slider.set(80)
+        self.watermark_opacity_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        
+        self.watermark_opacity_label = ctk.CTkLabel(
+            watermark_opacity_frame,
+            text="80%",
+            width=50
+        )
+        self.watermark_opacity_label.pack(side="right")
         
         # Process Section
         process_frame = ctk.CTkFrame(main_frame)
@@ -377,6 +404,9 @@ class ImageBatchProcessor(ctk.CTk):
         
     def update_thumbnail_quality_label(self, value):
         self.thumbnail_quality_label.configure(text=str(int(value)))
+    
+    def update_watermark_opacity_label(self, value):
+        self.watermark_opacity_label.configure(text=f"{int(value)}%")
     
     def on_mode_change(self):
         mode = self.mode_var.get()
@@ -518,6 +548,7 @@ class ImageBatchProcessor(ctk.CTk):
             keep_original_size = self.keep_original_size_var.get()
             details_resize_mode = self.details_resize_mode_var.get()
             thumbnail_resize_mode = self.thumbnail_resize_mode_var.get()
+            watermark_opacity = int(self.watermark_opacity_slider.get())
             
             # Load watermark image once (RGBA for alpha support)
             watermark_image = Image.open(self.watermark_path).convert("RGBA")
@@ -574,6 +605,14 @@ class ImageBatchProcessor(ctk.CTk):
                         # Apply watermark to details image
                         details_rgba = details_img.convert("RGBA")
                         wm = watermark_image.copy()
+                        
+                        # Apply opacity to watermark
+                        if watermark_opacity < 100:
+                            # Adjust the alpha channel based on opacity
+                            alpha = wm.split()[3]  # Get alpha channel
+                            alpha = alpha.point(lambda p: int(p * watermark_opacity / 100))
+                            wm.putalpha(alpha)
+                        
                         # Calculate watermark position dynamically
                         # Horizontal: center of image
                         # Vertical: 3/4 down from top
