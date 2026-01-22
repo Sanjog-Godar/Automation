@@ -8,7 +8,7 @@ class DuplicateFinderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Visual Duplicate Image Finder")
-        self.root.geometry("800x700")
+        self.root.geometry("1000x800")
 
         # --- Variables ---
         self.folder_path = tk.StringVar()
@@ -22,30 +22,30 @@ class DuplicateFinderGUI:
         header_frame.pack(fill='x', pady=5)
         
         # Folder Selection
-        tk.Label(header_frame, text="Step 1: Select your Image Folder", font=("Arial", 10, "bold"), bg="white").pack(pady=5)
+        tk.Label(header_frame, text="Step 1: Select your Image Folder", font=("Arial", 12, "bold"), bg="white").pack(pady=8)
         folder_frame = tk.Frame(header_frame, bg="white")
         folder_frame.pack(pady=5, padx=20, fill='x')
         
-        tk.Entry(folder_frame, textvariable=self.folder_path).pack(side='left', expand=True, fill='x', padx=5)
-        tk.Button(folder_frame, text="Browse", command=self.browse_folder).pack(side='right')
+        tk.Entry(folder_frame, textvariable=self.folder_path, font=("Arial", 10)).pack(side='left', expand=True, fill='x', padx=5)
+        tk.Button(folder_frame, text="Browse", command=self.browse_folder, font=("Arial", 10), height=1, width=10).pack(side='right')
 
         # Threshold Slider
-        tk.Label(header_frame, text="Step 2: Sensitivity (Lower = Stricter)", bg="white").pack(pady=(5, 0))
-        tk.Scale(header_frame, from_=0, to_=20, orient='horizontal', variable=self.threshold, bg="white").pack(pady=5)
-        tk.Label(header_frame, text="* Use 5-10 to catch images with removed watermarks", font=("Arial", 8, "italic"), fg="gray", bg="white").pack()
+        tk.Label(header_frame, text="Step 2: Sensitivity (Lower = Stricter)", font=("Arial", 11), bg="white").pack(pady=(8, 0))
+        tk.Scale(header_frame, from_=0, to_=20, orient='horizontal', variable=self.threshold, bg="white", font=("Arial", 10), length=300).pack(pady=5)
+        tk.Label(header_frame, text="* Use 5-10 to catch images with removed watermarks", font=("Arial", 9, "italic"), fg="gray", bg="white").pack()
 
         # Action Buttons
         button_frame = tk.Frame(header_frame, bg="white")
-        button_frame.pack(pady=10)
+        button_frame.pack(pady=12)
         
-        self.scan_btn = tk.Button(button_frame, text="START SCAN", bg="#4CAF50", fg="white", font=("Arial", 12, "bold"), command=self.start_scan)
-        self.scan_btn.pack(side='left', padx=5)
+        self.scan_btn = tk.Button(button_frame, text="START SCAN", bg="#4CAF50", fg="white", font=("Arial", 13, "bold"), command=self.start_scan, padx=20, pady=8)
+        self.scan_btn.pack(side='left', padx=8)
         
-        self.rename_btn = tk.Button(button_frame, text="RENAME & DELETE", bg="#FF9800", fg="white", font=("Arial", 12, "bold"), command=self.rename_all_duplicates, state="disabled")
-        self.rename_btn.pack(side='left', padx=5)
+        self.rename_btn = tk.Button(button_frame, text="RENAME & DELETE", bg="#FF9800", fg="white", font=("Arial", 13, "bold"), command=self.rename_all_duplicates, state="disabled", padx=20, pady=8)
+        self.rename_btn.pack(side='left', padx=8)
 
         # Results Area
-        tk.Label(header_frame, text="Results (Matches Found):", bg="white").pack(pady=(5, 0))
+        tk.Label(header_frame, text="Results (Matches Found):", font=("Arial", 11, "bold"), bg="white").pack(pady=(8, 0))
         
         # Scrollable results frame
         results_container = tk.Frame(root)
@@ -146,7 +146,7 @@ class DuplicateFinderGUI:
                 no_results_label = tk.Label(
                     self.scrollable_frame, 
                     text="No duplicates found with current sensitivity.\nTry increasing the sensitivity value.",
-                    font=("Arial", 11),
+                    font=("Arial", 13),
                     fg="gray",
                     bg="white"
                 )
@@ -161,8 +161,8 @@ class DuplicateFinderGUI:
     
     def create_pair_widget(self, pair, index):
         """Create a visual widget for a duplicate pair with individual controls"""
-        pair_frame = tk.Frame(self.scrollable_frame, relief="solid", borderwidth=1, bg="#f9f9f9")
-        pair_frame.pack(fill='x', padx=10, pady=5)
+        pair_frame = tk.Frame(self.scrollable_frame, relief="solid", borderwidth=2, bg="#f9f9f9")
+        pair_frame.pack(fill='x', padx=15, pady=8)
         
         # Store reference
         self.pair_widgets.append({'frame': pair_frame, 'pair': pair, 'index': index})
@@ -174,67 +174,67 @@ class DuplicateFinderGUI:
         tk.Label(
             header_frame, 
             text=f"[MATCH] Dist: {pair['distance']}", 
-            font=("Arial", 10, "bold"),
+            font=("Arial", 12, "bold"),
             bg="#e3e3e3"
-        ).pack(side='left', padx=10, pady=5)
+        ).pack(side='left', padx=15, pady=8)
         
         # Content frame with two columns
         content_frame = tk.Frame(pair_frame, bg="#f9f9f9")
-        content_frame.pack(fill='both', padx=10, pady=10)
+        content_frame.pack(fill='both', padx=15, pady=15)
         
         # File A column
         file_a_frame = tk.Frame(content_frame, bg="#f9f9f9")
-        file_a_frame.pack(side='left', fill='both', expand=True, padx=5)
+        file_a_frame.pack(side='left', fill='both', expand=True, padx=10)
         
-        tk.Label(file_a_frame, text="A:", font=("Arial", 9, "bold"), bg="#f9f9f9").pack(anchor='w')
+        tk.Label(file_a_frame, text="A:", font=("Arial", 11, "bold"), bg="#f9f9f9").pack(anchor='w')
         tk.Label(
             file_a_frame, 
             text=pair['file_a'], 
-            font=("Courier", 8),
+            font=("Courier", 9),
             bg="#f9f9f9",
-            wraplength=300,
+            wraplength=400,
             justify='left'
-        ).pack(anchor='w', pady=2)
+        ).pack(anchor='w', pady=5)
         
         # Thumbnail for A
         try:
             img_a = Image.open(pair['path_a'])
-            img_a.thumbnail((120, 120))
+            img_a.thumbnail((200, 200))
             photo_a = ImageTk.PhotoImage(img_a)
-            label_a = tk.Label(file_a_frame, image=photo_a, bg="#f9f9f9", relief="solid", borderwidth=1)
+            label_a = tk.Label(file_a_frame, image=photo_a, bg="#f9f9f9", relief="solid", borderwidth=2)
             label_a.image = photo_a  # Keep a reference
-            label_a.pack(pady=5)
+            label_a.pack(pady=8)
         except:
-            tk.Label(file_a_frame, text="[Preview unavailable]", fg="gray", bg="#f9f9f9").pack(pady=5)
+            tk.Label(file_a_frame, text="[Preview unavailable]", font=("Arial", 10), fg="gray", bg="#f9f9f9").pack(pady=8)
         
         # File B column
         file_b_frame = tk.Frame(content_frame, bg="#f9f9f9")
-        file_b_frame.pack(side='left', fill='both', expand=True, padx=5)
+        file_b_frame.pack(side='left', fill='both', expand=True, padx=10)
         
-        tk.Label(file_b_frame, text="B:", font=("Arial", 9, "bold"), bg="#f9f9f9").pack(anchor='w')
+        tk.Label(file_b_frame, text="B:", font=("Arial", 11, "bold"), bg="#f9f9f9").pack(anchor='w')
         tk.Label(
             file_b_frame, 
             text=pair['file_b'], 
-            font=("Courier", 8),
+            font=("Courier", 9),
             bg="#f9f9f9",
-            wraplength=300,
+            wraplength=400,
             justify='left'
-        ).pack(anchor='w', pady=2)
+        ).pack(anchor='w', pady=5)
         
         # Thumbnail for B
         try:
             img_b = Image.open(pair['path_b'])
-            img_b.thumbnail((120, 120))
+            img_b.thumbnail((200, 200))
             photo_b = ImageTk.PhotoImage(img_b)
-            label_b = tk.Label(file_b_frame, image=photo_b, bg="#f9f9f9", relief="solid", borderwidth=1)
+            label_b = tk.Label(file_b_frame, image=photo_b, bg="#f9f9f9", relief="solid", borderwidth=2)
             label_b.image = photo_b  # Keep a reference
-            label_b.pack(pady=5)
+            label_b.pack(pady=8)
         except:
-            tk.Label(file_b_frame, text="[Preview unavailable]", fg="gray", bg="#f9f9f9").pack(pady=5)
+            tk.Label(file_b_frame, text="[Preview unavailable]", font=("Arial", 10), fg="gray", bg="#f9f9f9").pack(pady=8)
         
         # Action buttons frame
         action_frame = tk.Frame(pair_frame, bg="#f9f9f9")
-        action_frame.pack(fill='x', padx=10, pady=(0, 10))
+        action_frame.pack(fill='x', padx=15, pady=(0, 15))
         
         # Individual action buttons
         btn_delete_a = tk.Button(
@@ -242,36 +242,48 @@ class DuplicateFinderGUI:
             text="Delete A", 
             bg="#f44336", 
             fg="white",
+            font=("Arial", 10, "bold"),
+            padx=15,
+            pady=6,
             command=lambda: self.delete_single_file(index, 'A')
         )
-        btn_delete_a.pack(side='left', padx=5)
+        btn_delete_a.pack(side='left', padx=6)
         
         btn_delete_b = tk.Button(
             action_frame, 
             text="Delete B", 
             bg="#f44336", 
             fg="white",
+            font=("Arial", 10, "bold"),
+            padx=15,
+            pady=6,
             command=lambda: self.delete_single_file(index, 'B')
         )
-        btn_delete_b.pack(side='left', padx=5)
+        btn_delete_b.pack(side='left', padx=6)
         
         btn_rename = tk.Button(
             action_frame, 
             text="Rename & Delete", 
             bg="#FF9800", 
             fg="white",
+            font=("Arial", 10, "bold"),
+            padx=15,
+            pady=6,
             command=lambda: self.rename_single_pair(index)
         )
-        btn_rename.pack(side='left', padx=5)
+        btn_rename.pack(side='left', padx=6)
         
         btn_keep_both = tk.Button(
             action_frame, 
             text="Keep Both", 
             bg="#4CAF50", 
             fg="white",
+            font=("Arial", 10, "bold"),
+            padx=15,
+            pady=6,
             command=lambda: self.keep_both_files(index)
         )
-        btn_keep_both.pack(side='left', padx=5)
+        btn_keep_both.pack(side='left', padx=6)
 
         btn_keep_both.pack(side='left', padx=5)
     
@@ -403,11 +415,11 @@ class DuplicateFinderGUI:
                 no_results_label = tk.Label(
                     self.scrollable_frame, 
                     text="All duplicates have been processed!",
-                    font=("Arial", 11),
+                    font=("Arial", 13, "bold"),
                     fg="green",
                     bg="white"
                 )
-                no_results_label.pack(pady=20)
+                no_results_label.pack(pady=30)
     
     def is_simpler_name(self, name1, name2):
         """Determine which filename is simpler (shorter, less complex)"""
