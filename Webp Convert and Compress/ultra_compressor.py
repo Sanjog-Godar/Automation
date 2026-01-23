@@ -91,7 +91,7 @@ class UltraCompressor(ctk.CTk):
         
         for i, filename in enumerate(files):
             input_path = os.path.join(self.source_folder, filename)
-            output_path = os.path.join(self.output_folder, f"compressed_{Path(filename).stem}.webp")
+            output_path = os.path.join(self.output_folder, f"{Path(filename).stem}.webp")
             
             with Image.open(input_path) as img:
                 if img.mode != "RGB":

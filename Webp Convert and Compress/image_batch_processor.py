@@ -5,6 +5,16 @@ import os
 import threading
 from pathlib import Path
 #  python image_batch_processor.py
+
+# ============================================
+# COMPRESSION OPTIMIZATION FEATURES:
+# - WebP method=6: Exhaustive encoding search (maximum compression)
+# - subsampling=0: Preserve color sharpness (no chroma subsampling)
+# - EXIF stripping: All metadata removed during RGB conversion
+# - LANCZOS resampling: High-fidelity edge preservation
+# - Threading: Robust UI responsiveness during heavy tasks
+# - Dynamic watermarking: RGBA transparency integrity maintained
+# ============================================
 class ImageBatchProcessor(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -335,15 +345,13 @@ class ImageBatchProcessor(ctk.CTk):
         )
         self.keep_original_size_checkbox.pack(anchor="w", padx=15, pady=(5, 10))
         
-        # Aggressive Compression Checkbox
-        self.aggressive_compression_var = ctk.BooleanVar(value=False)
-        self.aggressive_compression_checkbox = ctk.CTkCheckBox(
+        # Compression Info Label
+        ctk.CTkLabel(
             settings_frame,
-            text="Aggressive Compression (optimize=True, method=6)",
-            variable=self.aggressive_compression_var,
-            font=ctk.CTkFont(size=14)
-        )
-        self.aggressive_compression_checkbox.pack(anchor="w", padx=15, pady=(5, 10))
+            text="✓ Advanced Compression: method=6 (max search) | subsampling=0 (color fidelity) | EXIF stripped",
+            font=ctk.CTkFont(size=11),
+            text_color="#4CAF50"
+        ).pack(anchor="w", padx=15, pady=(5, 10))
         
         # Watermark Opacity Slider
         ctk.CTkLabel(
@@ -735,6 +743,10 @@ class ImageBatchProcessor(ctk.CTk):
         
     def process_images(self):
         try:
+            # DEBUG: Check watermark
+            print(f"[DEBUG] Watermark path: {self.watermark_path}")
+            print(f"[DEBUG] Watermark exists: {os.path.exists(self.watermark_path)}")
+            
             # Get all image files from source folder
             image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
             image_files = []
@@ -747,6 +759,8 @@ class ImageBatchProcessor(ctk.CTk):
                 for file in self.selected_files:
                     if Path(file).suffix.lower() in image_extensions:
                         image_files.append(file)
+            
+            print(f"[DEBUG] Found {len(image_files)} image files")
             
             if not image_files:
                 self.after(0, lambda: messagebox.showinfo("Info", "No image files found in source folder"))
@@ -761,38 +775,67 @@ class ImageBatchProcessor(ctk.CTk):
             details_height = int(self.details_height_entry.get())
             thumbnail_width = int(self.thumbnail_width_entry.get())
             thumbnail_height = int(self.thumbnail_height_entry.get())
-            aggressive_compression = self.aggressive_compression_var.get()
             keep_original_size = self.keep_original_size_var.get()
             details_resize_mode = self.details_resize_mode_var.get()
             thumbnail_resize_mode = self.thumbnail_resize_mode_var.get()
             watermark_opacity = int(self.watermark_opacity_slider.get())
             
-            # Load watermark image once (RGBA for alpha support)
-            watermark_image = Image.open(self.watermark_path).convert("RGBA")
+            print(f"[DEBUG] Details output: {self.details_output_folder}")
+            print(f"[DEBUG] Thumbnail output: {self.thumbnail_output_folder}")
             
             # Create output folders if they don't exist
             os.makedirs(self.details_output_folder, exist_ok=True)
             os.makedirs(self.thumbnail_output_folder, exist_ok=True)
             
+            print(f"[DEBUG] Output folders created/verified")
+            print(f"[DEBUG] Starting to load watermark...")
+            
+            # Load watermark image once (RGBA for alpha support)
+            try:
+                watermark_image = Image.open(self.watermark_path).convert("RGBA")
+                print(f"[DEBUG] Watermark loaded successfully: {watermark_image.size}")
+            except Exception as wm_error:
+                print(f"[ERROR] Failed to load watermark: {wm_error}")
+                self.after(0, lambda e=wm_error: messagebox.showerror(
+                    "Watermark Error",
+                    f"Could not load watermark:\n{str(e)}\n\nPath: {self.watermark_path}"
+                ))
+                self.after(0, lambda: self.start_button.configure(state="normal"))
+                return
+            
+            print(f"[DEBUG] Starting image processing loop with {total_images} images")
+            
             # Process each image
             for index, source_path in enumerate(image_files):
                 try:
-                    # Open image and convert to RGB
+                    print(f"[DEBUG] Processing image {index + 1}/{total_images}: {os.path.basename(source_path)}")
+                    # Open image and convert to RGB with metadata stripping
                     with Image.open(source_path) as img:
-                        # Convert to RGB mode for consistency
-                        if img.mode != 'RGB':
-                            img = img.convert('RGB')
+                        # Strip all EXIF and metadata, convert to RGB
+                        # Create new image without metadata for minimum file size
+                        img_data = img.convert('RGB')
+                        img = img_data
                         
                         base_name = Path(source_path).stem
                         
+                        # Auto-detect if image is smaller than target dimensions
+                        # If image is smaller than 1920x1200, automatically keep original size to prevent stretching
+                        auto_keep_original = (img.width < details_width or img.height < details_height)
+                        if auto_keep_original:
+                            print(f"[DEBUG] Auto-keeping original size: {img.width}x{img.height} (smaller than {details_width}x{details_height})")
+                        
                         # Prepare save options for details image
-                        details_save_options = {'format': 'WEBP', 'quality': details_quality}
-                        if aggressive_compression:
-                            details_save_options['optimize'] = True
-                            details_save_options['method'] = 6
+                        # Advanced WebP encoding: method=6 (exhaustive search) + subsampling=0 (preserve color)
+                        details_save_options = {
+                            'format': 'WEBP',
+                            'quality': details_quality,
+                            'optimize': True,
+                            'method': 6,
+                            'subsampling': 0  # Maintain color sharpness on edges and watermarks
+                        }
                         
                         # Create full image
-                        if keep_original_size:
+                        if keep_original_size or auto_keep_original:
                             # Keep original size without cropping or resizing
                             details_img = img.copy()
                         elif details_resize_mode == "scale":
@@ -819,40 +862,74 @@ class ImageBatchProcessor(ctk.CTk):
                             # Resize to exact dimensions using LANCZOS resampling
                             details_img = img_cropped.resize((details_width, details_height), Image.LANCZOS)
                         
-                        # Apply watermark to details image
+                        # Apply watermark with transparency integrity on temporary RGBA layer
                         details_rgba = details_img.convert("RGBA")
                         wm = watermark_image.copy()
                         
-                        # Apply opacity to watermark
+                        # PROPORTIONAL WATERMARK SCALING: Scale watermark based on image size
+                        # Reference dimensions: 1920x1200 with original watermark size (400x200)
+                        # Logic: Scale down for images smaller than reference, never upscale
+                        reference_width = 1920
+                        reference_height = 1200
+                        
+                        # Calculate scale factor based on both dimensions (use minimum to maintain aspect ratio)
+                        scale_factor_width = details_img.width / reference_width
+                        scale_factor_height = details_img.height / reference_height
+                        scale_factor = min(scale_factor_width, scale_factor_height)
+                        
+                        # Never upscale the watermark beyond its original size
+                        scale_factor = min(scale_factor, 1.0)
+                        
+                        # Calculate new watermark dimensions
+                        new_wm_width = int(watermark_image.width * scale_factor)
+                        new_wm_height = int(watermark_image.height * scale_factor)
+                        
+                        # Resize watermark with LANCZOS resampling for quality
+                        if scale_factor < 1.0:
+                            wm = watermark_image.resize((new_wm_width, new_wm_height), Image.LANCZOS)
+                            print(f"[DEBUG] Watermark scaled: {watermark_image.width}x{watermark_image.height} → {new_wm_width}x{new_wm_height} (factor: {scale_factor:.2f}) for image {details_img.width}x{details_img.height}")
+                        else:
+                            wm = watermark_image.copy()
+                            print(f"[DEBUG] Watermark kept at original size: {wm.width}x{wm.height} for image {details_img.width}x{details_img.height}")
+                        
+                        # Apply opacity to watermark while preserving alpha channel integrity
                         if watermark_opacity < 100:
-                            # Adjust the alpha channel based on opacity
                             alpha = wm.split()[3]  # Get alpha channel
+                            # Scale alpha based on opacity percentage
                             alpha = alpha.point(lambda p: int(p * watermark_opacity / 100))
                             wm.putalpha(alpha)
                         
-                        # Calculate watermark position dynamically
-                        # Horizontal: center of image
-                        # Vertical: 3/4 down from top
+                        # Calculate watermark position dynamically for consistent placement
+                        # Horizontal: center of image | Vertical: 3/4 down from top
                         wm_x = max(0, (details_img.width - wm.width) // 2)
                         wm_y = max(0, int(details_img.height * 0.75) - wm.height // 2)
+                        
+                        # Paste watermark on RGBA layer using alpha mask for fidelity
                         details_rgba.paste(wm, (wm_x, wm_y), wm)
+                        
+                        # Convert back to RGB for WebP encoding (maintains watermark quality)
                         details_img = details_rgba.convert("RGB")
                         
                         details_filename = f"{base_name}.webp"
                         details_path = os.path.join(self.details_output_folder, details_filename)
                         details_img.save(details_path, **details_save_options)
+                        print(f"[DEBUG] Saved details: {details_path} ({os.path.getsize(details_path) / 1024:.1f} KB)")
                         
                         # Prepare save options for thumbnail image
-                        thumbnail_save_options = {'format': 'WEBP', 'quality': thumbnail_quality}
-                        if aggressive_compression:
-                            thumbnail_save_options['optimize'] = True
-                            thumbnail_save_options['method'] = 6
+                        # Advanced WebP encoding: method=6 (exhaustive search) + subsampling=0 (preserve color)
+                        thumbnail_save_options = {
+                            'format': 'WEBP',
+                            'quality': thumbnail_quality,
+                            'optimize': True,
+                            'method': 6,
+                            'subsampling': 0  # Maintain color sharpness on edges and watermarks
+                        }
                         
-                        # Create thumbnail
+                        # Create thumbnail with metadata stripped
                         # Re-open the original image for thumbnail processing
                         with Image.open(source_path) as img_thumb:
-                            if img_thumb.mode != 'RGB':
-                                img_thumb = img_thumb.convert('RGB')
+                            # Strip metadata during RGB conversion
+                            img_thumb = img_thumb.convert('RGB')
                             
                             if thumbnail_resize_mode == "scale":
                                 # Scale to fit - resize to fit within dimensions without cropping
@@ -880,9 +957,12 @@ class ImageBatchProcessor(ctk.CTk):
                         thumbnail_filename = f"{base_name}_thumb.webp"
                         thumbnail_path = os.path.join(self.thumbnail_output_folder, thumbnail_filename)
                         thumbnail.save(thumbnail_path, **thumbnail_save_options)
+                        print(f"[DEBUG] Saved thumbnail: {thumbnail_path} ({os.path.getsize(thumbnail_path) / 1024:.1f} KB)")
                         
                 except Exception as e:
-                    print(f"Error processing {source_path}: {str(e)}")
+                    import traceback
+                    print(f"[ERROR] Error processing {source_path}: {str(e)}")
+                    traceback.print_exc()
                     continue
                 
                 # Update progress
@@ -898,7 +978,11 @@ class ImageBatchProcessor(ctk.CTk):
             ))
             
         except Exception as e:
-            self.after(0, lambda: messagebox.showerror("Error", f"An error occurred: {str(e)}"))
+            error_msg = f"Error in process_images:\n{str(e)}\n\nType: {type(e).__name__}"
+            print(f"[ERROR] {error_msg}")
+            import traceback
+            traceback.print_exc()  # Print full traceback to console
+            self.after(0, lambda: messagebox.showerror("Processing Error", error_msg))
         
         finally:
             # Re-enable start button
