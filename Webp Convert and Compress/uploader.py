@@ -7,6 +7,8 @@ import csv
 from tkinter import filedialog, messagebox
 from dotenv import load_dotenv
 from pathlib import Path
+from datetime import datetime
+from datetime import datetime
 import re
 
 # Load environment variables from .env file
@@ -1962,14 +1964,38 @@ class R2Uploader(ctk.CTk):
         button_frame = ctk.CTkFrame(popup)
         button_frame.pack(fill="x", padx=20, pady=(10, 20))
         
+        # Import from .sanjog button (LEFT SIDE - IMPORT)
+        ctk.CTkButton(
+            button_frame,
+            text="📥 Import .sanjog",
+            command=lambda: self.import_from_sanjog(entry_widgets, popup),
+            height=45,
+            width=160,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            fg_color="#e67e22",
+            hover_color="#d35400"
+        ).pack(side="left", padx=5)
+
+        # Import from .title button (LEFT SIDE - IMPORT)
+        ctk.CTkButton(
+            button_frame,
+            text="📄 Import .title",
+            command=lambda: self.import_from_title(entry_widgets, popup),
+            height=45,
+            width=160,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            fg_color="#8e44ad",
+            hover_color="#6c3483"
+        ).pack(side="left", padx=5)
+        
         # Export to CSV button
         ctk.CTkButton(
             button_frame,
-            text="💾 Export to CSV",
+            text="💾 Export CSV",
             command=lambda: self.export_table_to_csv(entry_widgets, popup),
             height=45,
-            width=200,
-            font=ctk.CTkFont(size=15, weight="bold"),
+            width=150,
+            font=ctk.CTkFont(size=14, weight="bold"),
             fg_color="#2B8A3E",
             hover_color="#1E6329"
         ).pack(side="left", padx=5)
@@ -1977,11 +2003,11 @@ class R2Uploader(ctk.CTk):
         # Validation helper button
         ctk.CTkButton(
             button_frame,
-            text="✓ Validate All",
+            text="✓ Validate",
             command=lambda: self.validate_all_entries(entry_widgets),
             height=45,
-            width=180,
-            font=ctk.CTkFont(size=15, weight="bold"),
+            width=130,
+            font=ctk.CTkFont(size=14, weight="bold"),
             fg_color="#0066CC",
             hover_color="#004D99"
         ).pack(side="left", padx=5)
@@ -1992,7 +2018,7 @@ class R2Uploader(ctk.CTk):
             text="✅ Close",
             command=popup.destroy,
             height=45,
-            width=150,
+            width=120,
             font=ctk.CTkFont(size=15, weight="bold"),
             fg_color="#6b6b6b",
             hover_color="#4a4a4a"
@@ -2029,6 +2055,285 @@ class R2Uploader(ctk.CTk):
             messagebox.showwarning("Validation Issues", "\n\n".join(issues))
         else:
             messagebox.showinfo("Validation Success", "✅ All entries are valid!\n\nYou can now export to CSV.")
+    
+    def import_from_sanjog(self, entry_widgets, parent_window):
+        """Import base links from .sanjog file and auto-fill the Base Link column"""
+        try:
+            import json
+            
+            # Open file dialog
+            file_path = filedialog.askopenfilename(
+                title="Select .sanjog file to import",
+                filetypes=[("Sanjog Files", "*.sanjog"), ("All Files", "*.*")],
+                parent=parent_window
+            )
+            
+            if not file_path:
+                return
+            
+            # Read and parse .sanjog file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                sanjog_data = json.load(f)
+            
+            if 'rows' not in sanjog_data:
+                messagebox.showerror("Invalid File", "The selected file is not a valid .sanjog file.", parent=parent_window)
+                return
+            
+            # Extract base links from the .sanjog file
+            # The URL format is: "Title: ... | Thumbnail: ... | Detail: ... | Base: ..."
+            # But also handle plain URLs from link_copy_tool.html
+            imported_data = {}
+            
+            for row in sanjog_data['rows']:
+                row_number = row.get('rowNumber')
+                url_string = row.get('url', '')
+                
+                # Parse the URL string to extract base link and title
+                base_link = ""
+                title = ""
+                
+                # Check if it's formatted data (contains |) or just a plain URL
+                if '|' in url_string:
+                    # Split by | and look for Base: and Title:
+                    parts = url_string.split('|')
+                    for part in parts:
+                        part = part.strip()
+                        if part.startswith('Base:'):
+                            base_link = part.replace('Base:', '').strip()
+                        elif part.startswith('Title:'):
+                            title = part.replace('Title:', '').strip()
+                else:
+                    # Treat the entire string as base link if it looks like a URL
+                    if url_string.startswith('http'):
+                        base_link = url_string.strip()
+                
+                if row_number and base_link:
+                    imported_data[row_number] = {
+                        'baselink': base_link,
+                        'title': title
+                    }
+            
+            if not imported_data:
+                messagebox.showwarning(
+                    "No Data Found", 
+                    "No base links found in the .sanjog file.\n\nMake sure the file contains valid URLs.",
+                    parent=parent_window
+                )
+                return
+            
+            # Ask user about overwrite strategy
+            overwrite_all = None
+            if any(widget['baselink'].get().strip() for widget in entry_widgets if widget['serial'] in imported_data):
+                overwrite_all = messagebox.askyesnocancel(
+                    "Overwrite Existing Data?",
+                    "Some rows already have base links.\n\n" +
+                    "• Yes = Overwrite all existing values\n" +
+                    "• No = Keep existing values, fill only empty\n" +
+                    "• Cancel = Abort import",
+                    parent=parent_window
+                )
+                
+                if overwrite_all is None:  # Cancel
+                    return
+            
+            # Fill the entry widgets based on serial number
+            filled_count = 0
+            title_filled_count = 0
+            skipped_count = 0
+            
+            for widget in entry_widgets:
+                serial = widget['serial']
+                
+                if serial in imported_data:
+                    data = imported_data[serial]
+                    
+                    # Fill base link
+                    if data['baselink']:
+                        baselink_entry = widget['baselink']
+                        current_value = baselink_entry.get().strip()
+                        
+                        should_fill = False
+                        if not current_value:
+                            should_fill = True
+                        elif overwrite_all is True:
+                            should_fill = True
+                        elif overwrite_all is False:
+                            should_fill = False
+                            skipped_count += 1
+                        
+                        if should_fill:
+                            baselink_entry.delete(0, 'end')
+                            baselink_entry.insert(0, data['baselink'])
+                            filled_count += 1
+                    
+                    # Optionally fill title if empty and available
+                    if data['title']:
+                        title_entry = widget['title']
+                        current_title = title_entry.get().strip()
+                        
+                        if not current_title:
+                            title_entry.delete(0, 'end')
+                            title_entry.insert(0, data['title'])
+                            title_filled_count += 1
+            
+            # Show success message
+            message = f"✅ Successfully imported data!\n\n"
+            message += f"📋 Base Links filled: {filled_count}\n"
+            if title_filled_count > 0:
+                message += f"📝 Titles filled: {title_filled_count}\n"
+            if skipped_count > 0:
+                message += f"⏭️ Skipped (existing): {skipped_count}\n"
+            message += f"\nTotal rows in file: {len(imported_data)}"
+            
+            messagebox.showinfo("Import Successful", message, parent=parent_window)
+            
+        except json.JSONDecodeError:
+            messagebox.showerror("Invalid File", "The file is not a valid JSON file.", parent=parent_window)
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to import .sanjog file:\n{str(e)}", parent=parent_window)
+    
+    def import_from_title(self, entry_widgets, parent_window):
+        """Import titles from .title file and auto-fill the Title column"""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Select .title file to import",
+                filetypes=[("Title Files", "*.title"), ("All Files", "*.*")],
+                parent=parent_window
+            )
+            if not file_path:
+                return
+            with open(file_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            # Accept lines like: Base 1: The Octagon Framework
+            cleaned_titles = []
+            for line in lines:
+                line = line.strip().replace('\r','').replace('\n','')
+                if line.lower().startswith('base') and ':' in line:
+                    cleaned_titles.append(line.split(':',1)[1].strip())
+                elif line:
+                    cleaned_titles.append(line.strip())
+            # Fill the Title column in order
+            for i, title in enumerate(cleaned_titles):
+                if i < len(entry_widgets):
+                    entry_widgets[i]['title'].delete(0, 'end')
+                    entry_widgets[i]['title'].insert(0, title)
+            messagebox.showinfo("Import Successful", f"Imported {len(cleaned_titles)} titles from .title file.", parent=parent_window)
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to import .title file:\n{str(e)}", parent=parent_window)
+    
+    def export_to_sanjog(self, entry_widgets, parent_window):
+        """Export links to .sanjog format for use with link_copy_tool.html"""
+        try:
+            import json
+            
+            # Prepare rows data
+            rows_data = []
+            
+            for widget in entry_widgets:
+                serial = widget['serial']
+                title = widget['title'].get().strip()
+                thumbnail_url = widget['thumbnail'].get().strip()
+                detail_url = widget['detail'].get().strip()
+                baselink = widget['baselink'].get().strip()
+                
+                # Create a combined entry with all the data
+                # Format: Title | Thumbnail: URL | Detail: URL | Base: URL
+                combined_entry = ""
+                
+                if title:
+                    combined_entry += f"Title: {title}"
+                
+                if thumbnail_url:
+                    if combined_entry:
+                        combined_entry += " | "
+                    combined_entry += f"Thumbnail: {thumbnail_url}"
+                
+                if detail_url:
+                    if combined_entry:
+                        combined_entry += " | "
+                    combined_entry += f"Detail: {detail_url}"
+                
+                if baselink:
+                    if combined_entry:
+                        combined_entry += " | "
+                    combined_entry += f"Base: {baselink}"
+                
+                # If no data at all, use placeholder
+                if not combined_entry:
+                    combined_entry = f"[Entry {serial} - No data entered]"
+                
+                rows_data.append({
+                    'rowNumber': serial,
+                    'url': combined_entry
+                })
+            
+            # Create .sanjog data structure
+            sanjog_data = {
+                'totalRows': len(rows_data),
+                'savedAt': datetime.now().isoformat(),
+                'rows': rows_data
+            }
+            
+            # Save file dialog
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_filename = f"coc_bases_{timestamp}.sanjog"
+            
+            file_path = filedialog.asksaveasfilename(
+                title="Save Links as .sanjog",
+                defaultextension=".sanjog",
+                initialfile=default_filename,
+                filetypes=[("Sanjog Files", "*.sanjog"), ("All Files", "*.*")]
+            )
+            
+            if not file_path:
+                return
+            
+            # Write to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(sanjog_data, f, indent=2, ensure_ascii=False)
+            
+            # Ask if user wants to open link_copy_tool.html
+            response = messagebox.askyesno(
+                "Export Successful",
+                f"✅ Successfully exported {len(rows_data)} entries to:\n{file_path}\n\n" +
+                "Would you like to open Link Copy Tool to load this file?",
+                parent=parent_window
+            )
+            
+            if response:
+                self.open_link_copy_tool()
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export .sanjog file:\n{str(e)}", parent=parent_window)
+    
+    def open_link_copy_tool(self):
+        """Open the link_copy_tool.html in default browser"""
+        try:
+            import webbrowser
+            
+            # Find link_copy_tool.html in current directory or Link Converter subdirectory
+            current_dir = Path(__file__).parent
+            possible_paths = [
+                current_dir / "Link_copy_tool.html",
+                current_dir / "Link Converter" / "Link_copy_tool.html"
+            ]
+            
+            html_path = None
+            for path in possible_paths:
+                if path.exists():
+                    html_path = path
+                    break
+            
+            if html_path:
+                webbrowser.open(f'file:///{html_path.as_posix()}')
+            else:
+                messagebox.showwarning(
+                    "File Not Found",
+                    "Could not find Link_copy_tool.html\n\n" +
+                    "Please open it manually and use the Upload button to load your .sanjog file."
+                )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open Link Copy Tool:\n{str(e)}")
     
     def export_table_to_csv(self, entry_widgets, parent_window):
         """Export the table data to CSV file"""

@@ -586,6 +586,44 @@
         </footer>
     </div>
 
+    <!-- Title Generator Section -->
+    <div class="main-container" style="margin-top: 30px;">
+        <header class="header">
+            <h1>Title Generator</h1>
+            <p>Generate numbered title lists with .title extension</p>
+        </header>
+
+        <div class="content">
+            <div style="border: 3px solid #2c3e50; border-radius: 15px; overflow: hidden; background: #fafafa; box-shadow: 4px 4px 0 rgba(44, 62, 80, 0.3);">
+                <div style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); padding: 15px 20px; border-bottom: 3px solid #2c3e50;">
+                    <span style="font-family: 'Inter', sans-serif; font-size: 1.3rem; font-weight: 600; color: #ffffff;">
+                        📝 Enter Titles (One per line)
+                    </span>
+                </div>
+                <textarea 
+                    id="titleInput" 
+                    placeholder="Enter each title on a new line, e.g.:&#10;The Octagon Framework&#10;Base8 Core&#10;The Infinity Pillars&#10;Nexus-8&#10;The Byte Bases"
+                    style="width: 100%; min-height: 300px; padding: 20px; font-size: 1.05rem; font-family: 'Inter', sans-serif; border: none; resize: vertical; background: #ffffff; line-height: 1.8;"
+                ></textarea>
+            </div>
+
+            <div class="button-container" style="margin-top: 20px;">
+                <button class="download-btn" type="button" onclick="downloadTitleFile()" style="padding: 15px 35px; font-size: 1.1rem;">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px; fill: currentColor;">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                    Generate & Download .title
+                </button>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px;">
+                <div style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: #ffffff; padding: 8px 20px; border-radius: 25px; font-weight: 600; border: 3px solid #2c3e50; box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);">
+                    📊 Total Titles: <span id="titleCount" style="font-family: 'Inter', sans-serif; font-size: 1.5rem;">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let rowCount = 0;
         let lastCopiedButton = null;
@@ -821,6 +859,74 @@
             };
 
             reader.readAsText(file);
+        }
+
+        // Title Generator Functions
+        function updateTitleCount() {
+            const textarea = document.getElementById('titleInput');
+            const text = textarea.value.trim();
+            const lines = text ? text.split('\n').filter(line => line.trim() !== '') : [];
+            document.getElementById('titleCount').textContent = lines.length;
+        }
+
+        // Update count on input
+        document.addEventListener('DOMContentLoaded', function() {
+            const titleInput = document.getElementById('titleInput');
+            if (titleInput) {
+                titleInput.addEventListener('input', updateTitleCount);
+            }
+        });
+
+        function downloadTitleFile() {
+            const textarea = document.getElementById('titleInput');
+            const text = textarea.value.trim();
+
+            if (!text) {
+                alert('Please enter at least one title before downloading.');
+                return;
+            }
+
+            // Split by newlines and filter out empty lines
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+
+            if (lines.length === 0) {
+                alert('Please enter at least one title before downloading.');
+                return;
+            }
+
+            // Generate numbered content
+            let numberedContent = '';
+            lines.forEach((line, index) => {
+                const baseNo = index + 1;
+                numberedContent += `Base ${baseNo}: ${line.trim()}\n`;
+            });
+
+            // Create and download file
+            const blob = new Blob([numberedContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.href = url;
+            a.download = `titles-${timestamp}.title`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Visual feedback
+            const btn = event.target.closest('button');
+            if (btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<span style="font-size: 1.1rem;">✓ Downloaded!</span>`;
+                btn.style.background = 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }
         }
     </script>
 </body>

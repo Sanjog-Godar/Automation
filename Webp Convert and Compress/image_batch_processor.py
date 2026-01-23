@@ -506,6 +506,23 @@ class ImageBatchProcessor(ctk.CTk):
                 f"Watermark image not found:\n{self.watermark_path}"
             )
             return
+        
+        # STEP 1: Ask for renaming offset value (MANDATORY)
+        rename_offset = self.ask_rename_offset()
+        if rename_offset is None:
+            # User cancelled or invalid input
+            return
+        
+        # STEP 2: Rename files in source folder
+        if self.selection_mode == "folder":
+            success = self.rename_source_files(self.source_folder, rename_offset)
+            if not success:
+                return
+        else:
+            # For selected files mode, rename files in their respective folders
+            success = self.rename_selected_files(rename_offset)
+            if not success:
+                return
             
         # Disable start button during processing
         self.start_button.configure(state="disabled")
@@ -515,6 +532,206 @@ class ImageBatchProcessor(ctk.CTk):
         # Start processing in a separate thread
         thread = threading.Thread(target=self.process_images, daemon=True)
         thread.start()
+    
+    def ask_rename_offset(self):
+        """Ask user for the renaming offset value (MANDATORY)"""
+        dialog = ctk.CTkInputDialog(
+            text="Enter the renaming offset value:\n\n"
+                 "Example: If images are named 1.jpg, 2.jpg...\n"
+                 "and you enter 20, they will become 21.jpg, 22.jpg...\n\n"
+                 "Enter offset value (must be a number):",
+            title="Image Renaming - Required Step"
+        )
+        
+        user_input = dialog.get_input()
+        
+        if user_input is None or user_input.strip() == "":
+            messagebox.showwarning(
+                "Renaming Required",
+                "You must enter a renaming offset value to proceed.\n\n"
+                "Process cancelled."
+            )
+            return None
+        
+        try:
+            offset = int(user_input.strip())
+            return offset
+        except ValueError:
+            messagebox.showerror(
+                "Invalid Input",
+                f"'{user_input}' is not a valid number.\n\n"
+                "Please enter a valid integer (e.g., 20, 100, -5)."
+            )
+            return None
+    
+    def rename_source_files(self, folder_path, offset):
+        """Rename all image files in the source folder by adding offset to their numeric names"""
+        try:
+            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
+            
+            # Get all image files and sort them by numeric value
+            files_to_rename = []
+            for file in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, file)
+                if os.path.isfile(file_path) and Path(file).suffix.lower() in image_extensions:
+                    # Extract numeric part from filename
+                    base_name = Path(file).stem
+                    try:
+                        numeric_value = int(base_name)
+                        files_to_rename.append({
+                            'path': file_path,
+                            'name': file,
+                            'numeric': numeric_value,
+                            'extension': Path(file).suffix
+                        })
+                    except ValueError:
+                        # Skip files that don't have purely numeric names
+                        pass
+            
+            if not files_to_rename:
+                messagebox.showwarning(
+                    "No Files to Rename",
+                    "No files with numeric names found in the source folder.\n\n"
+                    "Files should be named like: 1.jpg, 2.jpg, 3.jpg, etc."
+                )
+                return False
+            
+            # Sort by numeric value
+            files_to_rename.sort(key=lambda x: x['numeric'])
+            
+            # Show confirmation
+            first_example = files_to_rename[0]
+            last_example = files_to_rename[-1]
+            new_first = first_example['numeric'] + offset
+            new_last = last_example['numeric'] + offset
+            
+            confirm = messagebox.askyesno(
+                "Confirm Renaming",
+                f"About to rename {len(files_to_rename)} file(s)\n\n"
+                f"Examples:\n"
+                f"  {first_example['name']} → {new_first}{first_example['extension']}\n"
+                f"  {last_example['name']} → {new_last}{last_example['extension']}\n\n"
+                f"Offset: +{offset}\n\n"
+                f"Continue?"
+            )
+            
+            if not confirm:
+                messagebox.showinfo("Cancelled", "Renaming cancelled. Process aborted.")
+                return False
+            
+            # Rename files (in reverse order to avoid conflicts)
+            renamed_count = 0
+            for file_info in reversed(files_to_rename):
+                old_path = file_info['path']
+                new_numeric = file_info['numeric'] + offset
+                new_name = f"{new_numeric}{file_info['extension']}"
+                new_path = os.path.join(folder_path, new_name)
+                
+                try:
+                    os.rename(old_path, new_path)
+                    renamed_count += 1
+                except Exception as e:
+                    messagebox.showerror(
+                        "Rename Error",
+                        f"Failed to rename:\n{file_info['name']}\n\nError: {str(e)}"
+                    )
+                    return False
+            
+            messagebox.showinfo(
+                "Renaming Complete",
+                f"✅ Successfully renamed {renamed_count} file(s)!\n\n"
+                f"Now proceeding with batch processing..."
+            )
+            return True
+            
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"Failed to rename files:\n{str(e)}"
+            )
+            return False
+    
+    def rename_selected_files(self, offset):
+        """Rename selected files by adding offset to their numeric names"""
+        try:
+            files_to_rename = []
+            
+            for file_path in self.selected_files:
+                file_name = os.path.basename(file_path)
+                base_name = Path(file_name).stem
+                try:
+                    numeric_value = int(base_name)
+                    files_to_rename.append({
+                        'path': file_path,
+                        'name': file_name,
+                        'numeric': numeric_value,
+                        'extension': Path(file_name).suffix
+                    })
+                except ValueError:
+                    pass
+            
+            if not files_to_rename:
+                messagebox.showwarning(
+                    "No Files to Rename",
+                    "None of the selected files have numeric names.\n\n"
+                    "Files should be named like: 1.jpg, 2.jpg, 3.jpg, etc."
+                )
+                return False
+            
+            # Sort by numeric value
+            files_to_rename.sort(key=lambda x: x['numeric'])
+            
+            # Show confirmation
+            first_example = files_to_rename[0]
+            new_first = first_example['numeric'] + offset
+            
+            confirm = messagebox.askyesno(
+                "Confirm Renaming",
+                f"About to rename {len(files_to_rename)} file(s)\n\n"
+                f"Example: {first_example['name']} → {new_first}{first_example['extension']}\n"
+                f"Offset: +{offset}\n\n"
+                f"Continue?"
+            )
+            
+            if not confirm:
+                messagebox.showinfo("Cancelled", "Renaming cancelled. Process aborted.")
+                return False
+            
+            # Rename files and update selected_files list
+            new_file_paths = []
+            for file_info in reversed(files_to_rename):
+                old_path = file_info['path']
+                folder = os.path.dirname(old_path)
+                new_numeric = file_info['numeric'] + offset
+                new_name = f"{new_numeric}{file_info['extension']}"
+                new_path = os.path.join(folder, new_name)
+                
+                try:
+                    os.rename(old_path, new_path)
+                    new_file_paths.append(new_path)
+                except Exception as e:
+                    messagebox.showerror(
+                        "Rename Error",
+                        f"Failed to rename:\n{file_info['name']}\n\nError: {str(e)}"
+                    )
+                    return False
+            
+            # Update the selected files list with new paths
+            self.selected_files = sorted(new_file_paths)
+            
+            messagebox.showinfo(
+                "Renaming Complete",
+                f"✅ Successfully renamed {len(files_to_rename)} file(s)!\n\n"
+                f"Now proceeding with batch processing..."
+            )
+            return True
+            
+        except Exception as e:
+            messagebox.showerror(
+                "Error",
+                f"Failed to rename files:\n{str(e)}"
+            )
+            return False
         
     def process_images(self):
         try:
