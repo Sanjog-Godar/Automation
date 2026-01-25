@@ -18,13 +18,13 @@
             font-family: 'Inter', sans-serif;
             padding: 20px;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
         }
 
         .main-container {
             width: 100%;
-            max-width: 900px;
             background: #ffffff;
             border: 4px solid #2c3e50;
             border-radius: 20px;
@@ -34,6 +34,14 @@
             margin: 20px auto;
             overflow: hidden;
             position: relative;
+        }
+
+        .main-container:first-of-type {
+            max-width: 100%;
+        }
+
+        .main-container:nth-of-type(2) {
+            max-width: 900px;
         }
 
         .main-container::before {

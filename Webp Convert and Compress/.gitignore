@@ -31,3 +31,6 @@ Thumbs.db
 *.notepad
 r2_cache.json
 image_batch_processor_stretcher.py
+urlextractor.py
+viddown.py
+offset_config.json

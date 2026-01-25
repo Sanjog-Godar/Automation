@@ -4,6 +4,8 @@ from PIL import Image
 import os
 import threading
 from pathlib import Path
+import json
+import datetime
 #  python image_batch_processor.py
 
 # ============================================
@@ -46,6 +48,23 @@ class ImageBatchProcessor(ctk.CTk):
         # Create scrollable frame
         scrollable_frame = ctk.CTkScrollableFrame(self)
         scrollable_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Increase mousewheel scroll speed for faster scrolling
+        def _on_mousewheel(event):
+            # Scroll amount: 3 units per scroll (change to higher number for even faster scrolling)
+            # event.delta is positive for scrolling up, negative for scrolling down
+            scroll_speed = 3
+            if event.delta > 0:
+                scrollable_frame._parent_canvas.yview_scroll(-scroll_speed, "units")
+            else:
+                scrollable_frame._parent_canvas.yview_scroll(scroll_speed, "units")
+            return "break"
+        
+        # Bind mousewheel event (Windows/Linux)
+        scrollable_frame.bind("<MouseWheel>", _on_mousewheel)
+        # Bind mousewheel event (macOS)
+        scrollable_frame.bind("<Button-4>", lambda e: scrollable_frame._parent_canvas.yview_scroll(-3, "units"))
+        scrollable_frame.bind("<Button-5>", lambda e: scrollable_frame._parent_canvas.yview_scroll(3, "units"))
         
         # Main container with padding
         main_frame = ctk.CTkFrame(scrollable_frame)
@@ -515,8 +534,8 @@ class ImageBatchProcessor(ctk.CTk):
             )
             return
         
-        # STEP 1: Ask for renaming offset value (MANDATORY)
-        rename_offset = self.ask_rename_offset()
+        # STEP 1: Ask for renaming offset value (SMART AUTO-DETECTION)
+        rename_offset = self.ask_rename_offset_smart()
         if rename_offset is None:
             # User cancelled or invalid input
             return
@@ -740,6 +759,115 @@ class ImageBatchProcessor(ctk.CTk):
                 f"Failed to rename files:\n{str(e)}"
             )
             return False
+    
+    def load_last_offset(self):
+        """Load the last used offset from config file"""
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "offset_config.json")
+        try:
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    config = json.load(f)
+                    return config.get('last_offset', None)
+        except Exception as e:
+            print(f"[WARNING] Could not load offset config: {e}")
+        return None
+    
+    def auto_detect_highest_number(self):
+        """
+        Scan output folders to find the highest numeric filename.
+        Returns the highest number found, or None if no images exist.
+        """
+        image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp'}
+        highest = None
+        
+        # Scan both output folders
+        for folder in [self.details_output_folder, self.thumbnail_output_folder]:
+            if not os.path.exists(folder):
+                continue
+            
+            try:
+                for file in os.listdir(folder):
+                    if Path(file).suffix.lower() in image_extensions:
+                        try:
+                            numeric = int(Path(file).stem)
+                            if highest is None or numeric > highest:
+                                highest = numeric
+                        except ValueError:
+                            # Skip files that don't have numeric names
+                            continue
+            except Exception as e:
+                print(f"[WARNING] Error scanning folder {folder}: {e}")
+                continue
+        
+        return highest
+    
+    def save_offset_to_config(self, offset_value):
+        """Save the offset value to persistent storage"""
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "offset_config.json")
+        try:
+            config = {
+                'last_offset': offset_value,
+                'last_process_date': datetime.datetime.now().isoformat(),
+                'last_details_folder': self.details_output_folder,
+                'last_thumbnail_folder': self.thumbnail_output_folder
+            }
+            with open(config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            print(f"[INFO] Saved offset {offset_value} to config")
+        except Exception as e:
+            print(f"[WARNING] Could not save offset config: {e}")
+    
+    def ask_rename_offset_smart(self):
+        """
+        Smart offset detection:
+        1. Auto-detect highest numbered file in output folders
+        2. Load last used offset from config
+        3. Suggest next offset to user
+        4. Allow manual override
+        """
+        highest = self.auto_detect_highest_number()
+        last_offset = self.load_last_offset()
+        
+        # Determine suggested offset
+        if highest is not None:
+            suggested_offset = highest
+            auto_detected = True
+        elif last_offset is not None:
+            suggested_offset = last_offset
+            auto_detected = False
+        else:
+            # First time - use original dialog
+            return self.ask_rename_offset()
+        
+        # Show dialog with auto-detected suggestion
+        highest_text = str(highest) if highest is not None else "None"
+        last_offset_text = str(last_offset) if last_offset is not None else "None"
+        auto_detected_text = "✅ Auto-Detected" if auto_detected else "(from last session)"
+        
+        dialog = ctk.CTkInputDialog(
+            text=f"Renaming Offset - Auto-Detection:\n\n"
+                 f"Highest Current Number: {highest_text}\n"
+                 f"Last Used Offset: {last_offset_text}\n\n"
+                 f"Suggested Offset: {suggested_offset} {auto_detected_text}\n\n"
+                 f"(Edit below to change, or press Enter to accept):",
+            title="Auto-Detected Offset"
+        )
+        
+        user_input = dialog.get_input()
+        
+        if user_input is None or user_input.strip() == "":
+            # Use suggested
+            return suggested_offset
+        
+        try:
+            return int(user_input.strip())
+        except ValueError:
+            messagebox.showerror(
+                "Invalid Input",
+                f"'{user_input}' is not a valid number.\n\n"
+                "Please enter a valid integer (e.g., 20, 100, -5)."
+            )
+            return None
         
     def process_images(self):
         try:
@@ -976,6 +1104,12 @@ class ImageBatchProcessor(ctk.CTk):
                 "Success", 
                 f"Batch processing complete!\n\n{total_images} images processed successfully."
             ))
+            
+            # Save the highest number that was actually generated for next session
+            highest_generated = self.auto_detect_highest_number()
+            if highest_generated is not None:
+                self.save_offset_to_config(highest_generated)
+                print(f"[INFO] Saved highest generated number {highest_generated} as next suggested offset")
             
         except Exception as e:
             error_msg = f"Error in process_images:\n{str(e)}\n\nType: {type(e).__name__}"
