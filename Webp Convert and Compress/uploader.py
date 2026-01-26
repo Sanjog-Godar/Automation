@@ -93,7 +93,7 @@ class R2Uploader(ctk.CTk):
         scrollable_frame._parent_canvas.configure(yscrollincrement=40)
         
         # Main container
-        main_frame = ctk.CTkFrame(scrollable_frame)
+        main_frame = ctk.CTkFrame(scrollable_frame) # type: ignore
         main_frame.pack(fill="both", expand=True, padx=0, pady=0)
         
         # Title
@@ -272,6 +272,35 @@ class R2Uploader(ctk.CTk):
             fg_color="#6b6b6b",
             hover_color="#4a4a4a"
         ).pack(side="left", padx=2)
+        
+        # Folder search/filter section
+        folder_search_frame = ctk.CTkFrame(r2_browser_frame)
+        folder_search_frame.pack(fill="x", padx=15, pady=(10, 10))
+        
+        ctk.CTkLabel(
+            folder_search_frame,
+            text="🔍 Filter folders:",
+            font=ctk.CTkFont(size=12, weight="bold")
+        ).pack(side="left", padx=(0, 8))
+        
+        self.folder_search_entry = ctk.CTkEntry(
+            folder_search_frame,
+            placeholder_text="Search folder names...",
+            width=300,
+            height=32
+        )
+        self.folder_search_entry.pack(side="left", padx=(0, 8))
+        self.folder_search_entry.bind("<KeyRelease>", lambda e: self._update_r2_folders_display())
+        
+        ctk.CTkButton(
+            folder_search_frame,
+            text="✕ Clear",
+            command=self.clear_folder_search,
+            height=32,
+            width=80,
+            fg_color="#6b6b6b",
+            hover_color="#4a4a4a"
+        ).pack(side="left")
         
         # Folders at current level
         self.r2_folders_frame = ctk.CTkScrollableFrame(
@@ -794,6 +823,11 @@ class R2Uploader(ctk.CTk):
         # Get folders at current level
         current_folders = self.get_folders_at_current_level()
         
+        # Apply search filter if any
+        search_term = self.folder_search_entry.get().strip().lower()
+        if search_term:
+            current_folders = [f for f in current_folders if search_term in f.lower()]
+        
         if not current_folders:
             empty_label = ctk.CTkLabel(
                 self.r2_folders_frame,
@@ -890,6 +924,11 @@ class R2Uploader(ctk.CTk):
     def go_to_root(self):
         """Navigate to root folder"""
         self.current_r2_path = ""
+        self._update_r2_folders_display()
+    
+    def clear_folder_search(self):
+        """Clear folder search filter"""
+        self.folder_search_entry.delete(0, "end")
         self._update_r2_folders_display()
 
     def confirm_delete_folder(self):
