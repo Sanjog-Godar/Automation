@@ -16,34 +16,44 @@ def run_ffmpeg():
 
     output = os.path.splitext(video)[0] + "_ULTRA_FAST.mp4"
 
-    # --- THE SPEED MAXIMIZED COMMAND ---
-    # 1. -vcodec h264_qsv: Uses Intel Hardware (QuickSync)
-    # 2. -preset veryfast: Uses the fastest hardware path
-    # 3. -look_ahead 0: Disables latency-heavy analysis
-    # 4. -c:a copy: Still the king of speed (instant audio)
-    
-    cmd = [
-        FFMPEG_PATH, "-y",
-        "-i", video,
-        "-i", image,
-        "-filter_complex", "overlay=10:10", 
-        "-vcodec", "h264_qsv",  # INTEL HARDWARE ACCELERATION
-        "-preset", "veryfast",  # MAX SPEED FOR HARDWARE
-        "-look_ahead", "0",     # REDUCE LATENCY
-        "-c:a", "copy",         # INSTANT AUDIO
-        output
+    # --- TRY MULTIPLE HARDWARE ENCODERS ---
+    # Priority: NVIDIA (h264_nvenc) → AMD (h264_amf) → Intel (h264_qsv) → CPU (libx264)
+    encoders = [
+        ("h264_nvenc", "NVIDIA GPU"),
+        ("h264_amf", "AMD GPU"),
+        ("h264_qsv", "Intel QuickSync"),
+        ("libx264", "CPU (Fallback)")
     ]
-
-    try:
-        # Show progress in a separate console so it doesn't slow down the GUI
-        subprocess.run(cmd, check=True, creationflags=0x00000010)
-        messagebox.showinfo("Success", f"Finished! Video saved as:\n{output}")
-    except Exception as e:
-        # FALLBACK: If your specific Intel driver doesn't support QSV, it uses CPU ultrafast
-        messagebox.showwarning("Notice", "Hardware boost failed, using CPU fallback...")
-        cmd[7] = "libx264" # Change encoder to CPU
-        cmd[9] = "ultrafast"
-        subprocess.run(cmd, check=True, creationflags=0x00000010)
+    
+    for encoder, name in encoders:
+        cmd = [
+            FFMPEG_PATH, "-y",
+            "-fflags", "+genpts",
+            "-i", video,
+            "-i", image,
+            "-filter_complex", "overlay=(W-w)/2:50", 
+            "-vcodec", encoder,
+        ]
+        
+        if encoder == "libx264":
+            cmd.extend(["-preset", "ultrafast"])
+        else:
+            cmd.extend(["-preset", "veryfast", "-look_ahead", "0"])
+        
+        cmd.extend(["-vsync", "cfr", "-c:a", "copy", output])
+        
+        try:
+            result = subprocess.run(cmd, check=True, creationflags=0x00000010)
+            messagebox.showinfo("Success", f"Finished with {name}!\nVideo saved as:\n{output}")
+            return
+        except subprocess.CalledProcessError as e:
+            print(f"❌ {name} failed")
+            continue
+        except Exception as e:
+            print(f"❌ {name} error: {str(e)}")
+            continue
+    
+    messagebox.showerror("Error", "All encoders failed!\n\nCheck the Python console for details.\nFFmpeg path might be incorrect.")
 
 # --- SIMPLE GUI ---
 root = tk.Tk()
