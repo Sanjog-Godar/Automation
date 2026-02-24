@@ -48,11 +48,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET - Fetch all fuel bills, ordered by end_date descending
+// GET - Fetch all fuel bills or last bill date
 export async function GET(req: NextRequest) {
   const supabase = supabaseServerClient();
+  const url = new URL(req.url);
+  const type = url.searchParams.get('type');
 
   try {
+    // If requesting last bill date only
+    if (type === 'last-date') {
+      const { data, error } = await supabase
+        .from('last_fuel_bill_date')
+        .select('last_bill_date')
+        .eq('id', 1)
+        .single();
+      
+      if (error) {
+        console.error('Supabase fetch last bill date error', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      
+      return NextResponse.json({ data }, { status: 200 });
+    }
+
+    // Fetch all fuel bills, ordered by end_date descending
     const { data, error } = await supabase
       .from('fuel_bills')
       .select('*')
@@ -70,14 +89,35 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH - Update fuel bill dates
+// PATCH - Update fuel bill dates or last bill date
 export async function PATCH(req: NextRequest) {
   const supabase = supabaseServerClient();
 
   try {
     const body = await req.json();
-    const { id, start_date, end_date } = body;
+    const { id, start_date, end_date, last_bill_date } = body;
 
+    // If updating the last_fuel_bill_date table directly
+    if (last_bill_date !== undefined) {
+      const { data, error } = await supabase
+        .from('last_fuel_bill_date')
+        .update({ 
+          last_bill_date,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase update last bill date error', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ data }, { status: 200 });
+    }
+
+    // Otherwise, update a specific fuel bill
     if (!id) {
       return NextResponse.json(
         { error: 'id is required' },
@@ -107,6 +147,21 @@ export async function PATCH(req: NextRequest) {
     if (error) {
       console.error('Supabase update error', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // If end_date was updated, also update the last_fuel_bill_date table
+    if (end_date) {
+      const { error: updateError } = await supabase
+        .from('last_fuel_bill_date')
+        .update({ 
+          last_bill_date: end_date,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+      
+      if (updateError) {
+        console.error('Error updating last fuel bill date:', updateError);
+      }
     }
 
     return NextResponse.json({ data }, { status: 200 });

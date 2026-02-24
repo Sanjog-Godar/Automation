@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AttendanceLog, AttendanceStatus, FuelBill } from "@/lib/attendance";
 import { calculateMonthlySummary, DAILY_WAGE, REPLACEMENT_DEDUCTION } from "@/lib/attendance";
@@ -169,6 +169,39 @@ async function updateFuelBill(id: number, updates: { start_date?: string; end_da
   }
   const json = await res.json();
   return json.data as FuelBill;
+}
+
+async function fetchLastBillDate(): Promise<string> {
+  const res = await fetch(`${FUEL_BILLS_API}?type=last-date`);
+  if (!res.ok) {
+    let message = "Failed to fetch last bill date";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
+  }
+  const json = await res.json();
+  return json.data?.last_bill_date || "2026-01-15";
+}
+
+async function updateLastBillDate(last_bill_date: string): Promise<void> {
+  const res = await fetch(FUEL_BILLS_API, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ last_bill_date }),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to update last bill date";
+    try {
+      const json = await res.json();
+      if (json?.error) message = json.error as string;
+    } catch {}
+    throw new Error(message);
+  }
 }
 
 interface DayCardProps {
@@ -361,7 +394,8 @@ export function MonthlyAttendanceClient() {
   const [showKmListModal, setShowKmListModal] = useState(false);
 
   const [isEditingStartDate, setIsEditingStartDate] = useState(false);
-  const [lockedStartDate, setLockedStartDate] = useState<string | null>(null);
+  const [isEditingLastBillDate, setIsEditingLastBillDate] = useState(false);
+  const [tempLastBillDate, setTempLastBillDate] = useState("");
 
   const [toast, setToast] = useState({
     message: '',
@@ -434,6 +468,13 @@ export function MonthlyAttendanceClient() {
     staleTime: 30000,
   });
 
+  // Fetch last bill date from dedicated table
+  const { data: lastBillDateFromDB } = useQuery({
+    queryKey: ["lastBillDate"],
+    queryFn: fetchLastBillDate,
+    staleTime: 30000,
+  });
+
   const mutation = useMutation({
     mutationFn: upsertAttendance,
     onMutate: async (newLog: AttendanceLog) => {
@@ -495,6 +536,34 @@ export function MonthlyAttendanceClient() {
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Failed to create fuel bill";
       showToast(`Fuel bill failed: ${message}`, 'फ्युल बिल बनाउन समस्या आयो');
+    },
+  });
+
+  const updateFuelBillMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: { start_date?: string; end_date?: string } }) => 
+      updateFuelBill(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fuelBills"] });
+      queryClient.invalidateQueries({ queryKey: ["lastBillDate"] });
+      setIsEditingLastBillDate(false);
+    },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : "Failed to update fuel bill";
+      showToast(`Update failed: ${message}`, 'अपडेट गर्दा समस्या आयो');
+    },
+  });
+
+  const updateLastBillDateMutation = useMutation({
+    mutationFn: updateLastBillDate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lastBillDate"] });
+      queryClient.invalidateQueries({ queryKey: ["fuelBills"] });
+      setIsEditingLastBillDate(false);
+      showToast('Last bill date updated successfully', 'पछिल्लो बिल मिति अपडेट भयो');
+    },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : "Failed to update last bill date";
+      showToast(`Update failed: ${message}`, 'अपडेट गर्दा समस्या आयो');
     },
   });
 
@@ -724,21 +793,16 @@ export function MonthlyAttendanceClient() {
   };
 
   const handleOpenFuelBill = () => {
-    // Use locked date if available, otherwise calculate from last bill
-    let startDate: string;
+    // Get the last bill's end_date or default to "2026-01-15"
+    const lastBillEndDate = fuelBills.length > 0 ? fuelBills[0].end_date : "2026-01-15";
     
-    if (lockedStartDate) {
-      // Use the previously locked/edited date
-      startDate = lockedStartDate;
-    } else {
-      // Get the last bill's end_date or default to "2026-01-15"
-      const lastBillEndDate = fuelBills.length > 0 ? fuelBills[0].end_date : "2026-01-15";
-      
-      // Calculate next day after last bill
-      const lastDate = new Date(lastBillEndDate);
-      lastDate.setDate(lastDate.getDate() + 1);
-      startDate = lastDate.toISOString().slice(0, 10);
-    }
+    // Set temp last bill date for editing
+    setTempLastBillDate(lastBillEndDate);
+    
+    // Calculate next day after last bill
+    const lastDate = new Date(lastBillEndDate);
+    lastDate.setDate(lastDate.getDate() + 1);
+    const startDate = lastDate.toISOString().slice(0, 10);
     
     // Default end date is today
     const today = new Date();
@@ -780,14 +844,24 @@ export function MonthlyAttendanceClient() {
     });
     
     setFuelBillModal(null);
+    setIsEditingStartDate(false);
+    setIsEditingLastBillDate(false);
   };
 
   const handleFuelBillCancel = () => {
     setFuelBillModal(null);
     setIsEditingStartDate(false);
+    setIsEditingLastBillDate(false);
   };
 
-  // Calculate KM for fuel bill modal
+  const handleUpdateLastBillDate = () => {
+    if (!tempLastBillDate) return;
+    
+    // Update the last bill date in the dedicated table
+    updateLastBillDateMutation.mutate(tempLastBillDate);
+  };
+
+  // Calculate KM for fuel bill modal - recalculates when dates change
   const fuelBillCalculatedKm = useMemo(() => {
     if (!fuelBillModal) return { totalKm: 0, expectedLiters: 0 };
     
@@ -809,6 +883,28 @@ export function MonthlyAttendanceClient() {
       expectedLiters: Number(expectedLiters.toFixed(2)),
     };
   }, [fuelBillModal, fullMonthLogs]);
+
+  // Auto-update start date when last bill date changes
+  useEffect(() => {
+    if (fuelBillModal && tempLastBillDate) {
+      const lastDate = new Date(tempLastBillDate);
+      lastDate.setDate(lastDate.getDate() + 1);
+      const newStartDate = lastDate.toISOString().slice(0, 10);
+      
+      if (newStartDate !== fuelBillModal.start_date) {
+        setFuelBillModal(prev => prev ? { ...prev, start_date: newStartDate } : prev);
+      }
+    }
+  }, [tempLastBillDate, fuelBillModal]);
+
+  // Sync tempLastBillDate with database when last bill date is fetched
+  useEffect(() => {
+    if (lastBillDateFromDB && !isEditingLastBillDate) {
+      if (lastBillDateFromDB !== tempLastBillDate) {
+        setTempLastBillDate(lastBillDateFromDB);
+      }
+    }
+  }, [lastBillDateFromDB, isEditingLastBillDate, tempLastBillDate]);
 
   const handleDownloadPDF = () => {
     try {
@@ -1041,11 +1137,45 @@ export function MonthlyAttendanceClient() {
       doc.setFontSize(9);
       doc.text("Calculated by earning from total present days - Replace Days", 14, yPos);
       
+      // TDS Calculation Section
+      yPos += 10;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Final Settlement", 14, yPos);
+      
       yPos += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      
+      // Calculate TDS (1.5% of total earning)
+      const TDS_RATE = 0.015; // 1.5%
+      const tdsAmount = Math.round(totalEarning * TDS_RATE);
+      const totalBeforeTDS = totalEarning + calculatedTipsTotal + summaryUpToToday.totalExtraIncome;
+      const finalTotal = totalBeforeTDS - tdsAmount;
+      
+      // Display breakdown
+      doc.text("Total Earning (from attendance): Rs " + String(totalEarning), 14, yPos);
+      yPos += 6;
+      doc.text("Extra Tips: Rs " + String(calculatedTipsTotal), 14, yPos);
+      yPos += 6;
+      if (summaryUpToToday.totalExtraIncome > 0) {
+        doc.text("Extra Trip Income: Rs " + String(summaryUpToToday.totalExtraIncome), 14, yPos);
+        yPos += 6;
+      }
+      doc.text("Gross Total: Rs " + String(totalBeforeTDS), 14, yPos);
+      yPos += 8;
+      
+      // TDS Deduction with red color
+      doc.setTextColor(220, 38, 38); // Red color for deduction
+      doc.text("Less: TDS @ 1.5%: Rs " + String(tdsAmount), 14, yPos);
+      doc.setTextColor(0, 0, 0); // Reset to black
+      
+      yPos += 10;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
-      const finalTotal = totalEarning + calculatedTipsTotal + summaryUpToToday.totalExtraIncome;
-      doc.text("Net Income: Rs " + String(finalTotal), 14, yPos);
+      doc.setTextColor(22, 163, 74); // Green color for net income
+      doc.text("Net Income (After TDS): Rs " + String(finalTotal), 14, yPos);
+      doc.setTextColor(0, 0, 0); // Reset to black
       
       // Footer
       doc.setFontSize(8);
@@ -1151,6 +1281,69 @@ export function MonthlyAttendanceClient() {
             </button>
           </div>
         </header>
+
+        {/* Last Fuel Bill Date Card */}
+        <section className="mb-4 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-4 shadow-md">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">📅</span>
+                <h3 className="text-base font-bold text-gray-800">Last Fuel Bill End Date</h3>
+              </div>
+              <p className="text-xs text-gray-600 mb-3">
+                The last date your previous fuel bill ended. Next bill starts from the day after this date.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <input
+                  type="date"
+                  value={tempLastBillDate || lastBillDateFromDB || "2026-01-15"}
+                  onChange={(e) => setTempLastBillDate(e.target.value)}
+                  readOnly={!isEditingLastBillDate}
+                  className={`flex-1 max-w-xs rounded-lg border px-3 py-2 text-sm font-medium ${
+                    isEditingLastBillDate
+                      ? 'border-orange-400 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500'
+                      : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
+                  }`}
+                />
+                
+                {!isEditingLastBillDate ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempLastBillDate(lastBillDateFromDB || "2026-01-15");
+                      setIsEditingLastBillDate(true);
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-orange-700 bg-white border-2 border-orange-300 rounded-lg hover:bg-orange-50 transition-colors shadow-sm"
+                  >
+                    ✏️ Edit Date
+                  </button>
+                ) : (
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={handleUpdateLastBillDate}
+                      disabled={updateLastBillDateMutation.isPending}
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {updateLastBillDateMutation.isPending ? '⏳ Saving...' : '💾 Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempLastBillDate(lastBillDateFromDB || "2026-01-15");
+                        setIsEditingLastBillDate(false);
+                      }}
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      ✖️ Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="mb-4 rounded-lg bg-white p-3 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-800 mb-2">
@@ -1423,51 +1616,61 @@ export function MonthlyAttendanceClient() {
               <h3 className="mb-3 text-lg font-bold text-gray-900">
                 ⛽ Generate Fuel Bill
               </h3>
-              <p className="mb-4 text-sm text-gray-600">
-                Calculate fuel consumption based on kilometers run.
-              </p>
-              
+              {/* Last Bill End Date - Editable */}
               <div className="mb-3 flex flex-col gap-1">
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-sm font-medium text-gray-700">Last Bill Date (Auto-set)</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isEditingStartDate && fuelBillModal) {
-                        // Locking: save the current edited date
-                        setLockedStartDate(fuelBillModal.start_date);
-                      }
-                      setIsEditingStartDate(!isEditingStartDate);
-                    }}
-                    className="text-xs font-medium text-orange-600 hover:text-orange-700 px-2 py-1 rounded border border-orange-300 hover:bg-orange-50"
-                  >
-                    {isEditingStartDate ? '🔒 Lock' : '✏️ Edit'}
-                  </button>
+                  <label className="text-sm font-medium text-gray-700">Last Bill Ended On</label>
+                  {!isEditingLastBillDate ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingLastBillDate(true)}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700 px-2 py-1 rounded border border-blue-300 hover:bg-blue-50"
+                    >
+                      ✏️ Edit
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleUpdateLastBillDate}
+                      disabled={updateFuelBillMutation.isPending}
+                      className="text-xs font-medium text-green-600 hover:text-green-700 px-2 py-1 rounded border border-green-300 hover:bg-green-50 disabled:opacity-50"
+                    >
+                      {updateFuelBillMutation.isPending ? 'Saving...' : '💾 Save'}
+                    </button>
+                  )}
                 </div>
                 <input
                   type="date"
-                  value={fuelBillModal.start_date}
-                  onChange={(e) =>
-                    setFuelBillModal((prev) =>
-                      prev
-                        ? { ...prev, start_date: e.target.value }
-                        : prev
-                    )
-                  }
-                  readOnly={!isEditingStartDate}
+                  value={tempLastBillDate}
+                  onChange={(e) => setTempLastBillDate(e.target.value)}
+                  readOnly={!isEditingLastBillDate}
                   className={`w-full rounded border px-3 py-2 text-sm ${
-                    isEditingStartDate
-                      ? 'border-orange-400 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500'
-                      : 'border-gray-300 bg-gray-50 text-gray-600 cursor-not-allowed'
+                    isEditingLastBillDate
+                      ? 'border-blue-400 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                      : 'border-gray-300 bg-gray-100 text-gray-600 cursor-not-allowed'
                   }`}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {isEditingStartDate ? 'Edit to correct any previous mistake' : lockedStartDate ? 'Locked at your edited date' : 'Automatically set based on previous bill'}
+                  {isEditingLastBillDate ? 'Edit if the previous bill end date was wrong' : 'Previous bill ended on this date'}
+                </p>
+              </div>
+
+              {/* Bill Start Date - Auto-calculated from last bill */}
+              <div className="mb-3 flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Bill Start Date (From)</label>
+                <input
+                  type="date"
+                  value={fuelBillModal.start_date}
+                  readOnly
+                  className="w-full rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-calculated as day after last bill (edit last bill date to change this)
                 </p>
               </div>
 
               <div className="mb-3 flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Bill End Date</label>
+                <label className="text-sm font-medium text-gray-700">Bill End Date (To)</label>
                 <input
                   type="date"
                   value={fuelBillModal.end_date}
@@ -1676,6 +1879,71 @@ export function MonthlyAttendanceClient() {
             <h3 className="text-lg font-bold mb-4 text-gray-800">
               Fuel Bill Records / ईंधन बिल रेकर्ड
             </h3>
+            
+            {/* Last Bill Date Card */}
+            <div className="mb-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-300 rounded-xl p-4 sm:p-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">📅</span>
+                    <h4 className="text-base font-bold text-gray-800">Last Fuel Bill End Date</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">
+                    This is the last date your previous fuel bill ended. Edit it if there was a mistake.
+                  </p>
+                  
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="date"
+                      value={tempLastBillDate || fuelBills[0].end_date}
+                      onChange={(e) => setTempLastBillDate(e.target.value)}
+                      readOnly={!isEditingLastBillDate}
+                      className={`flex-1 max-w-xs rounded-lg border px-3 py-2.5 text-sm font-medium ${
+                        isEditingLastBillDate
+                          ? 'border-orange-400 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500'
+                          : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
+                      }`}
+                    />
+                    
+                    {!isEditingLastBillDate ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempLastBillDate(fuelBills[0].end_date);
+                          setIsEditingLastBillDate(true);
+                        }}
+                        className="px-4 py-2.5 text-sm font-semibold text-orange-700 bg-white border-2 border-orange-300 rounded-lg hover:bg-orange-50 transition-colors shadow-sm"
+                      >
+                        ✏️ Edit Date
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleUpdateLastBillDate}
+                          disabled={updateFuelBillMutation.isPending}
+                          className="px-4 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {updateFuelBillMutation.isPending ? '⏳ Saving...' : '💾 Save'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempLastBillDate(fuelBills[0].end_date);
+                            setIsEditingLastBillDate(false);
+                          }}
+                          className="px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                        >
+                          ✖️ Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fuel Bills Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
