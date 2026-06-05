@@ -19,13 +19,25 @@ class BGRremover(ctk.CTk):
 
         # ── Window Setup ──────────────────────────────────────
         self.title("AI Background Remover")
-        self.geometry("600x550")
-        self.resizable(False, False)
+        self.geometry("600x720")          # ← taller window
+        self.minsize(600, 720)            # ← prevent shrinking below content
+        self.resizable(True, False)       # ← allow vertical resize only
 
         # ── State Variables ───────────────────────────────────
         self.selected_folder = None
         self.is_processing = False
-        self.supported_formats = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
+
+        # ── Format Definitions ────────────────────────────────
+        self.transparency_formats = {
+            ".png", ".webp", ".tiff", ".tif", ".ico", ".tga"
+        }
+        self.opaque_formats = {
+            ".jpg", ".jpeg", ".bmp", ".gif", ".ppm",
+            ".pgm", ".pbm", ".pcx", ".sgi", ".dds"
+        }
+        self.supported_formats = tuple(
+            self.transparency_formats | self.opaque_formats
+        )
 
         # ── Build UI ──────────────────────────────────────────
         self._build_ui()
@@ -35,55 +47,70 @@ class BGRremover(ctk.CTk):
     # ============================================================
     def _build_ui(self):
 
+        # ── Main scrollable container ─────────────────────────
+        # Using a plain Frame so all widgets stack naturally and
+        # the Start button is always visible at the bottom.
+        main = ctk.CTkFrame(self, fg_color="transparent")
+        main.pack(fill="both", expand=True, padx=0, pady=0)
+
         # ── Title ─────────────────────────────────────────────
         ctk.CTkLabel(
-            self,
+            main,
             text="🖼️  AI Background Remover",
             font=ctk.CTkFont(size=24, weight="bold"),
-        ).pack(pady=(25, 5))
+        ).pack(pady=(20, 4))
 
         ctk.CTkLabel(
-            self,
+            main,
             text="Select a folder — all image backgrounds will be removed automatically",
             font=ctk.CTkFont(size=12),
             text_color=("gray40", "gray60"),
-        ).pack(pady=(0, 20))
+        ).pack(pady=(0, 4))
+
+        # ── Supported Formats Label ───────────────────────────
+        fmt_display = "  ".join(sorted(self.supported_formats))
+        ctk.CTkLabel(
+            main,
+            text=f"Supported: {fmt_display}",
+            font=ctk.CTkFont(size=10),
+            text_color=("gray50", "gray50"),
+            wraplength=540,
+            justify="center",
+        ).pack(pady=(0, 12))
 
         # ── Folder Selection Card ─────────────────────────────
-        folder_frame = ctk.CTkFrame(self, corner_radius=12)
-        folder_frame.pack(fill="x", padx=30, pady=(0, 15))
+        folder_frame = ctk.CTkFrame(main, corner_radius=12)
+        folder_frame.pack(fill="x", padx=30, pady=(0, 10))
 
         ctk.CTkLabel(
             folder_frame,
             text="📁  Selected Folder",
             font=ctk.CTkFont(size=13, weight="bold"),
-        ).pack(anchor="w", padx=15, pady=(12, 5))
+        ).pack(anchor="w", padx=15, pady=(10, 4))
 
-        # Folder path display box
         self.folder_path_box = ctk.CTkEntry(
             folder_frame,
             placeholder_text="No folder selected...",
-            height=38,
+            height=36,
             state="disabled",
             font=ctk.CTkFont(size=11),
         )
-        self.folder_path_box.pack(fill="x", padx=15, pady=(0, 5))
+        self.folder_path_box.pack(fill="x", padx=15, pady=(0, 4))
 
-        # Image count label
         self.image_count_label = ctk.CTkLabel(
             folder_frame,
             text="",
             font=ctk.CTkFont(size=11),
             text_color=("gray40", "gray60"),
         )
-        self.image_count_label.pack(anchor="w", padx=15, pady=(0, 12))
+        self.image_count_label.pack(anchor="w", padx=15, pady=(0, 10))
 
         # ── Browse Button ─────────────────────────────────────
         self.btn_browse = ctk.CTkButton(
-            self,
+            main,
             text="📂  Browse Folder",
             font=ctk.CTkFont(size=14, weight="bold"),
-            height=42,
+            height=40,
             width=220,
             corner_radius=10,
             command=self._browse_folder,
@@ -91,54 +118,53 @@ class BGRremover(ctk.CTk):
         self.btn_browse.pack(pady=(0, 10))
 
         # ── Progress Card ─────────────────────────────────────
-        progress_frame = ctk.CTkFrame(self, corner_radius=12)
-        progress_frame.pack(fill="x", padx=30, pady=(0, 15))
+        progress_frame = ctk.CTkFrame(main, corner_radius=12)
+        progress_frame.pack(fill="x", padx=30, pady=(0, 10))
 
         ctk.CTkLabel(
             progress_frame,
             text="📊  Progress",
             font=ctk.CTkFont(size=13, weight="bold"),
-        ).pack(anchor="w", padx=15, pady=(12, 5))
+        ).pack(anchor="w", padx=15, pady=(10, 4))
 
-        # Progress bar
         self.progress_bar = ctk.CTkProgressBar(
             progress_frame,
             height=16,
             corner_radius=8,
         )
-        self.progress_bar.pack(fill="x", padx=15, pady=(0, 6))
+        self.progress_bar.pack(fill="x", padx=15, pady=(0, 4))
         self.progress_bar.set(0)
 
-        # Progress text label
         self.progress_label = ctk.CTkLabel(
             progress_frame,
             text="Ready — waiting for folder selection",
             font=ctk.CTkFont(size=11),
             text_color=("gray40", "gray60"),
         )
-        self.progress_label.pack(pady=(0, 12))
+        self.progress_label.pack(pady=(0, 10))
 
         # ── Log Box ───────────────────────────────────────────
-        log_frame = ctk.CTkFrame(self, corner_radius=12)
-        log_frame.pack(fill="both", expand=True, padx=30, pady=(0, 15))
+        log_frame = ctk.CTkFrame(main, corner_radius=12)
+        log_frame.pack(fill="both", expand=True, padx=30, pady=(0, 10))
 
         ctk.CTkLabel(
             log_frame,
             text="📋  Log",
             font=ctk.CTkFont(size=13, weight="bold"),
-        ).pack(anchor="w", padx=15, pady=(12, 5))
+        ).pack(anchor="w", padx=15, pady=(10, 4))
 
         self.log_box = ctk.CTkTextbox(
             log_frame,
             font=ctk.CTkFont(family="Consolas", size=11),
             corner_radius=8,
-            height=120,
+            height=130,            # fixed height — frame expands around it
         )
-        self.log_box.pack(fill="both", expand=True, padx=15, pady=(0, 12))
+        self.log_box.pack(fill="both", expand=True, padx=15, pady=(0, 10))
 
         # ── Start Button ──────────────────────────────────────
+        # Packed LAST so it is always at the bottom and fully visible
         self.btn_start = ctk.CTkButton(
-            self,
+            main,
             text="🚀  Remove All Backgrounds",
             font=ctk.CTkFont(size=15, weight="bold"),
             height=46,
@@ -149,7 +175,7 @@ class BGRremover(ctk.CTk):
             hover_color=("#27ae60", "#1e8449"),
             command=self._start_processing,
         )
-        self.btn_start.pack(pady=(0, 20))
+        self.btn_start.pack(pady=(0, 18))   # ← always visible at bottom
 
     # ============================================================
     # FOLDER BROWSING
@@ -157,21 +183,18 @@ class BGRremover(ctk.CTk):
     def _browse_folder(self):
         """Open folder dialog and scan for images."""
         folder = filedialog.askdirectory(title="Select Folder Containing Images")
-
         if not folder:
             return
 
         self.selected_folder = folder
 
-        # ── Show path in entry ────────────────────────────────
         self.folder_path_box.configure(state="normal")
         self.folder_path_box.delete(0, "end")
         self.folder_path_box.insert(0, folder)
         self.folder_path_box.configure(state="disabled")
 
-        # ── Count images ──────────────────────────────────────
         images = self._get_images(folder)
-        count = len(images)
+        count  = len(images)
 
         if count == 0:
             self.image_count_label.configure(
@@ -182,34 +205,39 @@ class BGRremover(ctk.CTk):
             self._log(f"⚠️  No images found in: {folder}")
         else:
             self.image_count_label.configure(
-                text=f"✅  {count} image(s) found  "
-                     f"({', '.join(self.supported_formats)})",
+                text=f"✅  {count} image(s) found",
                 text_color=("gray40", "gray60"),
             )
             self.btn_start.configure(state="normal")
             self._log(f"📁 Folder selected: {folder}")
             self._log(f"   Found {count} image(s) ready to process")
+            self._log_format_breakdown(images)
 
-        # Reset progress
         self.progress_bar.set(0)
         self.progress_label.configure(
             text=f"{count} image(s) found — click 'Remove All Backgrounds'"
         )
 
+    def _log_format_breakdown(self, images: list):
+        counts: dict[str, int] = {}
+        for path in images:
+            ext = os.path.splitext(path)[1].lower()
+            counts[ext] = counts.get(ext, 0) + 1
+        parts = [f"{ext}: {n}" for ext, n in sorted(counts.items())]
+        self._log(f"   Format breakdown → {',  '.join(parts)}")
+
     # ============================================================
     # PROCESSING
     # ============================================================
     def _start_processing(self):
-        """Validate and start the background removal thread."""
         if self.is_processing or not self.selected_folder:
             return
 
         images = self._get_images(self.selected_folder)
         if not images:
-            messagebox.showwarning("No Images", "No supported images found in the folder.")
+            messagebox.showwarning("No Images", "No supported images found.")
             return
 
-        # Disable buttons during processing
         self.is_processing = True
         self.btn_start.configure(state="disabled", text="⏳  Processing...")
         self.btn_browse.configure(state="disabled")
@@ -219,82 +247,59 @@ class BGRremover(ctk.CTk):
         self._log(f"🚀 Starting: {len(images)} image(s) to process")
         self._log(f"{'─' * 40}")
 
-        # Start thread
         threading.Thread(
             target=self._process_all_images,
             args=(images,),
             daemon=True,
         ).start()
 
-    # ----------------------------------------------------------
     def _process_all_images(self, images: list):
-        """
-        Worker thread:
-        - Removes background from each image
-        - Saves back to the SAME path with SAME filename
-        - Only converts to PNG if the file is .jpg/.jpeg/.bmp
-          (since those formats don't support transparency)
-        """
-        total = len(images)
-        failed = []
+        total   = len(images)
+        failed  = []
         success = 0
 
         for idx, img_path in enumerate(images, start=1):
-
-            filename = os.path.basename(img_path)
+            filename  = os.path.basename(img_path)
             name, ext = os.path.splitext(filename)
             ext_lower = ext.lower()
 
-            # ── Determine save path ───────────────────────────
-            # PNG/WEBP support transparency → keep same name & extension
-            # JPG/BMP do NOT support transparency → save as PNG (same name)
-            if ext_lower in (".jpg", ".jpeg", ".bmp"):
-                # Replace extension with .png, same folder, same base name
-                save_path = os.path.join(
-                    os.path.dirname(img_path), f"{name}.png"
-                )
-            else:
-                # .png / .webp — overwrite in place
-                save_path = img_path
+            needs_conversion = ext_lower in self.opaque_formats
+            save_path = (
+                os.path.join(os.path.dirname(img_path), f"{name}.png")
+                if needs_conversion else img_path
+            )
 
             self._log(f"🔄 [{idx}/{total}] {filename}")
 
             try:
-                # ── Read image bytes ──────────────────────────
-                with open(img_path, "rb") as f:
-                    input_data = f.read()
+                with open(img_path, "rb") as fh:
+                    input_bytes = fh.read()
 
-                # ── Remove background ─────────────────────────
-                output_data = rembg.remove(input_data)
-
-                # ── Open result & ensure RGBA ─────────────────
-                output_img = Image.open(io.BytesIO(output_data)).convert("RGBA")
-
-                # ── Save to same location ─────────────────────
+                output_bytes = rembg.remove(input_bytes)
+                output_img   = Image.open(io.BytesIO(output_bytes)).convert("RGBA")
                 output_img.save(save_path, format="PNG")
 
-                # ── If original was JPG/BMP, remove old file ──
-                if ext_lower in (".jpg", ".jpeg", ".bmp") and save_path != img_path:
+                if needs_conversion and save_path != img_path:
                     os.remove(img_path)
-                    self._log(f"   ✅ Saved as PNG (was {ext_lower}): {os.path.basename(save_path)}")
+                    self._log(
+                        f"   ✅ Converted {ext_lower} → .png  "
+                        f"({os.path.basename(save_path)})"
+                    )
                 else:
                     self._log(f"   ✅ Done → {filename}")
 
                 success += 1
 
-            except Exception as e:
-                self._log(f"   ❌ Failed: {filename} — {e}")
+            except Exception as exc:
+                self._log(f"   ❌ Failed: {filename} — {exc}")
                 failed.append(filename)
 
-            # ── Update progress bar ───────────────────────────
-            progress = idx / total
-            self.after(0, self._update_progress, progress, idx, total)
+            self.after(0, self._update_progress, idx / total, idx, total)
 
-        # ── Notify completion ──────────────────────────────────
         self.after(0, self._on_done, success, failed, total)
 
     # ============================================================
-    # UI UPDATE CALLBACKS  (safe — run on main thread via after())
+    # UI CALLBACKS
     # ============================================================
     def _update_progress(self, value: float, done: int, total: int):
         self.progress_bar.set(value)
@@ -303,7 +308,6 @@ class BGRremover(ctk.CTk):
         )
 
     def _on_done(self, success: int, failed: list, total: int):
-        """Re-enable UI and show summary."""
         self.is_processing = False
         self.btn_start.configure(state="normal", text="🚀  Remove All Backgrounds")
         self.btn_browse.configure(state="normal")
@@ -315,11 +319,11 @@ class BGRremover(ctk.CTk):
         self._log(f"\n{'─' * 40}")
         self._log(f"🎉 Finished!  ✅ {success} OK   ❌ {len(failed)} failed")
         if failed:
-            for f in failed:
-                self._log(f"   • {f}")
+            for name in failed:
+                self._log(f"   • {name}")
         self._log(f"{'─' * 40}\n")
 
-        if len(failed) == 0:
+        if not failed:
             messagebox.showinfo(
                 "✅ All Done!",
                 f"Successfully processed all {success} image(s)!\n\n"
@@ -328,24 +332,23 @@ class BGRremover(ctk.CTk):
         else:
             messagebox.showwarning(
                 "Done with Errors",
-                f"✅ Processed: {success}\n"
-                f"❌ Failed:    {len(failed)}\n\n"
+                f"✅ Processed: {success}\n❌ Failed: {len(failed)}\n\n"
                 f"Check the log for details.",
             )
 
     # ============================================================
-    # UTILITY HELPERS
+    # HELPERS
     # ============================================================
     def _get_images(self, folder: str) -> list:
-        """Return sorted list of supported image paths in folder."""
-        files = []
-        for f in sorted(os.listdir(folder)):
-            if f.lower().endswith(self.supported_formats):
-                files.append(os.path.join(folder, f))
-        return files
+        results = []
+        for entry in sorted(os.listdir(folder)):
+            if os.path.splitext(entry)[1].lower() in self.supported_formats:
+                full = os.path.join(folder, entry)
+                if os.path.isfile(full):
+                    results.append(full)
+        return results
 
     def _log(self, message: str):
-        """Thread-safe log append."""
         def _insert():
             self.log_box.insert("end", message + "\n")
             self.log_box.see("end")
