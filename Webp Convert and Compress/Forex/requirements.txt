@@ -1,0 +1,8 @@
+# Core dependencies for the Forex Price Action / Liquidity Analyzer
+pandas>=1.3.0
+numpy>=1.21.0
+plotly>=5.0.0
+dash>=2.0.0
+
+# Yahoo Finance data downloader.
+yfinance>=0.2.36
