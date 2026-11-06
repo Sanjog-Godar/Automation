@@ -203,6 +203,16 @@ void main() {
             nepaliMessage: any(named: 'nepaliMessage'),
           )).called(1);
     });
+
+    test('AttendanceController can be rebuilt/refreshed without LateInitializationError', () {
+      final container = createContainer([]);
+      // First read triggers build()
+      expect(container.read(attendanceControllerProvider), isNotNull);
+
+      // Refresh triggers build() again
+      expect(() => container.refresh(attendanceControllerProvider), returnsNormally);
+      expect(container.read(attendanceControllerProvider), isNotNull);
+    });
   });
 }
 

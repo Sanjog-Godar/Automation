@@ -1,0 +1,802 @@
+{
+  "@@locale": "en",
+
+  "app_name": "Vehicle Attendance",
+  "@app_name": {
+    "description": "Application display title"
+  },
+  "common_language_selector_label": "Language / भाषा",
+  "@common_language_selector_label": {
+    "description": "Bilingual language header in sidebar drawer"
+  },
+  "common_english": "English",
+  "@common_english": {
+    "description": "English language option"
+  },
+  "common_nepali": "नेपाली",
+  "@common_nepali": {
+    "description": "Nepali language option in Devanagari"
+  },
+  "common_cancel": "Cancel",
+  "@common_cancel": {
+    "description": "Generic Cancel button"
+  },
+  "common_save": "Save",
+  "@common_save": {
+    "description": "Generic Save button"
+  },
+  "common_edit": "Edit",
+  "@common_edit": {
+    "description": "Generic Edit button"
+  },
+  "common_close": "Close",
+  "@common_close": {
+    "description": "Generic Close button"
+  },
+  "common_add": "+ Add",
+  "@common_add": {
+    "description": "Generic Add action"
+  },
+  "common_loading": "Loading...",
+  "@common_loading": {
+    "description": "Generic Loading text"
+  },
+  "common_saving": "Saving...",
+  "@common_saving": {
+    "description": "Generic Saving text"
+  },
+  "common_currency_rs": "Rs.",
+  "@common_currency_rs": {
+    "description": "Currency prefix"
+  },
+  "common_unit_km": "km",
+  "@common_unit_km": {
+    "description": "Kilometer unit abbreviation"
+  },
+  "common_unit_liters": "Liters",
+  "@common_unit_liters": {
+    "description": "Fuel volume unit"
+  },
+  "common_unit_l": "L",
+  "@common_unit_l": {
+    "description": "Short fuel volume abbreviation"
+  },
+
+  "auth_login_title": "Vehicle Attendance",
+  "@auth_login_title": {
+    "description": "Title on login card"
+  },
+  "auth_login_subtitle": "Sign in to access your dashboard",
+  "@auth_login_subtitle": {
+    "description": "Subtitle on login card"
+  },
+  "auth_login_emailLabel": "Email Address",
+  "@auth_login_emailLabel": {
+    "description": "Label for email field"
+  },
+  "auth_login_emailHint": "your@email.com",
+  "@auth_login_emailHint": {
+    "description": "Hint text for email field"
+  },
+  "auth_login_emailRequired": "Email is required",
+  "@auth_login_emailRequired": {
+    "description": "Validation message when email is empty"
+  },
+  "auth_login_emailInvalid": "Enter a valid email address",
+  "@auth_login_emailInvalid": {
+    "description": "Validation message when email is malformed"
+  },
+  "auth_login_passwordLabel": "Password",
+  "@auth_login_passwordLabel": {
+    "description": "Label for password field"
+  },
+  "auth_login_passwordHint": "••••••••",
+  "@auth_login_passwordHint": {
+    "description": "Hint text for password field"
+  },
+  "auth_login_passwordRequired": "Password is required",
+  "@auth_login_passwordRequired": {
+    "description": "Validation message when password is empty"
+  },
+  "auth_login_passwordMinLength": "Password must be at least 6 characters",
+  "@auth_login_passwordMinLength": {
+    "description": "Validation message when password is too short"
+  },
+  "auth_login_rememberMe": "Remember me",
+  "@auth_login_rememberMe": {
+    "description": "Label for remember me checkbox"
+  },
+  "auth_login_signInButton": "Sign in",
+  "@auth_login_signInButton": {
+    "description": "Login submit button text"
+  },
+  "auth_login_signingInButton": "Signing in...",
+  "@auth_login_signingInButton": {
+    "description": "Login submit button text when loading"
+  },
+
+  "dashboard_appbar_subtitle": "{monthName} {year} ({englishRange})",
+  "@dashboard_appbar_subtitle": {
+    "description": "Subtitle in top AppBar with month and year",
+    "placeholders": {
+      "monthName": { "type": "String" },
+      "year": { "type": "String" },
+      "englishRange": { "type": "String" }
+    }
+  },
+  "dashboard_drawer_title": "Vehicle Attendance System",
+  "@dashboard_drawer_title": {
+    "description": "Header title inside navigation drawer"
+  },
+  "dashboard_drawer_nav_dashboard": "Dashboard",
+  "@dashboard_drawer_nav_dashboard": {
+    "description": "Drawer navigation item for dashboard"
+  },
+  "dashboard_drawer_nav_fuelBills": "Fuel Bill Records",
+  "@dashboard_drawer_nav_fuelBills": {
+    "description": "Drawer navigation item for fuel bills"
+  },
+  "dashboard_drawer_nav_downloadReport": "Download Report (PDF)",
+  "@dashboard_drawer_nav_downloadReport": {
+    "description": "Drawer navigation item for report export"
+  },
+  "dashboard_drawer_nav_signOut": "Sign Out",
+  "@dashboard_drawer_nav_signOut": {
+    "description": "Drawer navigation item to log out"
+  },
+  "dashboard_signOut_dialogTitle": "Sign Out",
+  "@dashboard_signOut_dialogTitle": {
+    "description": "Title of sign out confirmation dialog"
+  },
+  "dashboard_signOut_dialogMessage": "Are you sure you want to sign out of the vehicle attendance system?",
+  "@dashboard_signOut_dialogMessage": {
+    "description": "Body message of sign out confirmation dialog"
+  },
+
+  "summary_card_title": "Monthly Summary",
+  "@summary_card_title": {
+    "description": "Header title of the monthly summary card"
+  },
+  "summary_presentDays": "Present Days",
+  "@summary_presentDays": {
+    "description": "Metric tile label for present days"
+  },
+  "summary_extraTips": "Extra Tips (Rs.)",
+  "@summary_extraTips": {
+    "description": "Metric tile label for extra tips"
+  },
+  "summary_replacementDays": "Replacement Days",
+  "@summary_replacementDays": {
+    "description": "Metric tile label for replacement days"
+  },
+  "summary_totalKm": "Total KM Run",
+  "@summary_totalKm": {
+    "description": "Metric tile label for total kilometers"
+  },
+  "summary_extraTrips": "Extra Trips (Rs.)",
+  "@summary_extraTrips": {
+    "description": "Metric tile label for extra trips income"
+  },
+  "summary_deductions": "Deductions (Rs.)",
+  "@summary_deductions": {
+    "description": "Metric tile label for deductions"
+  },
+  "summary_netIncome": "Net Income (Rs.)",
+  "@summary_netIncome": {
+    "description": "Label for prominent net income metric"
+  },
+  "summary_netIncomeFormula": "Earnings - Deductions",
+  "@summary_netIncomeFormula": {
+    "description": "Subtitle explaining net income formula"
+  },
+
+  "calendar_todayChip": "Today",
+  "@calendar_todayChip": {
+    "description": "Today jump chip in month navigation"
+  },
+  "calendar_prevMonthTooltip": "Previous Month",
+  "@calendar_prevMonthTooltip": {
+    "description": "Tooltip for previous month chevron"
+  },
+  "calendar_nextMonthTooltip": "Next Month",
+  "@calendar_nextMonthTooltip": {
+    "description": "Tooltip for next month chevron"
+  },
+  "calendar_missingDays": "{count, plural, =0{All days complete} =1{1 day needs data} other{{count} days need data}}",
+  "@calendar_missingDays": {
+    "description": "Plural missing days notification chip",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "calendar_legend_present": "Present",
+  "@calendar_legend_present": {
+    "description": "Legend label for present day"
+  },
+  "calendar_legend_holiday": "Holiday",
+  "@calendar_legend_holiday": {
+    "description": "Legend label for holiday"
+  },
+  "calendar_legend_replace": "Replace",
+  "@calendar_legend_replace": {
+    "description": "Legend label for replacement day"
+  },
+  "calendar_legend_missingStatus": "Missing Status",
+  "@calendar_legend_missingStatus": {
+    "description": "Legend label for missing status badge"
+  },
+  "calendar_legend_missingKm": "Missing KM",
+  "@calendar_legend_missingKm": {
+    "description": "Legend label for missing KM badge"
+  },
+  "calendar_legend_today": "Today",
+  "@calendar_legend_today": {
+    "description": "Legend label for today highlight ring"
+  },
+  "calendar_semantics_day": "{nepaliDay} {nepaliMonth}, {status}, {kmTotal} kilometers",
+  "@calendar_semantics_day": {
+    "description": "Accessibility screen-reader label for a day cell",
+    "placeholders": {
+      "nepaliDay": { "type": "String" },
+      "nepaliMonth": { "type": "String" },
+      "status": { "type": "String" },
+      "kmTotal": { "type": "String" }
+    }
+  },
+
+  "status_present": "Present",
+  "@status_present": {
+    "description": "Status name for present"
+  },
+  "status_holiday": "Holiday",
+  "@status_holiday": {
+    "description": "Status name for holiday"
+  },
+  "status_replace": "Replace",
+  "@status_replace": {
+    "description": "Status name for replacement"
+  },
+  "status_unselected": "Unmarked",
+  "@status_unselected": {
+    "description": "Status name for unselected day"
+  },
+  "status_presentRate": "Rs. 1,200",
+  "@status_presentRate": {
+    "description": "Rate subtitle on present button"
+  },
+  "status_holidaySubtitle": "No pay",
+  "@status_holidaySubtitle": {
+    "description": "Rate subtitle on holiday button"
+  },
+  "status_replaceDeduction": "-Rs. 3,000",
+  "@status_replaceDeduction": {
+    "description": "Deduction subtitle on replace button"
+  },
+
+  "day_sheet_missingStatusAlert": "Missing: Status unmarked for this date",
+  "@day_sheet_missingStatusAlert": {
+    "description": "Banner when day status is unmarked"
+  },
+  "day_sheet_missingKmAlert": "Missing: KM odometer entry required",
+  "@day_sheet_missingKmAlert": {
+    "description": "Banner when present day has missing KM"
+  },
+  "day_sheet_attendanceStatusTitle": "Attendance Status",
+  "@day_sheet_attendanceStatusTitle": {
+    "description": "Section title for attendance status toggle"
+  },
+  "day_sheet_detailsRecordsTitle": "Details & Records",
+  "@day_sheet_detailsRecordsTitle": {
+    "description": "Section title for detail records"
+  },
+  "day_sheet_enterKmTitle": "Enter Odometer KM",
+  "@day_sheet_enterKmTitle": {
+    "description": "Row title for odometer KM entry"
+  },
+  "day_sheet_enterKmSubtitle": "Starting & ending odometer reading",
+  "@day_sheet_enterKmSubtitle": {
+    "description": "Row subtitle for odometer KM entry"
+  },
+  "day_sheet_addTipTitle": "Add Extra Tip",
+  "@day_sheet_addTipTitle": {
+    "description": "Row title for extra customer tip"
+  },
+  "day_sheet_addTipSubtitle": "Customer tips and location notes",
+  "@day_sheet_addTipSubtitle": {
+    "description": "Row subtitle for extra customer tip"
+  },
+  "day_sheet_extraTripTitle": "Extra Trip Income",
+  "@day_sheet_extraTripTitle": {
+    "description": "Row title for extra trip earnings"
+  },
+  "day_sheet_extraTripSubtitle": "Additional earnings for today",
+  "@day_sheet_extraTripSubtitle": {
+    "description": "Row subtitle for extra trip earnings"
+  },
+
+  "km_sheet_title": "Odometer KM",
+  "@km_sheet_title": {
+    "description": "Title on KM entry bottom sheet"
+  },
+  "km_sheet_subtitle": "Enter starting and ending readings",
+  "@km_sheet_subtitle": {
+    "description": "Subtitle on KM entry bottom sheet"
+  },
+  "km_sheet_startKmLabel": "Starting KM",
+  "@km_sheet_startKmLabel": {
+    "description": "Label for starting odometer reading"
+  },
+  "km_sheet_startKmHint": "e.g. 10240",
+  "@km_sheet_startKmHint": {
+    "description": "Hint for starting odometer reading"
+  },
+  "km_sheet_endKmLabel": "Ending KM",
+  "@km_sheet_endKmLabel": {
+    "description": "Label for ending odometer reading"
+  },
+  "km_sheet_endKmHint": "e.g. 10320",
+  "@km_sheet_endKmHint": {
+    "description": "Hint for ending odometer reading"
+  },
+  "km_sheet_totalRun": "Total KM Run: {km} km",
+  "@km_sheet_totalRun": {
+    "description": "Live preview of computed total distance",
+    "placeholders": {
+      "km": { "type": "String" }
+    }
+  },
+  "km_sheet_saveButton": "Save KM",
+  "@km_sheet_saveButton": {
+    "description": "Button to save odometer KM"
+  },
+  "km_sheet_validationRequired": "Both starting and ending KM are required",
+  "@km_sheet_validationRequired": {
+    "description": "Validation message when KM fields are empty"
+  },
+  "km_sheet_validationEndLessThanStart": "Ending KM cannot be less than Starting KM",
+  "@km_sheet_validationEndLessThanStart": {
+    "description": "Validation message when ending KM is less than starting"
+  },
+
+  "tip_sheet_title": "Extra Tip",
+  "@tip_sheet_title": {
+    "description": "Title on extra tip bottom sheet"
+  },
+  "tip_sheet_subtitle": "Add extra customer tip and optional notes",
+  "@tip_sheet_subtitle": {
+    "description": "Subtitle on extra tip bottom sheet"
+  },
+  "tip_sheet_amountLabel": "Tip Amount (Rs.)",
+  "@tip_sheet_amountLabel": {
+    "description": "Label for tip amount field"
+  },
+  "tip_sheet_amountHint": "e.g. 500",
+  "@tip_sheet_amountHint": {
+    "description": "Hint for tip amount field"
+  },
+  "tip_sheet_noteLabel": "Location / Note (Optional)",
+  "@tip_sheet_noteLabel": {
+    "description": "Label for optional tip note"
+  },
+  "tip_sheet_noteHint": "e.g. Airport drop tip",
+  "@tip_sheet_noteHint": {
+    "description": "Hint for optional tip note"
+  },
+  "tip_sheet_saveButton": "Save Tip",
+  "@tip_sheet_saveButton": {
+    "description": "Button to save tip entry"
+  },
+  "tip_sheet_validationRequired": "Tip amount is required",
+  "@tip_sheet_validationRequired": {
+    "description": "Validation message when tip amount is empty"
+  },
+
+  "trip_dialog_title": "Extra Trip Income",
+  "@trip_dialog_title": {
+    "description": "Title on extra trip income dialog"
+  },
+  "trip_dialog_subtitle": "Enter extra earnings amount in Rs.",
+  "@trip_dialog_subtitle": {
+    "description": "Subtitle on extra trip income dialog"
+  },
+  "trip_dialog_amountLabel": "Extra Amount (Rs.)",
+  "@trip_dialog_amountLabel": {
+    "description": "Label for extra trip amount field"
+  },
+  "trip_dialog_amountHint": "e.g. 1500",
+  "@trip_dialog_amountHint": {
+    "description": "Hint for extra trip amount field"
+  },
+  "trip_dialog_validationRequired": "Amount is required",
+  "@trip_dialog_validationRequired": {
+    "description": "Validation message when amount is empty"
+  },
+
+  "fuel_records_tile_title": "Fuel Bill Records",
+  "@fuel_records_tile_title": {
+    "description": "Title on fuel bill records tile"
+  },
+  "fuel_records_tile_lastEnded": "Last bill ended: {date}",
+  "@fuel_records_tile_lastEnded": {
+    "description": "Subtitle showing last fuel bill end date",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "fuel_records_tile_noBills": "No fuel bill yet",
+  "@fuel_records_tile_noBills": {
+    "description": "Subtitle when no fuel bill exists"
+  },
+  "fuel_records_dialog_title": "Fuel Bill Records",
+  "@fuel_records_dialog_title": {
+    "description": "Title on fuel bill records dialog"
+  },
+  "fuel_records_dialog_lastEndedTitle": "Last Fuel Bill End Date",
+  "@fuel_records_dialog_lastEndedTitle": {
+    "description": "Card title for cutoff date block"
+  },
+  "fuel_records_dialog_lastEndedHint": "This is the last date your previous fuel bill ended. Edit it if there was a mistake.",
+  "@fuel_records_dialog_lastEndedHint": {
+    "description": "Description under cutoff date"
+  },
+  "fuel_records_dialog_editDateButton": "Edit Date",
+  "@fuel_records_dialog_editDateButton": {
+    "description": "Button to edit cutoff date"
+  },
+  "fuel_records_dialog_generateBillButton": "Generate Fuel Bill",
+  "@fuel_records_dialog_generateBillButton": {
+    "description": "Primary action to generate a new fuel bill"
+  },
+  "fuel_records_dialog_historyTitle": "Bill History",
+  "@fuel_records_dialog_historyTitle": {
+    "description": "Section header for history table"
+  },
+  "fuel_records_dialog_recordsCount": "{count, plural, =1{1 record} other{{count} records}}",
+  "@fuel_records_dialog_recordsCount": {
+    "description": "Count of existing records",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fuel_records_dialog_emptyState": "No fuel bill records found.",
+  "@fuel_records_dialog_emptyState": {
+    "description": "Empty state message when no bills exist"
+  },
+  "fuel_records_col_period": "Period",
+  "@fuel_records_col_period": {
+    "description": "Table column for date period"
+  },
+  "fuel_records_col_totalKm": "Total KM",
+  "@fuel_records_col_totalKm": {
+    "description": "Table column for total KM"
+  },
+  "fuel_records_col_expectedLiters": "Expected",
+  "@fuel_records_col_expectedLiters": {
+    "description": "Table column for expected liters"
+  },
+  "fuel_records_col_actualLiters": "Actual",
+  "@fuel_records_col_actualLiters": {
+    "description": "Table column for actual liters"
+  },
+
+  "generate_fuel_dialog_title": "Generate Fuel Bill",
+  "@generate_fuel_dialog_title": {
+    "description": "Title of modal to generate fuel bill"
+  },
+  "generate_fuel_dialog_lastEnded": "Last Bill Ended On",
+  "@generate_fuel_dialog_lastEnded": {
+    "description": "Section label for last bill end date"
+  },
+  "generate_fuel_dialog_lastEndedHint": "Previous bill ended on this date",
+  "@generate_fuel_dialog_lastEndedHint": {
+    "description": "Hint text for previous bill end date"
+  },
+  "generate_fuel_dialog_startDate": "Bill Start Date (From)",
+  "@generate_fuel_dialog_startDate": {
+    "description": "Label for bill start date"
+  },
+  "generate_fuel_dialog_startDateHint": "Auto-calculated as day after last bill (edit last bill date to change this)",
+  "@generate_fuel_dialog_startDateHint": {
+    "description": "Explanation of start date calculation"
+  },
+  "generate_fuel_dialog_endDate": "Bill End Date (To)",
+  "@generate_fuel_dialog_endDate": {
+    "description": "Label for bill end date picker"
+  },
+  "generate_fuel_dialog_calculating": "Calculating…",
+  "@generate_fuel_dialog_calculating": {
+    "description": "Loading state during calculation"
+  },
+  "generate_fuel_dialog_periodLabel": "Period:",
+  "@generate_fuel_dialog_periodLabel": {
+    "description": "Label for period in calculation box"
+  },
+  "generate_fuel_dialog_totalKmLabel": "Total KM:",
+  "@generate_fuel_dialog_totalKmLabel": {
+    "description": "Label for total KM in calculation box"
+  },
+  "generate_fuel_dialog_expectedFuelLabel": "Expected Fuel (÷ 7.5):",
+  "@generate_fuel_dialog_expectedFuelLabel": {
+    "description": "Label for expected fuel calculation"
+  },
+  "generate_fuel_dialog_litersDisplay": "{liters} Liters",
+  "@generate_fuel_dialog_litersDisplay": {
+    "description": "Computed liters value display",
+    "placeholders": {
+      "liters": { "type": "String" }
+    }
+  },
+  "generate_fuel_dialog_actualLitersLabel": "Actual Fuel Given (Optional)",
+  "@generate_fuel_dialog_actualLitersLabel": {
+    "description": "Label for actual fuel input"
+  },
+  "generate_fuel_dialog_actualLitersHint": "e.g. 45.5",
+  "@generate_fuel_dialog_actualLitersHint": {
+    "description": "Hint for actual fuel input"
+  },
+  "generate_fuel_dialog_actualLitersHelper": "Enter the actual liters provided by the company",
+  "@generate_fuel_dialog_actualLitersHelper": {
+    "description": "Helper note under actual fuel field"
+  },
+  "generate_fuel_dialog_saveButton": "Save Fuel Bill",
+  "@generate_fuel_dialog_saveButton": {
+    "description": "Action button to save fuel bill"
+  },
+  "generate_fuel_dialog_savingButton": "Saving...",
+  "@generate_fuel_dialog_savingButton": {
+    "description": "Saving state on fuel bill action button"
+  },
+
+  "quick_actions_fuelBill_title": "Generate Fuel Bill",
+  "@quick_actions_fuelBill_title": {
+    "description": "Quick action title to create fuel bill"
+  },
+  "quick_actions_fuelBill_subtitle": "Calculate fuel consumption",
+  "@quick_actions_fuelBill_subtitle": {
+    "description": "Quick action subtitle to create fuel bill"
+  },
+  "quick_actions_downloadPdf_title": "Download Report",
+  "@quick_actions_downloadPdf_title": {
+    "description": "Quick action title to download PDF"
+  },
+  "quick_actions_downloadPdf_subtitle": "PDF format (up to today)",
+  "@quick_actions_downloadPdf_subtitle": {
+    "description": "Quick action subtitle to download PDF"
+  },
+
+  "pdf_report_systemTitle": "Vehicle Attendance System",
+  "@pdf_report_systemTitle": {
+    "description": "Header title on PDF export"
+  },
+  "pdf_report_sheetTitle": "Monthly Details Sheet",
+  "@pdf_report_sheetTitle": {
+    "description": "Subtitle on PDF export"
+  },
+  "pdf_report_generatedDate": "Generated: {date}",
+  "@pdf_report_generatedDate": {
+    "description": "Timestamp on PDF export",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "pdf_report_earningSection": "Earning Sheet",
+  "@pdf_report_earningSection": {
+    "description": "Section header on PDF for earnings"
+  },
+  "pdf_report_fuelSection": "Fuel Bill Records",
+  "@pdf_report_fuelSection": {
+    "description": "Section header on PDF for fuel bills"
+  },
+  "pdf_report_finalSettlementSection": "Final Settlement",
+  "@pdf_report_finalSettlementSection": {
+    "description": "Section header on PDF for final summary"
+  },
+  "pdf_report_col_sn": "SN",
+  "@pdf_report_col_sn": {
+    "description": "PDF serial number column"
+  },
+  "pdf_report_col_bsDate": "BS Date",
+  "@pdf_report_col_bsDate": {
+    "description": "PDF BS date column"
+  },
+  "pdf_report_col_adDate": "AD Date",
+  "@pdf_report_col_adDate": {
+    "description": "PDF AD date column"
+  },
+  "pdf_report_col_status": "Status",
+  "@pdf_report_col_status": {
+    "description": "PDF attendance status column"
+  },
+  "pdf_report_col_startKm": "Start KM",
+  "@pdf_report_col_startKm": {
+    "description": "PDF starting KM column"
+  },
+  "pdf_report_col_endKm": "End KM",
+  "@pdf_report_col_endKm": {
+    "description": "PDF ending KM column"
+  },
+  "pdf_report_col_totalKm": "Total KM",
+  "@pdf_report_col_totalKm": {
+    "description": "PDF total KM column"
+  },
+  "pdf_report_col_extraTrip": "Extra Trip",
+  "@pdf_report_col_extraTrip": {
+    "description": "PDF extra trip column"
+  },
+  "pdf_report_col_tip": "Tip",
+  "@pdf_report_col_tip": {
+    "description": "PDF tip column"
+  },
+  "pdf_report_col_note": "Note",
+  "@pdf_report_col_note": {
+    "description": "PDF note column"
+  },
+  "pdf_report_totalPresentDays": "Total Present Days = {days}",
+  "@pdf_report_totalPresentDays": {
+    "description": "PDF total present count",
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "pdf_report_totalReplacementDays": "Replacement Days = {days}",
+  "@pdf_report_totalReplacementDays": {
+    "description": "PDF replacement days count",
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "pdf_report_totalAbsentDays": "Absent Days = {days}",
+  "@pdf_report_totalAbsentDays": {
+    "description": "PDF absent days count",
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "pdf_report_totalTipsAmount": "Total Tips: Rs. {amount}",
+  "@pdf_report_totalTipsAmount": {
+    "description": "PDF total tips amount summary",
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "pdf_report_noTipsRecorded": "No extra tips recorded",
+  "@pdf_report_noTipsRecorded": {
+    "description": "PDF fallback when no tips"
+  },
+  "pdf_report_grossEarnings": "Gross Earnings",
+  "@pdf_report_grossEarnings": {
+    "description": "PDF gross earnings line"
+  },
+  "pdf_report_tdsDeduction": "TDS Deduction (1.5%)",
+  "@pdf_report_tdsDeduction": {
+    "description": "PDF TDS tax deduction line"
+  },
+  "pdf_report_netPayable": "Net Payable",
+  "@pdf_report_netPayable": {
+    "description": "PDF final net payable amount"
+  },
+  "pdf_report_formulaExplanation": "Calculated by earning from total present days - Replace Days",
+  "@pdf_report_formulaExplanation": {
+    "description": "PDF calculation note"
+  },
+  "pdf_report_pageNumber": "Page {page} of {total}",
+  "@pdf_report_pageNumber": {
+    "description": "PDF page footer",
+    "placeholders": {
+      "page": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "toast_futureDateError": "You cannot mark attendance for future dates",
+  "@toast_futureDateError": {
+    "description": "Toast message on tapping a future date"
+  },
+  "toast_deleteSuccess": "Attendance deleted",
+  "@toast_deleteSuccess": {
+    "description": "Toast message when attendance is deleted"
+  },
+  "toast_deleteFailed": "Failed to delete: {error}",
+  "@toast_deleteFailed": {
+    "description": "Toast message when delete fails",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toast_saveFailed": "Failed to save: {error}",
+  "@toast_saveFailed": {
+    "description": "Toast message when save fails",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toast_tipSaved": "Tip saved successfully",
+  "@toast_tipSaved": {
+    "description": "Toast message when tip is saved"
+  },
+  "toast_tipFailed": "Failed to save tip: {error}",
+  "@toast_tipFailed": {
+    "description": "Toast message when saving tip fails",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toast_kmSaved": "KM entry saved ({km} km)",
+  "@toast_kmSaved": {
+    "description": "Toast message when KM is saved",
+    "placeholders": {
+      "km": { "type": "String" }
+    }
+  },
+  "toast_kmFailed": "Failed to save KM: {error}",
+  "@toast_kmFailed": {
+    "description": "Toast message when saving KM fails",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toast_extraTripSaved": "Extra trip saved",
+  "@toast_extraTripSaved": {
+    "description": "Toast message when extra trip is saved"
+  },
+  "toast_extraTripFailed": "Failed to save extra trip: {error}",
+  "@toast_extraTripFailed": {
+    "description": "Toast message when saving extra trip fails",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toast_lastBillDateUpdated": "Last bill date updated successfully",
+  "@toast_lastBillDateUpdated": {
+    "description": "Toast message when cutoff date is updated"
+  },
+  "toast_lastBillDateFailed": "Failed to update last bill date",
+  "@toast_lastBillDateFailed": {
+    "description": "Toast message when cutoff date update fails"
+  },
+  "fuel_bill_created_success": "Fuel bill created successfully",
+  "@fuel_bill_created_success": {
+    "description": "Toast message when fuel bill is created"
+  },
+  "fuel_bill_created_failed": "Failed to create fuel bill",
+  "@fuel_bill_created_failed": {
+    "description": "Toast message when fuel bill creation fails"
+  },
+  "toast_pdfGenerated": "PDF downloaded successfully",
+  "@toast_pdfGenerated": {
+    "description": "Toast message when PDF is generated"
+  },
+  "toast_pdfFailed": "Failed to generate PDF: {error}",
+  "@toast_pdfFailed": {
+    "description": "Toast message when PDF generation fails",
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "toast_genericError": "An unexpected error occurred",
+  "@toast_genericError": {
+    "description": "Generic fallback error toast"
+  },
+  "toast_networkError": "Network error, please check connection",
+  "@toast_networkError": {
+    "description": "Network connectivity error toast"
+  },
+
+  "error_invalidCredentials": "Invalid email or password",
+  "@error_invalidCredentials": {
+    "description": "API error mapping for bad login"
+  },
+  "error_sessionExpired": "Session expired, please sign in again",
+  "@error_sessionExpired": {
+    "description": "API error mapping for expired auth token"
+  },
+  "error_unauthorized": "Unauthorized access",
+  "@error_unauthorized": {
+    "description": "API error mapping for 401/403"
+  },
+  "error_serverError": "Server error, please try again later",
+  "@error_serverError": {
+    "description": "API error mapping for 500 server error"
+  }
+}
+

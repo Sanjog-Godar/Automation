@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/network/error_handler.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../controllers/auth_controller.dart';
 import '../models/auth_state.dart';
 
 /// Screen presenting the login form, matching the design, gradient,
 /// card layout, validation, and error states of the Next.js web application.
+/// Fully localized with an accessible language switcher chip.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -42,6 +46,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final activeLocale = ref.watch(localeProvider);
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
 
@@ -85,6 +91,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Language switcher chip at top right
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: ActionChip(
+                            key: const Key('login_language_toggle'),
+                            avatar: const Icon(
+                              Icons.language_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                            label: Text(
+                              activeLocale.languageCode == 'ne' ? 'EN' : 'नेपाली',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            backgroundColor: AppColors.primarySoft,
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            onPressed: () =>
+                                ref.read(localeProvider.notifier).toggleLanguage(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
                         // Icon circle
                         Center(
                           child: Container(
@@ -104,10 +139,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 16),
 
                         // Title
-                        const Text(
-                          'Vehicle Attendance',
+                        Text(
+                          l10n.auth_login_title,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF111827), // gray-900
@@ -116,17 +151,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 6),
 
                         // Subtitle
-                        const Text(
-                          'Sign in to access your dashboard',
+                        Text(
+                          l10n.auth_login_subtitle,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF4B5563), // gray-600
                           ),
                         ),
                         const SizedBox(height: 24),
 
-                        // Error message banner
+                        // Localized error message banner
                         if (authState.status == AuthStatus.error &&
                             authState.errorMessage != null) ...[
                           Container(
@@ -151,7 +186,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    authState.errorMessage!,
+                                    ErrorHandler.getLocalizedErrorMessage(
+                                      authState.errorMessage!,
+                                      l10n,
+                                    ),
                                     style: const TextStyle(
                                       color: Color(0xFFDC2626),
                                       fontSize: 13,
@@ -166,9 +204,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
 
                         // Email Address field
-                        const Text(
-                          'Email Address',
-                          style: TextStyle(
+                        Text(
+                          l10n.auth_login_emailLabel,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF374151), // gray-700
@@ -181,7 +219,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           autocorrect: false,
                           enabled: !isLoading,
                           decoration: InputDecoration(
-                            hintText: 'your@email.com',
+                            hintText: l10n.auth_login_emailHint,
                             prefixIcon: const Icon(Icons.email_outlined, size: 20),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -205,10 +243,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Email is required';
+                              return l10n.auth_login_emailRequired;
                             }
                             if (!value.contains('@')) {
-                              return 'Enter a valid email address';
+                              return l10n.auth_login_emailInvalid;
                             }
                             return null;
                           },
@@ -216,9 +254,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 18),
 
                         // Password field
-                        const Text(
-                          'Password',
-                          style: TextStyle(
+                        Text(
+                          l10n.auth_login_passwordLabel,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF374151), // gray-700
@@ -230,7 +268,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           obscureText: _obscurePassword,
                           enabled: !isLoading,
                           decoration: InputDecoration(
-                            hintText: 'Enter your password',
+                            hintText: l10n.auth_login_passwordHint,
                             prefixIcon: const Icon(Icons.lock_outline, size: 20),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -267,7 +305,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Password is required';
+                              return l10n.auth_login_passwordRequired;
+                            }
+                            if (value.length < 6) {
+                              return l10n.auth_login_passwordMinLength;
                             }
                             return null;
                           },
@@ -304,9 +345,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         _rememberMe = !_rememberMe;
                                       });
                                     },
-                              child: const Text(
-                                'Remember me for 30 days',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.auth_login_rememberMe,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xFF374151), // gray-700
                                 ),
@@ -346,9 +387,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
-                                    'Sign In',
-                                    style: TextStyle(
+                                : Text(
+                                    l10n.auth_login_signInButton,
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,

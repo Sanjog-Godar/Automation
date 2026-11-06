@@ -41,8 +41,8 @@ final fuelBillsControllerProvider =
 });
 
 class FuelBillsController extends Notifier<FuelBillsState> {
-  late final FuelBillsRepository _repository;
-  late final ToastService _toastService;
+  late FuelBillsRepository _repository;
+  late ToastService _toastService;
 
   @override
   FuelBillsState build() {

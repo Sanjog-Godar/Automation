@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/attendance_log.dart';
 
 /// Modal bottom sheet for entering or updating extra tip amount and note.
+/// Fully localized with strict single-language rendering.
 class TipBottomSheet extends StatefulWidget {
   final AttendanceLog log;
   final String dateTitle;
@@ -24,7 +26,7 @@ class TipBottomSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -76,6 +78,8 @@ class _TipBottomSheetState extends State<TipBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -90,27 +94,32 @@ class _TipBottomSheetState extends State<TipBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Extra Tip (${widget.dateTitle})',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+              Expanded(
+                child: Text(
+                  '${l10n.tip_sheet_title} (${widget.dateTitle})',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
+                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Tip Amount (Rs.)',
-            style: TextStyle(
+          Text(
+            l10n.tip_sheet_amountLabel,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF374151),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -119,26 +128,26 @@ class _TipBottomSheetState extends State<TipBottomSheet> {
             keyboardType: TextInputType.number,
             autofocus: true,
             decoration: InputDecoration(
-              hintText: 'e.g. 500',
-              prefixText: 'Rs. ',
+              hintText: l10n.tip_sheet_amountHint,
+              prefixText: '${l10n.common_currency_rs} ',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Note / Destination (Optional)',
-            style: TextStyle(
+          Text(
+            l10n.tip_sheet_noteLabel,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF374151),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _noteController,
             decoration: InputDecoration(
-              hintText: 'e.g. Airport drop, City trip',
+              hintText: l10n.tip_sheet_noteHint,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
@@ -149,7 +158,7 @@ class _TipBottomSheetState extends State<TipBottomSheet> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(l10n.common_cancel),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
@@ -165,7 +174,7 @@ class _TipBottomSheetState extends State<TipBottomSheet> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Save Tip'),
+                    : Text(l10n.tip_sheet_saveButton),
               ),
             ],
           ),
@@ -174,4 +183,3 @@ class _TipBottomSheetState extends State<TipBottomSheet> {
     );
   }
 }
-

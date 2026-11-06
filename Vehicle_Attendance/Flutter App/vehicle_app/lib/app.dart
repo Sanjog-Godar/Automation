@@ -1,26 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/config/app_config.dart';
+import 'core/l10n/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/services/toast_service.dart';
 import 'core/theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 
-/// Root application widget configuring Theme, Router, Material 3, and Toast service.
+/// Root application widget configuring Theme, Localization, Router, and Toast service.
 class VehicleAttendanceApp extends ConsumerWidget {
   const VehicleAttendanceApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'Vehicle Attendance & Earnings',
+      title: 'Vehicle Attendance',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
+      locale: locale,
+      supportedLocales: AppConfig.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       scaffoldMessengerKey: scaffoldMessengerKey,
       routerConfig: router,
     );
   }
 }
-

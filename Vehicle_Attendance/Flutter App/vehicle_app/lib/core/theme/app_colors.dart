@@ -1,69 +1,73 @@
 import 'package:flutter/material.dart';
 
-/// Tailwind-extracted color palette for vehicle attendance application.
+/// Pure light-theme color palette designed for maximum calm, high contrast,
+/// and senior-friendly readability (WCAG AA compliant >= 4.5:1).
 class AppColors {
   AppColors._();
 
-  // Primary Gradient (Blue 600 -> Blue 700)
-  static const Color primary = Color(0xFF2563EB); // blue-600
-  static const Color primaryDark = Color(0xFF1D4ED8); // blue-700
-  static const Color primaryLight = Color(0xFFDBEAFE); // blue-100
-  static const Color primarySubtle = Color(0xFFEFF6FF); // blue-50
+  // Core Surfaces & Structure
+  static const Color background = Color(0xFFF5F7FA);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color border = Color(0xFFE5E7EB);
+  static const Color divider = Color(0xFFEEF0F3);
 
-  // Secondary Accent (Purple 600 -> Purple 700)
-  static const Color secondary = Color(0xFF9333EA); // purple-600
-  static const Color secondaryDark = Color(0xFF7E22CE); // purple-700
-  static const Color secondaryLight = Color(0xFFF3E8FF); // purple-100
-  static const Color secondarySubtle = Color(0xFFFAF5FF); // purple-50
+  // Typography Tokens (High contrast, never lighter than #6B7280)
+  static const Color textPrimary = Color(0xFF1F2937);
+  static const Color textMuted = Color(0xFF6B7280);
 
-  // Present Status (Green 600)
-  static const Color present = Color(0xFF16A34A); // green-600
-  static const Color presentDark = Color(0xFF15803D); // green-700
-  static const Color presentLight = Color(0xFFDCFCE7); // green-100
-  static const Color presentSubtle = Color(0xFFF0FDF4); // green-50
+  // Brand / Primary
+  static const Color primary = Color(0xFF1D4ED8);
+  static const Color primarySoft = Color(0xFFE8EEFD);
 
-  // Holiday Status / Warning / Deductions (Red 600)
-  static const Color holiday = Color(0xFFDC2626); // red-600
-  static const Color holidayDark = Color(0xFFB91C1C); // red-700
-  static const Color holidayLight = Color(0xFFFEE2E2); // red-100
-  static const Color holidaySubtle = Color(0xFFFEF2F2); // red-50
-  static const Color missingBorder = Color(0xFFEF4444); // red-500
+  // Attendance Statuses
+  static const Color present = Color(0xFF15803D);
+  static const Color presentBg = Color(0xFFE7F6EC);
 
-  // Replacement Status / Fuel Bills (Orange 600)
-  static const Color replacement = Color(0xFFEA580C); // orange-600
-  static const Color replacementDark = Color(0xFFC2410C); // orange-700
-  static const Color replacementLight = Color(0xFFFFEDD5); // orange-100
-  static const Color replacementSubtle = Color(0xFFFFF7ED); // orange-50
-  static const Color replacementBorder = Color(0xFFFDBA74); // orange-300
+  static const Color holiday = Color(0xFFB91C1C);
+  static const Color holidayBg = Color(0xFFFDECEC);
 
-  // Neutral Colors (Light Theme)
-  static const Color backgroundLight = Color(0xFFF9FAFB); // gray-50
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color borderLight = Color(0xFFE5E7EB); // gray-200
-  static const Color textPrimaryLight = Color(0xFF111827); // gray-900
-  static const Color textSecondaryLight = Color(0xFF4B5563); // gray-600
-  static const Color textMutedLight = Color(0xFF9CA3AF); // gray-400
+  static const Color replacement = Color(0xFFC2410C);
+  static const Color replacementBg = Color(0xFFFFF0E5);
 
-  // Neutral Colors (Dark Theme)
-  static const Color backgroundDark = Color(0xFF111827); // gray-900
-  static const Color surfaceDark = Color(0xFF1F2937); // gray-800
-  static const Color borderDark = Color(0xFF374151); // gray-700
-  static const Color textPrimaryDark = Color(0xFFF9FAFB); // gray-50
-  static const Color textSecondaryDark = Color(0xFFD1D5DB); // gray-300
-  static const Color textMutedDark = Color(0xFF9CA3AF); // gray-400
+  // Missing Data Alerts & Badges
+  static const Color missingStatus = Color(0xFFB91C1C);
+  static const Color missingStatusBg = Color(0xFFFEF2F2);
+  static const Color missingStatusBorder = Color(0xFFF3C5C5);
 
-  // Unselected Day Card
-  static const Color unselectedBg = Color(0xFFF3F4F6); // gray-100
-  static const Color unselectedBorder = Color(0xFFD1D5DB); // gray-300
-  static const Color unselectedText = Color(0xFF9CA3AF); // gray-400
+  static const Color missingKm = Color(0xFFB45309);
+  static const Color missingKmBg = Color(0xFFFEF6E0);
+  static const Color missingKmBorder = Color(0xFFFDE68A);
 
-  // Status aliases
-  static const Color success = present;
+  // Financial Indicators
+  static const Color incomePositive = Color(0xFF15803D);
+  static const Color incomeNegative = Color(0xFFB91C1C);
+
+  // Subtle Shadow (opacity <= 0.06)
+  static const Color shadow = Color(0x0F000000); // 6% black
+
+  // Backward compatibility aliases pointing strictly to the light palette
+  static const Color backgroundLight = background;
+  static const Color surfaceLight = surface;
+  static const Color borderLight = border;
+  static const Color textPrimaryLight = textPrimary;
+  static const Color textSecondaryLight = textMuted;
+  static const Color textMutedLight = textMuted;
+  static const Color presentLight = presentBg;
+  static const Color holidayLight = holidayBg;
+  static const Color replacementLight = replacementBg;
+  static const Color missingStatusIcon = missingStatus;
+  static const Color missingKmIcon = missingKm;
+  static const Color missingCellBgLight = missingStatusBg;
+  static const Color missingCellBorderLight = missingStatusBorder;
+  static const Color calendarShadow = shadow;
+  static const Color todayRing = primary;
+  static const Color todayChip = primary;
   static const Color error = holiday;
+  static const Color success = present;
   static const Color warning = replacement;
-
-  // Today Highlight
-  static const Color todayBorder = Color(0xFF93C5FD); // blue-300
-  static const Color todayBg = Color(0xFFEFF6FF); // blue-50
+  static const Color replacementBorder = Color(0xFFFDBA74);
+  static const Color replacementDark = replacement;
+  static const Color primarySubtle = primarySoft;
+  static const Color weekdayHeader = textMuted;
+  static const Color adDateMuted = textMuted;
 }
-

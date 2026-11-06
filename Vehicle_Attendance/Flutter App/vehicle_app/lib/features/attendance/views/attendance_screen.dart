@@ -1,36 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/l10n/formatters.dart';
+import '../../../core/services/toast_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/nepal_clock.dart';
 import '../../../core/utils/nepali_calendar_helper.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../fuel_bills/controllers/fuel_bills_controller.dart';
-import '../../fuel_bills/widgets/fuel_bill_records_card.dart';
+import '../../fuel_bills/widgets/fuel_bill_records_tile.dart';
 import '../../reports/widgets/quick_actions_card.dart';
 import '../controllers/attendance_controller.dart';
-import '../models/attendance_log.dart';
+import '../widgets/app_drawer.dart';
 import '../widgets/calendar_grid.dart';
-import '../widgets/daily_list_view.dart';
 import '../widgets/extra_trip_dialog.dart';
 import '../widgets/km_bottom_sheet.dart';
 import '../widgets/monthly_summary_card.dart';
 import '../widgets/tip_bottom_sheet.dart';
 
-enum AttendanceViewMode {
-  list,
-  grid,
-}
-
-enum AttendanceFilter {
-  all,
-  missingData,
-  presentOnly,
-}
-
-/// Responsive, modern main attendance, fuel billing, and earnings dashboard screen.
-/// Offers both adaptive 7-column Calendar Grid view and mobile-optimized Daily List view,
-/// alongside full Fuel Bill Records and Quick Action PDF settlement downloads.
+/// Redesigned, airy main attendance, fuel billing, and earnings dashboard screen.
+/// Fully localized, supporting navigation drawer with instant language switching.
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
 
@@ -39,9 +28,6 @@ class AttendanceScreen extends ConsumerStatefulWidget {
 }
 
 class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
-  AttendanceViewMode _viewMode = AttendanceViewMode.list;
-  AttendanceFilter _filter = AttendanceFilter.all;
-
   @override
   void initState() {
     super.initState();
@@ -57,65 +43,62 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     });
   }
 
-  List<AttendanceLog> _getFilteredLogs(List<AttendanceLog> logs) {
-    switch (_filter) {
-      case AttendanceFilter.missingData:
-        return logs.where((log) {
-          final isPast = NepalClock.isPast(log.logDate);
-          return isPast &&
-              (log.isUnselected ||
-                  (log.status == AttendanceStatus.present &&
-                      (log.kmTotal == null || log.kmTotal! <= 0)));
-        }).toList();
-      case AttendanceFilter.presentOnly:
-        return logs
-            .where((log) => !log.isUnselected && log.status == AttendanceStatus.present)
-            .toList();
-      case AttendanceFilter.all:
-        return logs;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
     final attendanceState = ref.watch(attendanceControllerProvider);
     final controller = ref.read(attendanceControllerProvider.notifier);
 
     final bsYear = attendanceState.currentYear;
     final bsMonthIndex = attendanceState.currentMonthIndex;
 
-    final monthNameDevanagari = NepaliCalendarHelper.nepaliMonths[bsMonthIndex];
-    final yearDevanagari = NepaliCalendarHelper.toNepaliNumber(bsYear);
-    final englishSubtitle = NepaliCalendarHelper.getEnglishMonthSubtitle(bsYear, bsMonthIndex);
-
-    final filteredLogs = _getFilteredLogs(attendanceState.logs);
+    final monthName = AppFormatters.bsMonthName(bsMonthIndex, locale);
+    final yearStr = AppFormatters.formatNumber(bsYear, locale);
+    final rawSubtitle = NepaliCalendarHelper.getEnglishMonthSubtitle(bsYear, bsMonthIndex);
+    final localizedSubtitle = AppFormatters.formatAdMonthSpan(rawSubtitle, locale);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // soft slate-50
+      backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         centerTitle: false,
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            key: const Key('dashboard_drawer_button'),
+            icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 24),
+            tooltip: l10n.dashboard_drawer_title,
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.directions_bus_rounded, size: 18, color: Colors.white),
                 const SizedBox(width: 6),
-                Text(
-                  AppConstants.vehicleNumber,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    letterSpacing: 0.3,
+                Flexible(
+                  child: Text(
+                    AppConstants.vehicleNumber,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
               ],
             ),
             Text(
-              '$monthNameDevanagari $yearDevanagari ($englishSubtitle)',
+              '$monthName $yearStr ($localizedSubtitle)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.normal,
@@ -126,19 +109,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Sign Out',
+            key: const Key('dashboard_sign_out_button'),
+            tooltip: l10n.dashboard_drawer_nav_signOut,
             icon: const Icon(Icons.logout_rounded, size: 20),
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  title: const Text('Sign Out'),
-                  content: const Text('Are you sure you want to sign out of the vehicle attendance system?'),
+                  title: Text(l10n.dashboard_signOut_dialogTitle),
+                  content: Text(l10n.dashboard_signOut_dialogMessage),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
+                      child: Text(l10n.common_cancel),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -147,7 +131,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Sign Out'),
+                      child: Text(l10n.dashboard_signOut_dialogTitle),
                     ),
                   ],
                 ),
@@ -175,270 +159,73 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Month Navigation Header Card (Sleek, Accessible with Previous / Next)
-                    Card(
-                      elevation: 0,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Previous Month Button (Contains 'Previous' text)
-                            OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                side: const BorderSide(color: Color(0xFFE2E8F0)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                foregroundColor: const Color(0xFF334155),
-                              ),
-                              onPressed: attendanceState.isLoading
-                                  ? null
-                                  : () => controller.previousMonth(),
-                              icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                              label: const Text('Previous', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                            ),
-
-                            // Month Name Display
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '$monthNameDevanagari $yearDevanagari',
-                                    style: const TextStyle(
-                                      fontFamily: 'Mukta',
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0F172A),
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                  Text(
-                                    englishSubtitle,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Next Month Button (Contains 'Next' text)
-                            OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                side: const BorderSide(color: Color(0xFFE2E8F0)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                foregroundColor: const Color(0xFF334155),
-                              ),
-                              onPressed: attendanceState.isLoading
-                                  ? null
-                                  : () => controller.nextMonth(),
-                              label: const Text('Next', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                              icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Monthly Summary Card
+                    // Monthly Summary Card (Hero Metrics)
                     MonthlySummaryCard(
                       summary: attendanceState.summary,
                       isLoading: attendanceState.isLoading,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
 
-                    // Controls Row: View Switcher (List vs Calendar) & Jump to Today
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // View Switcher (List vs Grid)
-                        SegmentedButton<AttendanceViewMode>(
-                          segments: const [
-                            ButtonSegment(
-                              value: AttendanceViewMode.list,
-                              icon: Icon(Icons.view_agenda_rounded, size: 15),
-                              label: Text('List', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                            ),
-                            ButtonSegment(
-                              value: AttendanceViewMode.grid,
-                              icon: Icon(Icons.grid_view_rounded, size: 15),
-                              label: Text('Grid', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                          selected: {_viewMode},
-                          onSelectionChanged: (newSelection) {
-                            setState(() {
-                              _viewMode = newSelection.first;
-                            });
-                          },
-                          style: SegmentedButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            selectedBackgroundColor: AppColors.primary,
-                            selectedForegroundColor: Colors.white,
-                            side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          ),
-                        ),
-
-                        // Jump to Today button
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            foregroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          icon: const Icon(Icons.today_rounded, size: 16),
-                          label: const Text('Today', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          onPressed: () {
-                            final current = NepaliCalendarHelper.getCurrentNepaliYearMonth();
-                            if (current.year != bsYear || current.monthIndex != bsMonthIndex) {
-                              controller.loadMonth(current.year, current.monthIndex);
-                            }
-                          },
-                        ),
-                      ],
+                    // Calendar Grid (Single-source view, integrated navigation & today chip)
+                    CalendarGrid(
+                      bsYear: bsYear,
+                      bsMonthIndex: bsMonthIndex,
+                      logs: attendanceState.logs,
+                      savingDates: attendanceState.savingDates,
+                      onPreviousMonth: attendanceState.isLoading ? () {} : () => controller.previousMonth(),
+                      onNextMonth: attendanceState.isLoading ? () {} : () => controller.nextMonth(),
+                      onToday: () {
+                        final current = NepaliCalendarHelper.getCurrentNepaliYearMonth();
+                        if (current.year != bsYear || current.monthIndex != bsMonthIndex) {
+                          controller.loadMonth(current.year, current.monthIndex);
+                        }
+                      },
+                      onStatusChange: (logDate, status) {
+                        controller.changeStatus(logDate, status);
+                      },
+                      onOpenTip: (log) {
+                        TipBottomSheet.show(
+                          context: context,
+                          log: log,
+                          dateTitle: log.logDate,
+                          onSave: (amount, note) =>
+                              controller.updateTip(log.logDate, amount, note),
+                        );
+                      },
+                      onOpenKm: (log) {
+                        KmBottomSheet.show(
+                          context: context,
+                          log: log,
+                          dateTitle: log.logDate,
+                          onSave: (startKm, endKm) =>
+                              controller.updateKm(log.logDate, startKm, endKm),
+                        );
+                      },
+                      onOpenExtraTrip: (log) {
+                        ExtraTripDialog.show(
+                          context: context,
+                          log: log,
+                          dateTitle: log.logDate,
+                          onSave: (amount) =>
+                              controller.updateExtraTrip(log.logDate, amount),
+                        );
+                      },
+                      onFutureDateTap: (logDate) {
+                        ref.read(toastServiceProvider).showError(
+                          l10n.toast_futureDateError,
+                          nepaliMessage: l10n.toast_futureDateError,
+                        );
+                      },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
 
-                    // Filter Chips Row (All, Missing Data, Present)
-                    if (_viewMode == AttendanceViewMode.list) ...[
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          FilterChip(
-                            selected: _filter == AttendanceFilter.all,
-                            label: Text('All (${attendanceState.logs.length})', style: const TextStyle(fontSize: 11)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: BorderSide(
-                              color: _filter == AttendanceFilter.all ? AppColors.primary : const Color(0xFFCBD5E1),
-                            ),
-                            onSelected: (_) => setState(() => _filter = AttendanceFilter.all),
-                          ),
-                          FilterChip(
-                            selected: _filter == AttendanceFilter.missingData,
-                            label: const Text('⚠️ Needs Attention', style: TextStyle(fontSize: 11)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            selectedColor: const Color(0xFFFEE2E2),
-                            checkmarkColor: const Color(0xFFDC2626),
-                            side: BorderSide(
-                              color: _filter == AttendanceFilter.missingData ? const Color(0xFFF87171) : const Color(0xFFCBD5E1),
-                            ),
-                            labelStyle: TextStyle(
-                              color: _filter == AttendanceFilter.missingData
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFF334155),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            onSelected: (_) => setState(() => _filter = AttendanceFilter.missingData),
-                          ),
-                          FilterChip(
-                            selected: _filter == AttendanceFilter.presentOnly,
-                            label: const Text('Present Only', style: TextStyle(fontSize: 11)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: BorderSide(
-                              color: _filter == AttendanceFilter.presentOnly ? AppColors.present : const Color(0xFFCBD5E1),
-                            ),
-                            onSelected: (_) => setState(() => _filter = AttendanceFilter.presentOnly),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-
-                    // Main View Content: Daily List View OR Responsive Calendar Grid View
-                    if (_viewMode == AttendanceViewMode.list)
-                      DailyListView(
-                        bsYear: bsYear,
-                        bsMonthIndex: bsMonthIndex,
-                        logs: filteredLogs,
-                        savingDates: attendanceState.savingDates,
-                        onStatusChange: (logDate, status) {
-                          controller.changeStatus(logDate, status);
-                        },
-                        onOpenTip: (log) {
-                          TipBottomSheet.show(
-                            context: context,
-                            log: log,
-                            dateTitle: log.logDate,
-                            onSave: (amount, note) =>
-                                controller.updateTip(log.logDate, amount, note),
-                          );
-                        },
-                        onOpenKm: (log) {
-                          KmBottomSheet.show(
-                            context: context,
-                            log: log,
-                            dateTitle: log.logDate,
-                            onSave: (startKm, endKm) =>
-                                controller.updateKm(log.logDate, startKm, endKm),
-                          );
-                        },
-                        onOpenExtraTrip: (log) {
-                          ExtraTripDialog.show(
-                            context: context,
-                            log: log,
-                            dateTitle: log.logDate,
-                            onSave: (amount) =>
-                                controller.updateExtraTrip(log.logDate, amount),
-                          );
-                        },
-                      )
-                    else
-                      CalendarGrid(
-                        bsYear: bsYear,
-                        bsMonthIndex: bsMonthIndex,
-                        logs: attendanceState.logs,
-                        savingDates: attendanceState.savingDates,
-                        onStatusChange: (logDate, status) {
-                          controller.changeStatus(logDate, status);
-                        },
-                        onOpenTip: (log) {
-                          TipBottomSheet.show(
-                            context: context,
-                            log: log,
-                            dateTitle: log.logDate,
-                            onSave: (amount, note) =>
-                                controller.updateTip(log.logDate, amount, note),
-                          );
-                        },
-                        onOpenKm: (log) {
-                          KmBottomSheet.show(
-                            context: context,
-                            log: log,
-                            dateTitle: log.logDate,
-                            onSave: (startKm, endKm) =>
-                                controller.updateKm(log.logDate, startKm, endKm),
-                          );
-                        },
-                        onOpenExtraTrip: (log) {
-                          ExtraTripDialog.show(
-                            context: context,
-                            log: log,
-                            dateTitle: log.logDate,
-                            onSave: (amount) =>
-                                controller.updateExtraTrip(log.logDate, amount),
-                          );
-                        },
-                      ),
-                    const SizedBox(height: 14),
-
-                    // Fuel Bill Records Section (Matches Screenshot)
-                    const FuelBillRecordsCard(),
-                    const SizedBox(height: 14),
+                    // Fuel Bill Records Button Tile (Tapping opens Modal Dialog)
+                    const FuelBillRecordsTile(),
+                    const SizedBox(height: 16),
 
                     // Quick Actions Section (Generate Fuel Bill & Download Report)
                     const QuickActionsCard(),

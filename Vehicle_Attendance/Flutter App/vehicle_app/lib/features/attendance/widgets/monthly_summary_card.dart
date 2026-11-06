@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/l10n/formatters.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/monthly_summary.dart';
 
-/// Highly responsive, modern dashboard card displaying attendance summary metrics.
-/// Adapts gracefully from compact mobile viewports to wide tablet/desktop viewports.
+/// Senior-friendly, calm dashboard card displaying monthly attendance metrics.
+/// Clean light-only surfaces, high-contrast typography, large numbers (22-24sp+),
+/// and thin tinted left accents with zero neon gradients. Fully localized.
 class MonthlySummaryCard extends StatelessWidget {
   final MonthlySummary summary;
   final bool isLoading;
@@ -17,173 +19,173 @@ class MonthlySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat('#,##,###', 'en_IN');
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
 
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border, width: 1.0),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Monthly Summary',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
-                      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.analytics_rounded, color: AppColors.primary, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.summary_card_title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
-                  ],
-                ),
-                if (isLoading)
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                ],
+              ),
+              if (isLoading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.2, color: AppColors.primary),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Adaptive Metric Tiles (White cards with thin tinted left accent)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 600;
+              final columnCount = isWide ? 3 : 2;
+
+              return GridView.count(
+                crossAxisCount: columnCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: isWide ? 2.5 : 1.85,
+                children: [
+                  _buildMetricTile(
+                    label: l10n.summary_presentDays,
+                    value: AppFormatters.formatNumber(summary.totalPresentDays, locale),
+                    icon: Icons.check_circle_rounded,
+                    accentColor: AppColors.present,
+                    iconBgColor: AppColors.presentBg,
+                  ),
+                  _buildMetricTile(
+                    label: l10n.summary_extraTips,
+                    value: AppFormatters.formatNumber(summary.totalExtraTips, locale),
+                    icon: Icons.volunteer_activism_rounded,
+                    accentColor: AppColors.primary,
+                    iconBgColor: AppColors.primarySoft,
+                  ),
+                  _buildMetricTile(
+                    label: l10n.summary_replacementDays,
+                    value: AppFormatters.formatNumber(summary.totalReplacementDays, locale),
+                    icon: Icons.person_off_rounded,
+                    accentColor: AppColors.replacement,
+                    iconBgColor: AppColors.replacementBg,
+                  ),
+                  _buildMetricTile(
+                    label: l10n.summary_totalKm,
+                    value: AppFormatters.formatUnit(summary.totalKm, 'km', locale),
+                    icon: Icons.speed_rounded,
+                    accentColor: AppColors.primary,
+                    iconBgColor: AppColors.primarySoft,
+                  ),
+                  _buildMetricTile(
+                    label: l10n.summary_extraTrips,
+                    value: AppFormatters.formatNumber(summary.totalExtraIncome, locale),
+                    icon: Icons.trending_up_rounded,
+                    accentColor: AppColors.present,
+                    iconBgColor: AppColors.presentBg,
+                  ),
+                  _buildMetricTile(
+                    label: l10n.summary_deductions,
+                    value: '-${AppFormatters.formatNumber(summary.totalDeductions, locale)}',
+                    icon: Icons.trending_down_rounded,
+                    accentColor: AppColors.holiday,
+                    iconBgColor: AppColors.holidayBg,
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+
+          // Prominent Net Income Card
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border, width: 1.0),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
               ],
             ),
-            const SizedBox(height: 14),
-
-            // Adaptive Metric Tiles
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 600;
-                final columnCount = isWide ? 3 : 2;
-
-                return GridView.count(
-                  crossAxisCount: columnCount,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: isWide ? 2.4 : 2.1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildMetricTile(
-                      label: 'Present Days',
-                      value: summary.totalPresentDays.toString(),
-                      icon: Icons.check_circle_outline,
-                      iconColor: AppColors.present,
-                      bgColor: const Color(0xFFF0FDF4), // green-50
-                      borderColor: const Color(0xFFDCFCE7), // green-100
+                    Text(
+                      l10n.summary_netIncome,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    _buildMetricTile(
-                      label: 'Extra Tips (Rs.)',
-                      value: currencyFormatter.format(summary.totalExtraTips),
-                      icon: Icons.volunteer_activism_outlined,
-                      iconColor: AppColors.primary,
-                      bgColor: const Color(0xFFEFF6FF), // blue-50
-                      borderColor: const Color(0xFFDBEAFE), // blue-100
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppFormatters.formatCurrency(summary.netIncome, locale),
+                          style: TextStyle(
+                            color: summary.netIncome >= 0
+                                ? AppColors.incomePositive
+                                : AppColors.incomeNegative,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                    _buildMetricTile(
-                      label: 'Replacement Days',
-                      value: summary.totalReplacementDays.toString(),
-                      icon: Icons.person_off_outlined,
-                      iconColor: AppColors.holiday,
-                      bgColor: const Color(0xFFFEF2F2), // red-50
-                      borderColor: const Color(0xFFFEE2E2), // red-100
-                      valueColor: AppColors.holiday,
-                    ),
-                    _buildMetricTile(
-                      label: 'Total KM Run',
-                      value: '${currencyFormatter.format(summary.totalKm)} km',
-                      icon: Icons.speed_outlined,
-                      iconColor: const Color(0xFF9333EA),
-                      bgColor: const Color(0xFFFAF5FF), // purple-50
-                      borderColor: const Color(0xFFF3E8FF), // purple-100
-                      valueColor: const Color(0xFF7E22CE),
-                    ),
-                    _buildMetricTile(
-                      label: 'Extra Trips (Rs.)',
-                      value: currencyFormatter.format(summary.totalExtraIncome),
-                      icon: Icons.trending_up,
-                      iconColor: const Color(0xFF0D9488),
-                      bgColor: const Color(0xFFF0FDFA), // teal-50
-                      borderColor: const Color(0xFFCCFBF1), // teal-100
-                    ),
-                    _buildMetricTile(
-                      label: 'Deductions (Rs.)',
-                      value: '-${currencyFormatter.format(summary.totalDeductions)}',
-                      icon: Icons.trending_down,
-                      iconColor: AppColors.holiday,
-                      bgColor: const Color(0xFFFEF2F2), // red-50
-                      borderColor: const Color(0xFFFEE2E2), // red-100
-                      valueColor: AppColors.holiday,
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 14),
-
-            // Prominent Net Income Banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF15803D), // green-700
-                    Color(0xFF16A34A), // green-600
                   ],
                 ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF16A34A).withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.summary_netIncomeFormula,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12.5,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Net Income (Rs.)',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '(Earnings - Deductions)',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    'Rs. ${currencyFormatter.format(summary.netIncome)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -192,52 +194,90 @@ class MonthlySummaryCard extends StatelessWidget {
     required String label,
     required String value,
     required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
-    required Color borderColor,
-    Color valueColor = const Color(0xFF111827),
+    required Color accentColor,
+    required Color iconBgColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 1.0),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(icon, size: 14, color: iconColor),
-              const SizedBox(width: 4),
+              // 4dp Tinted Left Accent Strip
+              Container(width: 4, color: accentColor),
               Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF4B5563),
-                    fontWeight: FontWeight.w500,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Tinted Soft Icon Chip
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: iconBgColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(icon, color: accentColor, size: 18),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w500,
+                                height: 1.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  value,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

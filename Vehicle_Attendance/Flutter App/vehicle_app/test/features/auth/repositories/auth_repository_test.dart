@@ -2,6 +2,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:vehicle_app/core/config/app_config.dart';
 import 'package:vehicle_app/core/network/api_client.dart';
 import 'package:vehicle_app/features/auth/repositories/auth_repository.dart';
 
@@ -88,7 +89,7 @@ void main() {
 
     test('logout calls /api/auth/logout and clears cookie jar', () async {
       // Seed a cookie
-      final uri = Uri.parse('http://10.0.2.2:3000');
+      final uri = Uri.parse(AppConfig.apiBaseUrl);
       await cookieJar.saveFromResponse(uri, [
         Cookie('sb-access-token', 'token-abc'),
       ]);
@@ -107,7 +108,7 @@ void main() {
     });
 
     test('hasValidSession returns true when sb-access-token exists and is valid', () async {
-      final uri = Uri.parse('http://10.0.2.2:3000');
+      final uri = Uri.parse(AppConfig.apiBaseUrl);
       await cookieJar.saveFromResponse(uri, [
         Cookie('sb-access-token', 'valid-jwt-token'),
       ]);

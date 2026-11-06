@@ -60,8 +60,8 @@ final attendanceControllerProvider =
 /// Riverpod controller managing attendance state, optimistic mutations,
 /// single-date rollback, and BS month transitions.
 class AttendanceController extends Notifier<AttendanceState> {
-  late final AttendanceRepository _repository;
-  late final ToastService _toastService;
+  late AttendanceRepository _repository;
+  late ToastService _toastService;
 
   @override
   AttendanceState build() {

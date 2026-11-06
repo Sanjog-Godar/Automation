@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/attendance_log.dart';
 
 /// Dialog allowing driver to enter extra trip earnings for a day.
+/// Fully localized with strict single-language rendering.
 class ExtraTripDialog extends StatefulWidget {
   final AttendanceLog log;
   final String dateTitle;
@@ -60,33 +62,36 @@ class _ExtraTripDialogState extends State<ExtraTripDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return AlertDialog(
-      title: Text('Extra Trip Income (${widget.dateTitle})'),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('${l10n.trip_dialog_title} (${widget.dateTitle})'),
       content: TextField(
         controller: _controller,
         keyboardType: TextInputType.number,
         autofocus: true,
         decoration: InputDecoration(
-          hintText: 'e.g. 500',
-          prefixText: 'Rs. ',
+          hintText: l10n.trip_dialog_amountHint,
+          prefixText: '${l10n.common_currency_rs} ',
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.common_cancel),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: _handleSubmit,
-          child: const Text('Save Extra Trip'),
+          child: Text(l10n.common_save),
         ),
       ],
     );
   }
 }
-

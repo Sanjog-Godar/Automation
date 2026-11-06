@@ -8,7 +8,7 @@ final authControllerProvider =
 
 /// Riverpod Notifier managing authentication state without code generation.
 class AuthController extends Notifier<AuthState> {
-  late final AuthRepository _repository;
+  late AuthRepository _repository;
 
   @override
   AuthState build() {

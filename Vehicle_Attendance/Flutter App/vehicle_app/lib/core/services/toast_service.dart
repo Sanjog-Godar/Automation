@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/locale_provider.dart';
 import '../theme/app_colors.dart';
 
 /// Global scaffold messenger key used by ToastService to display
@@ -7,13 +8,19 @@ import '../theme/app_colors.dart';
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-/// Provider for ToastService singleton.
+/// Provider for ToastService singleton, dynamically aware of active [Locale].
 final toastServiceProvider = Provider<ToastService>((ref) {
-  return ToastService();
+  final locale = ref.watch(localeProvider);
+  return ToastService(locale: locale);
 });
 
-/// Service for displaying toast notifications with bilingual (English/Nepali) capability.
+/// Service for displaying toast notifications with strict single-language rendering.
+/// In Nepali mode, only [nepaliMessage] is shown; in English mode, only [message] is shown.
 class ToastService {
+  final Locale? locale;
+
+  ToastService({this.locale});
+
   void showSuccess(
     String message, {
     String? nepaliMessage,
@@ -68,8 +75,10 @@ class ToastService {
 
     state.hideCurrentSnackBar();
 
-    final displayText = nepaliMessage != null && nepaliMessage.isNotEmpty
-        ? '$message ($nepaliMessage)'
+    // Render strictly ONE language based on active application locale.
+    final isNepali = locale?.languageCode == 'ne';
+    final displayText = (isNepali && nepaliMessage != null && nepaliMessage.isNotEmpty)
+        ? nepaliMessage
         : message;
 
     state.showSnackBar(
@@ -101,4 +110,3 @@ class ToastService {
     );
   }
 }
-

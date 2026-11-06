@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../core/l10n/formatters.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/attendance_log.dart';
 
 /// Modal bottom sheet for entering daily odometer readings (Starting KM and Ending KM).
+/// Fully localized with strict single-language rendering.
 class KmBottomSheet extends StatefulWidget {
   final AttendanceLog log;
   final String dateTitle;
@@ -23,7 +27,7 @@ class KmBottomSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -81,20 +85,20 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
     return null;
   }
 
-  Future<void> _handleSubmit() async {
+  Future<void> _handleSubmit(AppLocalizations l10n) async {
     final start = int.tryParse(_startController.text.trim());
     final end = int.tryParse(_endController.text.trim());
 
     if (start == null || end == null) {
       setState(() {
-        _validationError = 'Please enter both Starting and Ending KM readings';
+        _validationError = l10n.km_sheet_validationRequired;
       });
       return;
     }
 
     if (end < start) {
       setState(() {
-        _validationError = 'Ending KM cannot be less than Starting KM';
+        _validationError = l10n.km_sheet_validationEndLessThanStart;
       });
       return;
     }
@@ -108,6 +112,8 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
     final totalKm = _computedTotalKm;
 
     return Padding(
@@ -124,15 +130,20 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Daily KM (${widget.dateTitle})',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+              Expanded(
+                child: Text(
+                  '${l10n.km_sheet_title} (${widget.dateTitle})',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
+                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
@@ -154,12 +165,12 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
             ),
             const SizedBox(height: 12),
           ],
-          const Text(
-            'Starting KM',
-            style: TextStyle(
+          Text(
+            l10n.km_sheet_startKmLabel,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF374151),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -168,19 +179,19 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
             keyboardType: TextInputType.number,
             autofocus: true,
             decoration: InputDecoration(
-              hintText: 'e.g. 12300',
-              suffixText: 'km',
+              hintText: l10n.km_sheet_startKmHint,
+              suffixText: l10n.common_unit_km,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Ending KM',
-            style: TextStyle(
+          Text(
+            l10n.km_sheet_endKmLabel,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF374151),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -188,8 +199,8 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
             controller: _endController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              hintText: 'e.g. 12350',
-              suffixText: 'km',
+              hintText: l10n.km_sheet_endKmHint,
+              suffixText: l10n.common_unit_km,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
@@ -199,29 +210,17 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF), // purple-100
+                color: AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Total KM: ',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF4B5563),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    '$totalKm km',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF7E22CE), // purple-700
-                    ),
-                  ),
-                ],
+              alignment: Alignment.center,
+              child: Text(
+                l10n.km_sheet_totalRun(AppFormatters.formatNumber(totalKm, locale)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ),
           const SizedBox(height: 20),
@@ -230,23 +229,23 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(l10n.common_cancel),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9333EA), // purple-600
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                onPressed: _isSaving ? null : _handleSubmit,
+                onPressed: _isSaving ? null : () => _handleSubmit(l10n),
                 child: _isSaving
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Save KM'),
+                    : Text(l10n.km_sheet_saveButton),
               ),
             ],
           ),
