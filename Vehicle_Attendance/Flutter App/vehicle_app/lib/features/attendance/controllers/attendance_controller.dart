@@ -126,7 +126,7 @@ class AttendanceController extends Notifier<AttendanceState> {
   ///
   /// Mirroring Next.js `handleStatusClick`:
   /// - If clicking the active status on a selected day, toggles delete (replaces with placeholder).
-  /// - If status != present, resets extraTripIncome to 0 while preserving tips and KM.
+  /// - If status != present, resets extraTripIncome to 0 while preserving KM.
   /// - Rollback on error affects ONLY the mutated date.
   Future<void> changeStatus(String logDate, AttendanceStatus newStatus) async {
     if (NepalClock.isFuture(logDate)) {
@@ -162,10 +162,9 @@ class AttendanceController extends Notifier<AttendanceState> {
     }
 
     // Upsert status
-    final extraTrip = newStatus == AttendanceStatus.present ? oldLog.extraTripIncome : 0;
     final updatedLog = oldLog.copyWith(
       status: newStatus,
-      extraTripIncome: extraTrip,
+      extraTripIncome: oldLog.extraTripIncome,
       isUnselected: false,
     );
 
@@ -184,14 +183,14 @@ class AttendanceController extends Notifier<AttendanceState> {
     }
   }
 
-  /// Updates extra trip income for a day (marks day as present if unselected).
+  /// Updates extra trip income for a day.
+  /// If the day was unselected, maintains its placeholder status or keeps existing status without forcing it to present.
   Future<void> updateExtraTrip(String logDate, int extraTrip) async {
     final index = state.logs.indexWhere((l) => l.logDate == logDate);
     if (index == -1) return;
 
     final oldLog = state.logs[index];
     final updatedLog = oldLog.copyWith(
-      status: AttendanceStatus.present,
       extraTripIncome: extraTrip,
       isUnselected: false,
     );
@@ -206,43 +205,6 @@ class AttendanceController extends Notifier<AttendanceState> {
       _toastService.showError(
         'Failed to save extra trip: $e',
         nepaliMessage: 'अतिरिक्त आम्दानी सेभ गर्न सकिएन',
-      );
-    }
-  }
-
-  /// Updates extra tip amount and note for a day.
-  Future<void> updateTip(String logDate, int amount, String? note) async {
-    if (NepalClock.isFuture(logDate)) {
-      _toastService.showError(
-        'You cannot add tips for future dates',
-        nepaliMessage: 'भविष्यको मिति चयन गर्न सकिँदैन',
-      );
-      return;
-    }
-
-    final index = state.logs.indexWhere((l) => l.logDate == logDate);
-    if (index == -1) return;
-
-    final oldLog = state.logs[index];
-    final updatedLog = oldLog.copyWith(
-      extraTipAmount: amount,
-      extraTipNote: note,
-    );
-
-    _replaceLogAtIndex(index, updatedLog, logDate, isSaving: true);
-
-    try {
-      final savedLog = await _repository.upsertAttendance(updatedLog);
-      _replaceLogAtIndex(index, savedLog, logDate, isSaving: false);
-      _toastService.showSuccess(
-        'Tip saved successfully',
-        nepaliMessage: 'टिप सुरक्षित गरियो',
-      );
-    } catch (e) {
-      _replaceLogAtIndex(index, oldLog, logDate, isSaving: false);
-      _toastService.showError(
-        'Failed to save tip: $e',
-        nepaliMessage: 'टिप सेभ गर्न समस्या आयो',
       );
     }
   }

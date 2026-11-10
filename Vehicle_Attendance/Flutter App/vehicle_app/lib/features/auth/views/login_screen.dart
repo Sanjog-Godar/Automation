@@ -102,13 +102,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               color: AppColors.primary,
                             ),
                             label: Text(
-                              activeLocale.languageCode == 'ne' ? 'EN' : 'नेपाली',
+                              activeLocale.languageCode == 'ne'
+                                  ? l10n.common_nepali
+                                  : l10n.common_english,
                               style: const TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
                               ),
                             ),
+                            tooltip: activeLocale.languageCode == 'ne'
+                                ? 'English मा बदल्नुहोस्'
+                                : 'नेपालीमा बदल्नुहोस्',
                             backgroundColor: AppColors.primarySoft,
                             side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(

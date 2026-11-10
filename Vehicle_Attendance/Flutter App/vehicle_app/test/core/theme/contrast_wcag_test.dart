@@ -57,6 +57,8 @@ void main() {
     verifyContrast('missingKm on missingKmBg', AppColors.missingKm, AppColors.missingKmBg);
     verifyContrast('incomePositive on surface', AppColors.incomePositive, AppColors.surface);
     verifyContrast('incomeNegative on surface', AppColors.incomeNegative, AppColors.surface);
+    verifyContrast('netIncomePositiveOnHero on heroNavyStart', AppColors.netIncomePositiveOnHero, AppColors.heroNavyStart);
+    verifyContrast('netIncomeNegativeOnHero on heroNavyStart', AppColors.netIncomeNegativeOnHero, AppColors.heroNavyStart);
   });
 }
 

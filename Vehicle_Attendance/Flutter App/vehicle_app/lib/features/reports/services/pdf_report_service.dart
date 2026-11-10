@@ -69,8 +69,7 @@ class PdfReportService {
         replaceDates.add(bsDay);
       }
 
-      if ((log.extraTipAmount != null && log.extraTipAmount! > 0) ||
-          log.extraTripIncome > 0) {
+      if (log.extraTripIncome > 0) {
         if (!tipDates.contains(bsDay)) tipDates.add(bsDay);
       }
     }
@@ -97,13 +96,9 @@ class PdfReportService {
     final totalEarning = presentIncome - summaryUpToToday.totalDeductions;
     final totalHolidayDays = logsUpToToday.where((l) => l.status == AttendanceStatus.absentHoliday).length;
 
-    // Tips data breakdown
-    final tipsData = logsUpToToday.where((l) => l.extraTipAmount != null && l.extraTipAmount! > 0).toList();
-    final calculatedTipsTotal = summaryUpToToday.totalExtraTips;
-
     // TDS Calculation @ 1.5% strictly on totalEarning
     final tdsAmount = (totalEarning * AppConstants.tdsRate).round();
-    final totalBeforeTDS = totalEarning + calculatedTipsTotal + summaryUpToToday.totalExtraIncome;
+    final totalBeforeTDS = totalEarning + summaryUpToToday.totalExtraIncome;
     final netIncomeAfterTDS = totalBeforeTDS - tdsAmount;
 
     pdf.addPage(
@@ -299,57 +294,6 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 14),
 
-          // Extra Tips Section
-          pw.Text(
-            isNepali ? 'अतिरिक्त टिपहरू' : 'Extra Tips',
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 6),
-
-          if (tipsData.isNotEmpty) ...[
-            ...List.generate(tipsData.length, (index) {
-              final tip = tipsData[index];
-              final adDate = NepalClock.parseDate(tip.logDate);
-              final adDateStr = AppFormatters.formatAdDate(adDate, locale);
-
-              final destination = (tip.extraTipNote != null && tip.extraTipNote!.isNotEmpty)
-                  ? tip.extraTipNote!
-                  : (isNepali ? 'स्थान उल्लेख छैन' : 'No destination');
-              final amount = tip.extraTipAmount ?? 0;
-              final indexNum = isNepali ? AppFormatters.toDevanagariDigits('${index + 1}') : '${index + 1}';
-
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 3),
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      '$indexNum. $destination ($adDateStr)',
-                      style: const pw.TextStyle(fontSize: 9),
-                    ),
-                    pw.Text(
-                      AppFormatters.formatCurrency(amount, locale),
-                      style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              isNepali
-                  ? 'जम्मा टिप रकम: ${AppFormatters.formatCurrency(calculatedTipsTotal, locale)}'
-                  : 'Total Tips Amount: ${AppFormatters.formatCurrency(calculatedTipsTotal, locale)}',
-              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-            ),
-          ] else ...[
-            pw.Text(
-              isNepali ? 'कुनै अतिरिक्त टिप छैन' : 'No extra tips recorded',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-            ),
-          ],
-          pw.SizedBox(height: 10),
-
           pw.Text(
             isNepali
                 ? 'उपस्थित दिनको आम्दानीबाट सट्टा दिनको कटौती घटाई गणना गरिएको'
@@ -377,10 +321,6 @@ class PdfReportService {
                 _summaryRow(
                   isNepali ? 'उपस्थिति आम्दानी:' : 'Total Earning (from attendance):',
                   AppFormatters.formatCurrency(totalEarning, locale),
-                ),
-                _summaryRow(
-                  isNepali ? 'अतिरिक्त टिप:' : 'Extra Tips:',
-                  AppFormatters.formatCurrency(calculatedTipsTotal, locale),
                 ),
                 if (summaryUpToToday.totalExtraIncome > 0)
                   _summaryRow(

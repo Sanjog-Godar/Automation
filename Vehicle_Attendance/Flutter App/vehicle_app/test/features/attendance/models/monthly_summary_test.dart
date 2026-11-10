@@ -7,12 +7,11 @@ void main() {
   group('MonthlySummary Calculation Tests', () {
     test('Calculates exact financial formulas matching Next.js lib/attendance.ts', () {
       final logs = [
-        // Present day with extra trip and tip
+        // Present day with extra trip
         const AttendanceLog(
           logDate: '2026-01-15',
           status: AttendanceStatus.present,
           extraTripIncome: 500,
-          extraTipAmount: 200,
           kmTotal: 65,
           isUnselected: false,
         ),
@@ -21,7 +20,6 @@ void main() {
           logDate: '2026-01-16',
           status: AttendanceStatus.present,
           extraTripIncome: 0,
-          extraTipAmount: 100,
           kmTotal: 50,
           isUnselected: false,
         ),
@@ -59,8 +57,7 @@ void main() {
       // Net Income: 2900 - 3000 = -100
       expect(summary.netIncome, -100);
 
-      // Tips & KM
-      expect(summary.totalExtraTips, 300);
+      // KM
       expect(summary.totalKm, 115);
     });
   });

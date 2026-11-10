@@ -318,6 +318,18 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to sign out of the vehicle attendance system?'**
   String get dashboard_signOut_dialogMessage;
 
+  /// Bottom navigation label for the earnings home tab
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get dashboard_bottomNav_home;
+
+  /// Bottom navigation label for the attendance calendar tab
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get dashboard_bottomNav_calendar;
+
   /// Header title of the monthly summary card
   ///
   /// In en, this message translates to:
@@ -329,12 +341,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Present Days'**
   String get summary_presentDays;
-
-  /// Metric tile label for extra tips
-  ///
-  /// In en, this message translates to:
-  /// **'Extra Tips (Rs.)'**
-  String get summary_extraTips;
 
   /// Metric tile label for replacement days
   ///
@@ -371,6 +377,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Earnings - Deductions'**
   String get summary_netIncomeFormula;
+
+  /// Pill text when deductions exceed earnings
+  ///
+  /// In en, this message translates to:
+  /// **'Deductions exceed earnings'**
+  String get summary_deductions_exceed;
+
+  /// Label for gross earnings inside hero card
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get summary_earnings;
+
+  /// Section header for attendance metrics
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get summary_sec_attendance;
+
+  /// Section header for performance metrics
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get summary_sec_performance;
+
+  /// Unit for days count
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get summary_unit_days;
+
+  /// Label for present days in attendance section
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get summary_present_label;
+
+  /// Label for replacement days in attendance section
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement'**
+  String get summary_replacement_label;
+
+  /// Label for distance run in performance section
+  ///
+  /// In en, this message translates to:
+  /// **'Distance run'**
+  String get summary_distance_run;
 
   /// Today jump chip in month navigation
   ///
@@ -521,18 +575,6 @@ abstract class AppLocalizations {
   /// **'Starting & ending odometer reading'**
   String get day_sheet_enterKmSubtitle;
 
-  /// Row title for extra customer tip
-  ///
-  /// In en, this message translates to:
-  /// **'Add Extra Tip'**
-  String get day_sheet_addTipTitle;
-
-  /// Row subtitle for extra customer tip
-  ///
-  /// In en, this message translates to:
-  /// **'Customer tips and location notes'**
-  String get day_sheet_addTipSubtitle;
-
   /// Row title for extra trip earnings
   ///
   /// In en, this message translates to:
@@ -604,54 +646,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ending KM cannot be less than Starting KM'**
   String get km_sheet_validationEndLessThanStart;
-
-  /// Title on extra tip bottom sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Extra Tip'**
-  String get tip_sheet_title;
-
-  /// Subtitle on extra tip bottom sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Add extra customer tip and optional notes'**
-  String get tip_sheet_subtitle;
-
-  /// Label for tip amount field
-  ///
-  /// In en, this message translates to:
-  /// **'Tip Amount (Rs.)'**
-  String get tip_sheet_amountLabel;
-
-  /// Hint for tip amount field
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. 500'**
-  String get tip_sheet_amountHint;
-
-  /// Label for optional tip note
-  ///
-  /// In en, this message translates to:
-  /// **'Location / Note (Optional)'**
-  String get tip_sheet_noteLabel;
-
-  /// Hint for optional tip note
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. Airport drop tip'**
-  String get tip_sheet_noteHint;
-
-  /// Button to save tip entry
-  ///
-  /// In en, this message translates to:
-  /// **'Save Tip'**
-  String get tip_sheet_saveButton;
-
-  /// Validation message when tip amount is empty
-  ///
-  /// In en, this message translates to:
-  /// **'Tip amount is required'**
-  String get tip_sheet_validationRequired;
 
   /// Title on extra trip income dialog
   ///
@@ -977,12 +971,6 @@ abstract class AppLocalizations {
   /// **'Extra Trip'**
   String get pdf_report_col_extraTrip;
 
-  /// PDF tip column
-  ///
-  /// In en, this message translates to:
-  /// **'Tip'**
-  String get pdf_report_col_tip;
-
   /// PDF note column
   ///
   /// In en, this message translates to:
@@ -1006,18 +994,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Absent Days = {days}'**
   String pdf_report_totalAbsentDays(String days);
-
-  /// PDF total tips amount summary
-  ///
-  /// In en, this message translates to:
-  /// **'Total Tips: Rs. {amount}'**
-  String pdf_report_totalTipsAmount(String amount);
-
-  /// PDF fallback when no tips
-  ///
-  /// In en, this message translates to:
-  /// **'No extra tips recorded'**
-  String get pdf_report_noTipsRecorded;
 
   /// PDF gross earnings line
   ///
@@ -1072,18 +1048,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to save: {error}'**
   String toast_saveFailed(String error);
-
-  /// Toast message when tip is saved
-  ///
-  /// In en, this message translates to:
-  /// **'Tip saved successfully'**
-  String get toast_tipSaved;
-
-  /// Toast message when saving tip fails
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to save tip: {error}'**
-  String toast_tipFailed(String error);
 
   /// Toast message when KM is saved
   ///

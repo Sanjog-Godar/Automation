@@ -152,6 +152,14 @@
   "@dashboard_signOut_dialogMessage": {
     "description": "Body message of sign out confirmation dialog"
   },
+  "dashboard_bottomNav_home": "Home",
+  "@dashboard_bottomNav_home": {
+    "description": "Bottom navigation label for the earnings home tab"
+  },
+  "dashboard_bottomNav_calendar": "Calendar",
+  "@dashboard_bottomNav_calendar": {
+    "description": "Bottom navigation label for the attendance calendar tab"
+  },
 
   "summary_card_title": "Monthly Summary",
   "@summary_card_title": {
@@ -160,10 +168,6 @@
   "summary_presentDays": "Present Days",
   "@summary_presentDays": {
     "description": "Metric tile label for present days"
-  },
-  "summary_extraTips": "Extra Tips (Rs.)",
-  "@summary_extraTips": {
-    "description": "Metric tile label for extra tips"
   },
   "summary_replacementDays": "Replacement Days",
   "@summary_replacementDays": {
@@ -188,6 +192,38 @@
   "summary_netIncomeFormula": "Earnings - Deductions",
   "@summary_netIncomeFormula": {
     "description": "Subtitle explaining net income formula"
+  },
+  "summary_deductions_exceed": "Deductions exceed earnings",
+  "@summary_deductions_exceed": {
+    "description": "Pill text when deductions exceed earnings"
+  },
+  "summary_earnings": "Earnings",
+  "@summary_earnings": {
+    "description": "Label for gross earnings inside hero card"
+  },
+  "summary_sec_attendance": "Attendance",
+  "@summary_sec_attendance": {
+    "description": "Section header for attendance metrics"
+  },
+  "summary_sec_performance": "Performance",
+  "@summary_sec_performance": {
+    "description": "Section header for performance metrics"
+  },
+  "summary_unit_days": "days",
+  "@summary_unit_days": {
+    "description": "Unit for days count"
+  },
+  "summary_present_label": "Present",
+  "@summary_present_label": {
+    "description": "Label for present days in attendance section"
+  },
+  "summary_replacement_label": "Replacement",
+  "@summary_replacement_label": {
+    "description": "Label for replacement days in attendance section"
+  },
+  "summary_distance_run": "Distance run",
+  "@summary_distance_run": {
+    "description": "Label for distance run in performance section"
   },
 
   "calendar_todayChip": "Today",
@@ -297,14 +333,6 @@
   "@day_sheet_enterKmSubtitle": {
     "description": "Row subtitle for odometer KM entry"
   },
-  "day_sheet_addTipTitle": "Add Extra Tip",
-  "@day_sheet_addTipTitle": {
-    "description": "Row title for extra customer tip"
-  },
-  "day_sheet_addTipSubtitle": "Customer tips and location notes",
-  "@day_sheet_addTipSubtitle": {
-    "description": "Row subtitle for extra customer tip"
-  },
   "day_sheet_extraTripTitle": "Extra Trip Income",
   "@day_sheet_extraTripTitle": {
     "description": "Row title for extra trip earnings"
@@ -356,39 +384,6 @@
   "km_sheet_validationEndLessThanStart": "Ending KM cannot be less than Starting KM",
   "@km_sheet_validationEndLessThanStart": {
     "description": "Validation message when ending KM is less than starting"
-  },
-
-  "tip_sheet_title": "Extra Tip",
-  "@tip_sheet_title": {
-    "description": "Title on extra tip bottom sheet"
-  },
-  "tip_sheet_subtitle": "Add extra customer tip and optional notes",
-  "@tip_sheet_subtitle": {
-    "description": "Subtitle on extra tip bottom sheet"
-  },
-  "tip_sheet_amountLabel": "Tip Amount (Rs.)",
-  "@tip_sheet_amountLabel": {
-    "description": "Label for tip amount field"
-  },
-  "tip_sheet_amountHint": "e.g. 500",
-  "@tip_sheet_amountHint": {
-    "description": "Hint for tip amount field"
-  },
-  "tip_sheet_noteLabel": "Location / Note (Optional)",
-  "@tip_sheet_noteLabel": {
-    "description": "Label for optional tip note"
-  },
-  "tip_sheet_noteHint": "e.g. Airport drop tip",
-  "@tip_sheet_noteHint": {
-    "description": "Hint for optional tip note"
-  },
-  "tip_sheet_saveButton": "Save Tip",
-  "@tip_sheet_saveButton": {
-    "description": "Button to save tip entry"
-  },
-  "tip_sheet_validationRequired": "Tip amount is required",
-  "@tip_sheet_validationRequired": {
-    "description": "Validation message when tip amount is empty"
   },
 
   "trip_dialog_title": "Extra Trip Income",
@@ -623,10 +618,6 @@
   "@pdf_report_col_extraTrip": {
     "description": "PDF extra trip column"
   },
-  "pdf_report_col_tip": "Tip",
-  "@pdf_report_col_tip": {
-    "description": "PDF tip column"
-  },
   "pdf_report_col_note": "Note",
   "@pdf_report_col_note": {
     "description": "PDF note column"
@@ -651,17 +642,6 @@
     "placeholders": {
       "days": { "type": "String" }
     }
-  },
-  "pdf_report_totalTipsAmount": "Total Tips: Rs. {amount}",
-  "@pdf_report_totalTipsAmount": {
-    "description": "PDF total tips amount summary",
-    "placeholders": {
-      "amount": { "type": "String" }
-    }
-  },
-  "pdf_report_noTipsRecorded": "No extra tips recorded",
-  "@pdf_report_noTipsRecorded": {
-    "description": "PDF fallback when no tips"
   },
   "pdf_report_grossEarnings": "Gross Earnings",
   "@pdf_report_grossEarnings": {
@@ -706,17 +686,6 @@
   "toast_saveFailed": "Failed to save: {error}",
   "@toast_saveFailed": {
     "description": "Toast message when save fails",
-    "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
-  "toast_tipSaved": "Tip saved successfully",
-  "@toast_tipSaved": {
-    "description": "Toast message when tip is saved"
-  },
-  "toast_tipFailed": "Failed to save tip: {error}",
-  "@toast_tipFailed": {
-    "description": "Toast message when saving tip fails",
     "placeholders": {
       "error": { "type": "String" }
     }

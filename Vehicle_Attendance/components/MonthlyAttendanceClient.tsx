@@ -688,8 +688,7 @@ export function MonthlyAttendanceClient() {
     mutation.mutate({
       ...cleanLog,
       status,
-      extra_trip_income:
-        status === "present" ? current.extra_trip_income ?? 0 : 0,
+      extra_trip_income: current.extra_trip_income ?? 0,
     });
   };
 
@@ -698,7 +697,6 @@ export function MonthlyAttendanceClient() {
     const { isUnselected, ...cleanLog } = current;
     mutation.mutate({
       ...cleanLog,
-      status: "present",
       extra_trip_income: extra,
     });
   };

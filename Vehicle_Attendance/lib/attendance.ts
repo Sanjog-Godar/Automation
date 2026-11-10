@@ -66,10 +66,11 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
   for (const log of logs) {
     if (log.status === 'present') {
       totalPresentDays += 1;
-      totalExtraIncome += Number(log.extra_trip_income || 0);
     } else if (log.status === 'absent_replacement') {
       totalReplacementDays += 1;
     }
+
+    totalExtraIncome += Number(log.extra_trip_income || 0);
 
     totalExtraTips += Number((log.extra_tip_amount ?? 0) || 0);
     totalKm += Number((log.km_total ?? 0) || 0);

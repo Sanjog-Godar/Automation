@@ -65,6 +65,13 @@ class AppFormatters {
     return buffer.toString();
   }
 
+  /// Formats calendar years (e.g. 2083 or 2026) without thousands grouping commas.
+  /// Produces '2083' in English and '२०८३' in Nepali.
+  static String formatYear(int year, Locale locale) {
+    final str = year.toString();
+    return locale.languageCode == 'ne' ? toDevanagariDigits(str) : str;
+  }
+
   /// Formats numbers with thousand / lakh grouping.
   /// Converts to Devanagari digits when [locale.languageCode == 'ne'].
   static String formatNumber(

@@ -126,13 +126,16 @@ class AppLocalizationsNe extends AppLocalizations {
       'के तपाईं सवारी साधन उपस्थिति प्रणालीबाट बाहिरिन चाहनुहुन्छ?';
 
   @override
+  String get dashboard_bottomNav_home => 'गृहपृष्ठ';
+
+  @override
+  String get dashboard_bottomNav_calendar => 'पात्रो';
+
+  @override
   String get summary_card_title => 'मासिक सारांश';
 
   @override
   String get summary_presentDays => 'उपस्थित दिन';
-
-  @override
-  String get summary_extraTips => 'अतिरिक्त टिप (रु.)';
 
   @override
   String get summary_replacementDays => 'सट्टा दिन';
@@ -151,6 +154,30 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get summary_netIncomeFormula => 'आम्दानी - कटौती';
+
+  @override
+  String get summary_deductions_exceed => 'कटौती आम्दानीभन्दा बढी छ';
+
+  @override
+  String get summary_earnings => 'आम्दानी';
+
+  @override
+  String get summary_sec_attendance => 'उपस्थिति';
+
+  @override
+  String get summary_sec_performance => 'कार्य सम्पादन';
+
+  @override
+  String get summary_unit_days => 'दिन';
+
+  @override
+  String get summary_present_label => 'उपस्थित';
+
+  @override
+  String get summary_replacement_label => 'सट्टा';
+
+  @override
+  String get summary_distance_run => 'चलेको दुरी';
 
   @override
   String get calendar_todayChip => 'आज';
@@ -242,12 +269,6 @@ class AppLocalizationsNe extends AppLocalizations {
   String get day_sheet_enterKmSubtitle => 'सुरु र अन्तिम मिटरको अंक';
 
   @override
-  String get day_sheet_addTipTitle => 'अतिरिक्त टिप थप्नुहोस्';
-
-  @override
-  String get day_sheet_addTipSubtitle => 'ग्राहकबाट प्राप्त टिप र स्थान';
-
-  @override
   String get day_sheet_extraTripTitle => 'अतिरिक्त आम्दानी';
 
   @override
@@ -286,30 +307,6 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get km_sheet_validationEndLessThanStart =>
       'अन्तिम किलोमिटर सुरुभन्दा कम हुन सक्दैन';
-
-  @override
-  String get tip_sheet_title => 'अतिरिक्त टिप';
-
-  @override
-  String get tip_sheet_subtitle => 'ग्राहकको टिप र आवश्यक नोट थप्नुहोस्';
-
-  @override
-  String get tip_sheet_amountLabel => 'टिप रकम (रु.)';
-
-  @override
-  String get tip_sheet_amountHint => 'जस्तै: ५००';
-
-  @override
-  String get tip_sheet_noteLabel => 'स्थान / नोट (ऐच्छिक)';
-
-  @override
-  String get tip_sheet_noteHint => 'जस्तै: विमानस्थल ड्रप टिप';
-
-  @override
-  String get tip_sheet_saveButton => 'टिप सुरक्षित गर्नुहोस्';
-
-  @override
-  String get tip_sheet_validationRequired => 'टिप रकम अनिवार्य छ';
 
   @override
   String get trip_dialog_title => 'अतिरिक्त आम्दानी';
@@ -494,9 +491,6 @@ class AppLocalizationsNe extends AppLocalizations {
   String get pdf_report_col_extraTrip => 'अतिरिक्त आम्दानी';
 
   @override
-  String get pdf_report_col_tip => 'टिप';
-
-  @override
   String get pdf_report_col_note => 'कैफियत';
 
   @override
@@ -513,14 +507,6 @@ class AppLocalizationsNe extends AppLocalizations {
   String pdf_report_totalAbsentDays(String days) {
     return 'अनुपस्थित दिन = $days';
   }
-
-  @override
-  String pdf_report_totalTipsAmount(String amount) {
-    return 'जम्मा टिप रकम: रु. $amount';
-  }
-
-  @override
-  String get pdf_report_noTipsRecorded => 'कुनै अतिरिक्त टिप छैन';
 
   @override
   String get pdf_report_grossEarnings => 'जम्मा आम्दानी';
@@ -554,14 +540,6 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String toast_saveFailed(String error) {
     return 'सुरक्षित गर्दा समस्या आयो: $error';
-  }
-
-  @override
-  String get toast_tipSaved => 'टिप सुरक्षित गरियो';
-
-  @override
-  String toast_tipFailed(String error) {
-    return 'टिप सुरक्षित गर्न सकिएन: $error';
   }
 
   @override

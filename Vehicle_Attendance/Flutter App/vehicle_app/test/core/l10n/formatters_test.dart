@@ -24,6 +24,13 @@ void main() {
       expect(AppFormatters.formatNumber(1250000, neLocale), equals('१२,५०,०००'));
     });
 
+    test('formatYear formats calendar year without thousands commas', () {
+      expect(AppFormatters.formatYear(2083, enLocale), equals('2083'));
+      expect(AppFormatters.formatYear(2083, neLocale), equals('२०८३'));
+      expect(AppFormatters.formatYear(2026, enLocale), equals('2026'));
+      expect(AppFormatters.formatYear(2026, neLocale), equals('२०२६'));
+    });
+
     test('formatCurrency prefixes correct symbol per locale', () {
       expect(AppFormatters.formatCurrency(1200, enLocale), equals('Rs. 1,200'));
       expect(AppFormatters.formatCurrency(-3000, enLocale), equals('Rs. -3,000'));

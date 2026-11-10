@@ -127,13 +127,12 @@ void main() {
       verify(() => mockToastService.showError(any(), nepaliMessage: any(named: 'nepaliMessage'))).called(1);
     });
 
-    test('Changing status away from present resets extraTripIncome to 0 but preserves tips and km', () async {
+    test('Changing status away from present preserves extraTripIncome and km', () async {
       final initialLogs = [
         const AttendanceLog(
           logDate: '2026-01-15',
           status: AttendanceStatus.present,
           extraTripIncome: 600,
-          extraTipAmount: 300,
           kmTotal: 75,
           isUnselected: false,
         ),
@@ -152,8 +151,7 @@ void main() {
       final state = container.read(attendanceControllerProvider);
       final updated = state.logs[0];
       expect(updated.status, AttendanceStatus.absentReplacement);
-      expect(updated.extraTripIncome, 0); // Reset to 0!
-      expect(updated.extraTipAmount, 300); // Preserved!
+      expect(updated.extraTripIncome, 600); // Preserved!
       expect(updated.kmTotal, 75); // Preserved!
       expect(updated.isUnselected, isFalse);
     });

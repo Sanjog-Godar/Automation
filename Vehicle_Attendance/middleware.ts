@@ -5,6 +5,19 @@ import type { NextRequest } from 'next/server';
 // We treat presence of `sb-access-token` as "logged in".
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Handle CORS preflight requests for /api routes
+  if (req.method === 'OPTIONS' && pathname.startsWith('/api')) {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept',
+      },
+    });
+  }
+
   const isLoginPage = pathname === '/login';
   const hasAuthCookie = req.cookies.has('sb-access-token');
 

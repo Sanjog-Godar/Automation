@@ -3,9 +3,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vehicle_app/core/theme/app_colors.dart';
 import 'package:vehicle_app/features/attendance/models/attendance_log.dart';
+import 'package:vehicle_app/features/attendance/models/monthly_summary.dart';
 import 'package:vehicle_app/features/attendance/widgets/calendar_grid.dart';
 import 'package:vehicle_app/features/attendance/widgets/day_card.dart';
 import 'package:vehicle_app/features/attendance/widgets/day_details_bottom_sheet.dart';
+import 'package:vehicle_app/features/attendance/widgets/monthly_summary_card.dart';
 import 'package:vehicle_app/l10n/app_localizations.dart';
 
 void main() {
@@ -318,7 +320,6 @@ void main() {
               onNextMonth: () {},
               onToday: () {},
               onStatusChange: (logDate, status) {},
-              onOpenTip: (_) {},
               onOpenKm: (_) {},
               onFutureDateTap: (date) {
                 futureTapped = true;
@@ -364,7 +365,6 @@ void main() {
                 changedDate = date;
                 changedStatus = status;
               },
-              onOpenTip: (_) {},
               onOpenKm: (_) {},
             ),
           ),
@@ -420,7 +420,6 @@ void main() {
                 onNextMonth: () {},
                 onToday: () {},
                 onStatusChange: (logDate, status) {},
-                onOpenTip: (_) {},
                 onOpenKm: (_) {},
               ),
             ),
@@ -431,6 +430,140 @@ void main() {
       // The summary chip should display localized "3 days need data"
       expect(find.byKey(const Key('calendar_missing_summary_chip')), findsOneWidget);
       expect(find.textContaining('3 days need data'), findsOneWidget);
+    });
+
+    testWidgets('CalendarGrid header renders year without commas in English (Kartik 2083)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('ne')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: CalendarGrid(
+                bsYear: 2083,
+                bsMonthIndex: 6, // Kartik
+                logs: const [],
+                savingDates: const {},
+                onPreviousMonth: () {},
+                onNextMonth: () {},
+                onToday: () {},
+                onStatusChange: (logDate, status) {},
+                onOpenKm: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Must display 'Kartik 2083' without comma
+      expect(find.text('Kartik 2083'), findsOneWidget);
+      expect(find.text('Kartik 2,083'), findsNothing);
+    });
+
+    testWidgets('CalendarGrid header renders year without commas in Nepali (कार्तिक २०८३)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ne'),
+          supportedLocales: const [Locale('en'), Locale('ne')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: CalendarGrid(
+                bsYear: 2083,
+                bsMonthIndex: 6, // Kartik
+                logs: const [],
+                savingDates: const {},
+                onPreviousMonth: () {},
+                onNextMonth: () {},
+                onToday: () {},
+                onStatusChange: (logDate, status) {},
+                onOpenKm: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Must display 'कार्तिक २०८३' without comma
+      expect(find.text('कार्तिक २०८३'), findsOneWidget);
+      expect(find.text('कार्तिक २,०८३'), findsNothing);
+    });
+
+    testWidgets('MonthlySummaryCard renders negative net income in red', (tester) async {
+      const negativeSummary = MonthlySummary(
+        totalPresentDays: 2,
+        totalReplacementDays: 2,
+        totalExtraIncome: 0,
+        totalKm: 1,
+        grossIncome: 2400,
+        totalDeductions: 6000,
+        netIncome: -3600,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: [Locale('en'), Locale('ne')],
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: MonthlySummaryCard(summary: negativeSummary),
+          ),
+        ),
+      );
+
+      final amountFinder = find.text('−3,600');
+      expect(amountFinder, findsOneWidget);
+      final textWidget = tester.widget<Text>(amountFinder);
+      expect(textWidget.style?.color, AppColors.netIncomeNegativeOnHero);
+    });
+
+    testWidgets('MonthlySummaryCard renders positive net income in green', (tester) async {
+      const positiveSummary = MonthlySummary(
+        totalPresentDays: 3,
+        totalReplacementDays: 0,
+        totalExtraIncome: 300,
+        totalKm: 50,
+        grossIncome: 3900,
+        totalDeductions: 0,
+        netIncome: 3900,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: [Locale('en'), Locale('ne')],
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: MonthlySummaryCard(summary: positiveSummary),
+          ),
+        ),
+      );
+
+      final amountFinder = find.text('3,900');
+      expect(amountFinder, findsOneWidget);
+      final textWidget = tester.widget<Text>(amountFinder);
+      expect(textWidget.style?.color, AppColors.netIncomePositiveOnHero);
     });
   });
 }

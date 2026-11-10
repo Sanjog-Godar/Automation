@@ -8,15 +8,14 @@ import '../../../l10n/app_localizations.dart';
 import '../models/attendance_log.dart';
 
 /// Modal bottom sheet displaying detailed attendance status, KM entry,
-/// and extra tips for a specific day. Fully localized with strict single-language rendering.
-class DayDetailsBottomSheet extends StatelessWidget {
+/// and extra trips for a specific day. Fully localized with strict single-language rendering.
+class DayDetailsBottomSheet extends StatefulWidget {
   final int dayNumber;
   final int bsYear;
   final int bsMonthIndex;
   final AttendanceLog log;
   final bool isSaving;
   final void Function(String logDate, AttendanceStatus newStatus) onStatusChange;
-  final void Function(AttendanceLog log) onOpenTip;
   final void Function(AttendanceLog log) onOpenKm;
   final void Function(AttendanceLog log)? onOpenExtraTrip;
 
@@ -28,7 +27,6 @@ class DayDetailsBottomSheet extends StatelessWidget {
     required this.log,
     required this.isSaving,
     required this.onStatusChange,
-    required this.onOpenTip,
     required this.onOpenKm,
     this.onOpenExtraTrip,
   });
@@ -41,7 +39,6 @@ class DayDetailsBottomSheet extends StatelessWidget {
     required AttendanceLog log,
     required bool isSaving,
     required void Function(String logDate, AttendanceStatus newStatus) onStatusChange,
-    required void Function(AttendanceLog log) onOpenTip,
     required void Function(AttendanceLog log) onOpenKm,
     void Function(AttendanceLog log)? onOpenExtraTrip,
   }) {
@@ -56,7 +53,6 @@ class DayDetailsBottomSheet extends StatelessWidget {
         log: log,
         isSaving: isSaving,
         onStatusChange: onStatusChange,
-        onOpenTip: onOpenTip,
         onOpenKm: onOpenKm,
         onOpenExtraTrip: onOpenExtraTrip,
       ),
@@ -64,29 +60,75 @@ class DayDetailsBottomSheet extends StatelessWidget {
   }
 
   @override
+  State<DayDetailsBottomSheet> createState() => _DayDetailsBottomSheetState();
+}
+
+class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
+  late AttendanceLog _currentLog;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentLog = widget.log;
+  }
+
+  @override
+  void didUpdateWidget(covariant DayDetailsBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.log != oldWidget.log) {
+      setState(() {
+        _currentLog = widget.log;
+      });
+    }
+  }
+
+  void _handleStatusSelect(AttendanceStatus status) {
+    HapticFeedback.lightImpact();
+    widget.onStatusChange(_currentLog.logDate, status);
+
+    setState(() {
+      if (!_currentLog.isUnselected && _currentLog.status == status) {
+        // Toggled off (deleted)
+        _currentLog = AttendanceLog.unselectedPlaceholder(_currentLog.logDate);
+      } else {
+        _currentLog = _currentLog.copyWith(
+          status: status,
+          isUnselected: false,
+        );
+      }
+    });
+
+    // If marked Present, immediately prompt for Odometer KM without needing to re-open the bottom sheet
+    if (status == AttendanceStatus.present && !_currentLog.isUnselected) {
+      Navigator.pop(context);
+      widget.onOpenKm(_currentLog);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
 
-    final adDate = NepalClock.parseDate(log.logDate);
+    final adDate = NepalClock.parseDate(_currentLog.logDate);
     final dayOfWeek = adDate.weekday % 7; // 0=Sun ... 6=Sat
 
-    final bsMonth = AppFormatters.bsMonthName(bsMonthIndex, locale);
-    final bsDayStr = AppFormatters.formatNumber(dayNumber, locale);
+    final bsMonth = AppFormatters.bsMonthName(widget.bsMonthIndex, locale);
+    final bsDayStr = AppFormatters.formatNumber(widget.dayNumber, locale);
     final weekdayStr = AppFormatters.weekdayName(dayOfWeek, locale, full: true);
     final adDateStr = AppFormatters.formatAdDate(adDate, locale, fullMonth: false);
 
-    final isToday = log.logDate == NepalClock.todayDateString();
-    final isPast = NepalClock.isPast(log.logDate);
-    final isMissingStatus = isPast && log.isUnselected;
+    final isToday = _currentLog.logDate == NepalClock.todayDateString();
+    final isPast = NepalClock.isPast(_currentLog.logDate);
+    final isMissingStatus = isPast && _currentLog.isUnselected;
     final isMissingKm = isPast &&
-        !log.isUnselected &&
-        log.status == AttendanceStatus.present &&
-        (log.kmTotal == null || log.kmTotal! <= 0);
+        !_currentLog.isUnselected &&
+        _currentLog.status == AttendanceStatus.present &&
+        (_currentLog.kmTotal == null || _currentLog.kmTotal! <= 0);
 
-    final isPresent = log.status == AttendanceStatus.present && !log.isUnselected;
-    final isHoliday = log.status == AttendanceStatus.absentHoliday && !log.isUnselected;
-    final isReplace = log.status == AttendanceStatus.absentReplacement && !log.isUnselected;
+    final isPresent = _currentLog.status == AttendanceStatus.present && !_currentLog.isUnselected;
+    final isHoliday = _currentLog.status == AttendanceStatus.absentHoliday && !_currentLog.isUnselected;
+    final isReplace = _currentLog.status == AttendanceStatus.absentReplacement && !_currentLog.isUnselected;
 
     return Container(
       decoration: const BoxDecoration(
@@ -277,11 +319,7 @@ class DayDetailsBottomSheet extends StatelessWidget {
                     isActive: isPresent,
                     activeColor: AppColors.present,
                     activeBg: AppColors.presentBg,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      onStatusChange(log.logDate, AttendanceStatus.present);
-                      Navigator.pop(context);
-                    },
+                    onTap: () => _handleStatusSelect(AttendanceStatus.present),
                   ),
                   const SizedBox(width: 8),
                   _buildStatusButton(
@@ -292,11 +330,7 @@ class DayDetailsBottomSheet extends StatelessWidget {
                     isActive: isHoliday,
                     activeColor: AppColors.holiday,
                     activeBg: AppColors.holidayBg,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      onStatusChange(log.logDate, AttendanceStatus.absentHoliday);
-                      Navigator.pop(context);
-                    },
+                    onTap: () => _handleStatusSelect(AttendanceStatus.absentHoliday),
                   ),
                   const SizedBox(width: 8),
                   _buildStatusButton(
@@ -307,17 +341,13 @@ class DayDetailsBottomSheet extends StatelessWidget {
                     isActive: isReplace,
                     activeColor: AppColors.replacement,
                     activeBg: AppColors.replacementBg,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      onStatusChange(log.logDate, AttendanceStatus.absentReplacement);
-                      Navigator.pop(context);
-                    },
+                    onTap: () => _handleStatusSelect(AttendanceStatus.absentReplacement),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // Records & Modals Section (KM, Extra Tip, Extra Trip)
+              // Records & Modals Section (KM, Extra Trip)
               Text(
                 l10n.day_sheet_detailsRecordsTitle,
                 style: const TextStyle(
@@ -333,57 +363,38 @@ class DayDetailsBottomSheet extends StatelessWidget {
                 context: context,
                 icon: Icons.speed_rounded,
                 iconColor: AppColors.primary,
-                title: log.kmTotal != null && log.kmTotal! > 0
-                    ? '${AppFormatters.formatUnit(log.kmTotal!, 'km', locale)} (${AppFormatters.formatNumber(log.kmStart ?? 0, locale)} - ${AppFormatters.formatNumber(log.kmEnd ?? 0, locale)})'
+                title: _currentLog.kmTotal != null && _currentLog.kmTotal! > 0
+                    ? '${AppFormatters.formatUnit(_currentLog.kmTotal!, 'km', locale)} (${AppFormatters.formatNumber(_currentLog.kmStart ?? 0, locale)} - ${AppFormatters.formatNumber(_currentLog.kmEnd ?? 0, locale)})'
                     : l10n.day_sheet_enterKmTitle,
                 subtitle: l10n.day_sheet_enterKmSubtitle,
-                buttonText: log.kmTotal != null && log.kmTotal! > 0 ? l10n.common_edit : l10n.common_add,
+                buttonText: _currentLog.kmTotal != null && _currentLog.kmTotal! > 0 ? l10n.common_edit : l10n.common_add,
                 buttonColor: AppColors.primary,
                 isEnabled: isPresent,
                 onTap: isPresent
                     ? () {
                         Navigator.pop(context);
-                        onOpenKm(log);
+                        widget.onOpenKm(_currentLog);
                       }
                     : null,
               ),
               const SizedBox(height: 8),
 
-              // Extra Tip Button
-              _buildActionRow(
-                context: context,
-                icon: Icons.volunteer_activism_rounded,
-                iconColor: AppColors.primary,
-                title: log.extraTipAmount != null && log.extraTipAmount! > 0
-                    ? '${l10n.tip_sheet_title}: ${AppFormatters.formatCurrency(log.extraTipAmount!, locale)}${log.extraTipNote != null ? " (${log.extraTipNote})" : ""}'
-                    : l10n.day_sheet_addTipTitle,
-                subtitle: l10n.day_sheet_addTipSubtitle,
-                buttonText: log.extraTipAmount != null && log.extraTipAmount! > 0 ? l10n.common_edit : l10n.common_add,
-                buttonColor: AppColors.primary,
-                isEnabled: true,
-                onTap: () {
-                  Navigator.pop(context);
-                  onOpenTip(log);
-                },
-              ),
-
-              // Extra Trip Income (Present days)
-              if (isPresent && onOpenExtraTrip != null) ...[
-                const SizedBox(height: 8),
+              // Extra Trip Income (Available regardless of status)
+              if (widget.onOpenExtraTrip != null) ...[
                 _buildActionRow(
                   context: context,
                   icon: Icons.add_circle_outline_rounded,
                   iconColor: AppColors.present,
-                  title: log.extraTripIncome > 0
-                      ? '${l10n.trip_dialog_title}: ${AppFormatters.formatCurrency(log.extraTripIncome, locale)}'
+                  title: _currentLog.extraTripIncome > 0
+                      ? '${l10n.trip_dialog_title}: ${AppFormatters.formatCurrency(_currentLog.extraTripIncome, locale)}'
                       : l10n.day_sheet_extraTripTitle,
                   subtitle: l10n.day_sheet_extraTripSubtitle,
-                  buttonText: log.extraTripIncome > 0 ? l10n.common_edit : l10n.common_add,
+                  buttonText: _currentLog.extraTripIncome > 0 ? l10n.common_edit : l10n.common_add,
                   buttonColor: AppColors.present,
                   isEnabled: true,
                   onTap: () {
                     Navigator.pop(context);
-                    onOpenExtraTrip!(log);
+                    widget.onOpenExtraTrip!(_currentLog);
                   },
                 ),
               ],

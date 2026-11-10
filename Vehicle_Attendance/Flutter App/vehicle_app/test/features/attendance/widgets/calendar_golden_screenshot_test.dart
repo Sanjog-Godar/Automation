@@ -38,7 +38,7 @@ void main() {
     } else if (day == 4) {
       return AttendanceLog(logDate: dateStr, status: AttendanceStatus.absentReplacement, isUnselected: false);
     } else if (day == 5) {
-      return AttendanceLog(logDate: dateStr, status: AttendanceStatus.present, isUnselected: false, kmTotal: 60, extraTipAmount: 200);
+      return AttendanceLog(logDate: dateStr, status: AttendanceStatus.present, isUnselected: false, kmTotal: 60);
     } else if (day == 6) {
       return AttendanceLog(logDate: dateStr, status: AttendanceStatus.absentHoliday, isUnselected: false);
     } else {
@@ -86,7 +86,6 @@ void main() {
                 onNextMonth: () {},
                 onToday: () {},
                 onStatusChange: (d, s) {},
-                onOpenTip: (l) {},
                 onOpenKm: (l) {},
               ),
             ),
@@ -143,7 +142,6 @@ void main() {
               log: sampleLogs[3],
               isSaving: false,
               onStatusChange: (d, s) {},
-              onOpenTip: (l) {},
               onOpenKm: (l) {},
             ),
           ),

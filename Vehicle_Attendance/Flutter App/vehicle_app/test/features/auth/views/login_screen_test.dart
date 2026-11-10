@@ -56,6 +56,10 @@ void main() {
       expect(find.text('Remember me'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'Sign in'), findsOneWidget);
       expect(find.text('Ga 2 Pa 4066'), findsOneWidget);
+      // Language chip shows 'English' when active language is English (never 'नेपाली' or inverted)
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text('नेपाली'), findsNothing);
+      expect(find.text('EN'), findsNothing);
     });
 
     testWidgets('Renders properly localized in Nepali without English leakage', (tester) async {
@@ -68,6 +72,10 @@ void main() {
       expect(find.text('पासवर्ड'), findsOneWidget);
       expect(find.text('मलाई सम्झनुहोस्'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'लग-इन गर्नुहोस्'), findsOneWidget);
+      // Language chip shows 'नेपाली' when active language is Nepali (never 'EN' or inverted)
+      expect(find.text('नेपाली'), findsOneWidget);
+      expect(find.text('English'), findsNothing);
+      expect(find.text('EN'), findsNothing);
     });
 
     testWidgets('Displays form validation errors when submitted empty', (tester) async {

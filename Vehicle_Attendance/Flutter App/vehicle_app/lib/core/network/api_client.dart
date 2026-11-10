@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import 'auth_interceptor.dart';
 import 'cookie_manager_provider.dart';
+import 'supabase_rest_interceptor.dart';
 
 /// Provider for the ApiClient instance.
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -44,6 +45,7 @@ class ApiClient {
             ) {
     if (customDio == null) {
       dio.interceptors.addAll([
+        SupabaseRestInterceptor(),
         if (!kIsWeb) CookieManager(cookieJar),
         AuthInterceptor(
           cookieJar: cookieJar,

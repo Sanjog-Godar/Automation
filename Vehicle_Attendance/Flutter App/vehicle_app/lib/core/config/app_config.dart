@@ -61,6 +61,20 @@ class AppConfig {
     return liveProductionBaseUrl;
   }
 
+  /// Whether the Flutter application communicates directly with Supabase REST
+  /// and GoTrue authentication endpoints.
+  ///
+  /// Defaults to `true` to ensure 100% reliable database operations, full CORS
+  /// support in web browsers without preflight blocks, and zero Vercel cold-starts.
+  /// Set `--dart-define=USE_NEXT_API=true` to force routing via Next.js `/api/*` endpoints.
+  static bool get useSupabaseDirect {
+    const useNextApi = bool.fromEnvironment('USE_NEXT_API', defaultValue: false);
+    if (useNextApi) return false;
+
+    const useSupabase = bool.fromEnvironment('USE_SUPABASE_DIRECT', defaultValue: true);
+    return useSupabase;
+  }
+
   /// HTTP connect timeout in milliseconds.
   static const Duration connectTimeout = Duration(seconds: 15);
 

@@ -38,7 +38,6 @@ void main() {
                 'log_date': '2026-01-15',
                 'status': 'present',
                 'extra_trip_income': 0,
-                'extra_tip_amount': 150,
                 'km_total': 45,
               }
             ],
@@ -67,7 +66,6 @@ void main() {
       final day1 = logs.firstWhere((l) => l.logDate == '2026-01-15');
       expect(day1.status, AttendanceStatus.present);
       expect(day1.isUnselected, isFalse);
-      expect(day1.extraTipAmount, 150);
 
       // Other days must be unselected placeholders
       final unselectedDay = logs.firstWhere((l) => l.logDate != '2026-01-15');
@@ -95,7 +93,6 @@ void main() {
               'log_date': '2026-01-15',
               'status': 'present',
               'extra_trip_income': 400,
-              'extra_tip_amount': 0,
             },
           },
         ),

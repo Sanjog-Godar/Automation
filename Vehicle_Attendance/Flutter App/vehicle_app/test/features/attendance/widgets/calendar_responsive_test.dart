@@ -35,7 +35,6 @@ void main() {
                   onNextMonth: () {},
                   onToday: () {},
                   onStatusChange: (logDate, status) {},
-                  onOpenTip: (_) {},
                   onOpenKm: (_) {},
                 ),
               ),

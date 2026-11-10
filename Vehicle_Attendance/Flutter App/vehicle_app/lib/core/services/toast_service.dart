@@ -9,17 +9,25 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 /// Provider for ToastService singleton, dynamically aware of active [Locale].
+///
+/// The locale is resolved lazily (instead of `ref.watch`-ing it here) so that a
+/// language switch does not recreate this service and, through it, reset the
+/// state of every controller that depends on it.
 final toastServiceProvider = Provider<ToastService>((ref) {
-  final locale = ref.watch(localeProvider);
-  return ToastService(locale: locale);
+  return ToastService(localeResolver: () => ref.read(localeProvider));
 });
 
 /// Service for displaying toast notifications with strict single-language rendering.
 /// In Nepali mode, only [nepaliMessage] is shown; in English mode, only [message] is shown.
 class ToastService {
-  final Locale? locale;
+  final Locale? fixedLocale;
+  final Locale Function()? localeResolver;
 
-  ToastService({this.locale});
+  ToastService({Locale? locale, this.localeResolver}) : fixedLocale = locale;
+
+  /// Active application locale, resolved on every read so a single instance
+  /// always reflects the current language selection.
+  Locale? get locale => localeResolver?.call() ?? fixedLocale;
 
   void showSuccess(
     String message, {

@@ -126,13 +126,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to sign out of the vehicle attendance system?';
 
   @override
+  String get dashboard_bottomNav_home => 'Home';
+
+  @override
+  String get dashboard_bottomNav_calendar => 'Calendar';
+
+  @override
   String get summary_card_title => 'Monthly Summary';
 
   @override
   String get summary_presentDays => 'Present Days';
-
-  @override
-  String get summary_extraTips => 'Extra Tips (Rs.)';
 
   @override
   String get summary_replacementDays => 'Replacement Days';
@@ -151,6 +154,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get summary_netIncomeFormula => 'Earnings - Deductions';
+
+  @override
+  String get summary_deductions_exceed => 'Deductions exceed earnings';
+
+  @override
+  String get summary_earnings => 'Earnings';
+
+  @override
+  String get summary_sec_attendance => 'Attendance';
+
+  @override
+  String get summary_sec_performance => 'Performance';
+
+  @override
+  String get summary_unit_days => 'days';
+
+  @override
+  String get summary_present_label => 'Present';
+
+  @override
+  String get summary_replacement_label => 'Replacement';
+
+  @override
+  String get summary_distance_run => 'Distance run';
 
   @override
   String get calendar_todayChip => 'Today';
@@ -242,12 +269,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get day_sheet_enterKmSubtitle => 'Starting & ending odometer reading';
 
   @override
-  String get day_sheet_addTipTitle => 'Add Extra Tip';
-
-  @override
-  String get day_sheet_addTipSubtitle => 'Customer tips and location notes';
-
-  @override
   String get day_sheet_extraTripTitle => 'Extra Trip Income';
 
   @override
@@ -286,30 +307,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get km_sheet_validationEndLessThanStart =>
       'Ending KM cannot be less than Starting KM';
-
-  @override
-  String get tip_sheet_title => 'Extra Tip';
-
-  @override
-  String get tip_sheet_subtitle => 'Add extra customer tip and optional notes';
-
-  @override
-  String get tip_sheet_amountLabel => 'Tip Amount (Rs.)';
-
-  @override
-  String get tip_sheet_amountHint => 'e.g. 500';
-
-  @override
-  String get tip_sheet_noteLabel => 'Location / Note (Optional)';
-
-  @override
-  String get tip_sheet_noteHint => 'e.g. Airport drop tip';
-
-  @override
-  String get tip_sheet_saveButton => 'Save Tip';
-
-  @override
-  String get tip_sheet_validationRequired => 'Tip amount is required';
 
   @override
   String get trip_dialog_title => 'Extra Trip Income';
@@ -493,9 +490,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdf_report_col_extraTrip => 'Extra Trip';
 
   @override
-  String get pdf_report_col_tip => 'Tip';
-
-  @override
   String get pdf_report_col_note => 'Note';
 
   @override
@@ -512,14 +506,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String pdf_report_totalAbsentDays(String days) {
     return 'Absent Days = $days';
   }
-
-  @override
-  String pdf_report_totalTipsAmount(String amount) {
-    return 'Total Tips: Rs. $amount';
-  }
-
-  @override
-  String get pdf_report_noTipsRecorded => 'No extra tips recorded';
 
   @override
   String get pdf_report_grossEarnings => 'Gross Earnings';
@@ -554,14 +540,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String toast_saveFailed(String error) {
     return 'Failed to save: $error';
-  }
-
-  @override
-  String get toast_tipSaved => 'Tip saved successfully';
-
-  @override
-  String toast_tipFailed(String error) {
-    return 'Failed to save tip: $error';
   }
 
   @override

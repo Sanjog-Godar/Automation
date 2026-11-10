@@ -55,8 +55,6 @@ class AttendanceLog {
   final String logDate; // YYYY-MM-DD
   final AttendanceStatus status;
   final int extraTripIncome;
-  final int? extraTipAmount;
-  final String? extraTipNote;
   final int? kmStart;
   final int? kmEnd;
   final int? kmTotal;
@@ -66,8 +64,6 @@ class AttendanceLog {
     required this.logDate,
     required this.status,
     this.extraTripIncome = 0,
-    this.extraTipAmount = 0,
-    this.extraTipNote,
     this.kmStart,
     this.kmEnd,
     this.kmTotal,
@@ -81,8 +77,6 @@ class AttendanceLog {
       logDate: dateStr,
       status: AttendanceStatus.absentHoliday,
       extraTripIncome: 0,
-      extraTipAmount: 0,
-      extraTipNote: null,
       kmStart: null,
       kmEnd: null,
       kmTotal: null,
@@ -95,8 +89,6 @@ class AttendanceLog {
       logDate: json['log_date'] as String,
       status: AttendanceStatus.fromApiValue(json['status'] as String?),
       extraTripIncome: (json['extra_trip_income'] as num?)?.toInt() ?? 0,
-      extraTipAmount: (json['extra_tip_amount'] as num?)?.toInt() ?? 0,
-      extraTipNote: json['extra_tip_note'] as String?,
       kmStart: (json['km_start'] as num?)?.toInt(),
       kmEnd: (json['km_end'] as num?)?.toInt(),
       kmTotal: (json['km_total'] as num?)?.toInt(),
@@ -109,8 +101,6 @@ class AttendanceLog {
       'log_date': logDate,
       'status': status.toApiValue(),
       'extra_trip_income': extraTripIncome,
-      'extra_tip_amount': extraTipAmount ?? 0,
-      'extra_tip_note': extraTipNote,
       'km_start': kmStart,
       'km_end': kmEnd,
       'km_total': kmTotal,
@@ -121,8 +111,6 @@ class AttendanceLog {
     String? logDate,
     AttendanceStatus? status,
     int? extraTripIncome,
-    int? extraTipAmount,
-    String? extraTipNote,
     int? kmStart,
     int? kmEnd,
     int? kmTotal,
@@ -132,8 +120,6 @@ class AttendanceLog {
       logDate: logDate ?? this.logDate,
       status: status ?? this.status,
       extraTripIncome: extraTripIncome ?? this.extraTripIncome,
-      extraTipAmount: extraTipAmount ?? this.extraTipAmount,
-      extraTipNote: extraTipNote ?? this.extraTipNote,
       kmStart: kmStart ?? this.kmStart,
       kmEnd: kmEnd ?? this.kmEnd,
       kmTotal: kmTotal ?? this.kmTotal,
@@ -143,6 +129,6 @@ class AttendanceLog {
 
   @override
   String toString() =>
-      'AttendanceLog(date: $logDate, status: ${status.name}, isUnselected: $isUnselected, extraTrip: $extraTripIncome, tip: $extraTipAmount, km: $kmTotal)';
+      'AttendanceLog(date: $logDate, status: ${status.name}, isUnselected: $isUnselected, extraTrip: $extraTripIncome, km: $kmTotal)';
 }
 

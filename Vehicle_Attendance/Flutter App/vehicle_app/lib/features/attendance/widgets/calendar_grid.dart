@@ -21,7 +21,6 @@ class CalendarGrid extends StatelessWidget {
   final VoidCallback onNextMonth;
   final VoidCallback onToday;
   final void Function(String logDate, AttendanceStatus newStatus) onStatusChange;
-  final void Function(AttendanceLog log) onOpenTip;
   final void Function(AttendanceLog log) onOpenKm;
   final void Function(AttendanceLog log)? onOpenExtraTrip;
   final void Function(String logDate)? onFutureDateTap;
@@ -36,7 +35,6 @@ class CalendarGrid extends StatelessWidget {
     required this.onNextMonth,
     required this.onToday,
     required this.onStatusChange,
-    required this.onOpenTip,
     required this.onOpenKm,
     this.onOpenExtraTrip,
     this.onFutureDateTap,
@@ -48,7 +46,7 @@ class CalendarGrid extends StatelessWidget {
     final locale = Localizations.localeOf(context);
 
     final monthName = AppFormatters.bsMonthName(bsMonthIndex, locale);
-    final yearNumber = AppFormatters.formatNumber(bsYear, locale);
+    final yearNumber = AppFormatters.formatYear(bsYear, locale);
     final rawSubtitle = NepaliCalendarHelper.getEnglishMonthSubtitle(bsYear, bsMonthIndex);
     final localizedSubtitle = AppFormatters.formatAdMonthSpan(rawSubtitle, locale);
 
@@ -150,15 +148,16 @@ class CalendarGrid extends StatelessWidget {
                       ),
                     ),
 
-                    // Today Chip
-                    OutlinedButton(
+                    // Today Chip (Pill button matching Kartik 2083 calendar.html .today-btn)
+                    FilledButton(
                       key: const Key('calendar_header_today_chip'),
-                      style: OutlinedButton.styleFrom(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primarySoft,
                         foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        minimumSize: const Size(0, 40),
+                        elevation: 0,
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        minimumSize: const Size(0, 36),
                         tapTargetSize: MaterialTapTargetSize.padded,
                       ),
                       onPressed: onToday,
@@ -170,8 +169,9 @@ class CalendarGrid extends StatelessWidget {
                           Text(
                             l10n.calendar_todayChip,
                             style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Mukta',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.primary,
                             ),
                           ),
@@ -194,11 +194,11 @@ class CalendarGrid extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // 2. Weekday Header Row (Sun - Sat, Saturday in red)
+                // 2. Weekday Header Row (Sun & Sat in red, Mon-Fri in muted grey)
                 Row(
                   children: List.generate(7, (index) {
                     final dayName = AppFormatters.weekdayName(index, locale);
-                    final isSat = index == 6;
+                    final isRedDay = index == 0 || index == 6;
                     return Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -206,10 +206,11 @@ class CalendarGrid extends StatelessWidget {
                         child: Text(
                           dayName,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontFamily: 'Mukta',
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: isSat ? AppColors.holiday : AppColors.textMuted,
+                            letterSpacing: 0.3,
+                            color: isRedDay ? AppColors.alert : AppColors.textMuted,
                           ),
                         ),
                       ),
@@ -218,11 +219,11 @@ class CalendarGrid extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // 3. Calendar Grid Rows (7 columns)
+                // 3. Calendar Grid Rows (7 columns, 5px gap)
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final textScale = MediaQuery.textScalerOf(context).clamp(minScaleFactor: 1.0, maxScaleFactor: 1.3).scale(1.0);
-                    const double gridGap = 6.0;
+                    const double gridGap = 5.0;
                     final totalWidth = constraints.maxWidth;
                     final cellWidth = (totalWidth - (6 * gridGap)) / 7;
                     final baseHeight = math.max(72.0, cellWidth * 1.15);
@@ -340,7 +341,6 @@ class CalendarGrid extends StatelessWidget {
                                           log: log,
                                           isSaving: isSaving,
                                           onStatusChange: onStatusChange,
-                                          onOpenTip: onOpenTip,
                                           onOpenKm: onOpenKm,
                                           onOpenExtraTrip: onOpenExtraTrip,
                                         );
@@ -373,7 +373,6 @@ class CalendarGrid extends StatelessWidget {
                         log: first['log'] as AttendanceLog,
                         isSaving: savingDates.contains((first['log'] as AttendanceLog).logDate),
                         onStatusChange: onStatusChange,
-                        onOpenTip: onOpenTip,
                         onOpenKm: onOpenKm,
                         onOpenExtraTrip: onOpenExtraTrip,
                       );

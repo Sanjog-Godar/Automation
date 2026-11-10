@@ -111,8 +111,8 @@ void main() {
         'isMissingStatus': false,
         'isMissingKm': false,
       },
-      'present with tip': {
-        'log': const AttendanceLog(logDate: '2026-11-04', status: AttendanceStatus.present, isUnselected: false, extraTipAmount: 200, extraTipNote: 'Fuel tip', kmTotal: 50),
+      'present with extra trip': {
+        'log': const AttendanceLog(logDate: '2026-11-04', status: AttendanceStatus.present, isUnselected: false, extraTripIncome: 200, kmTotal: 50),
         'isToday': false,
         'isPast': true,
         'isFuture': false,
@@ -233,7 +233,6 @@ void main() {
                       onNextMonth: () {},
                       onToday: () {},
                       onStatusChange: (d, s) {},
-                      onOpenTip: (l) {},
                       onOpenKm: (l) {},
                     ),
                   ),
