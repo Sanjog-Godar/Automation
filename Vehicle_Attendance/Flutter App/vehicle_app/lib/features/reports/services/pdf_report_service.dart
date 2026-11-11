@@ -1,11 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/services.dart';
+import 'package:nepali_utils/nepali_utils.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/l10n/formatters.dart';
 import '../../../core/utils/nepal_clock.dart';
+import '../../../core/utils/nepali_calendar_helper.dart';
 import '../../attendance/models/attendance_log.dart';
 import '../../attendance/models/monthly_summary.dart';
 import '../../fuel_bills/models/fuel_bill.dart';
@@ -100,6 +102,13 @@ class PdfReportService {
     final tdsAmount = (totalEarning * AppConstants.tdsRate).round();
     final totalBeforeTDS = totalEarning + summaryUpToToday.totalExtraIncome;
     final netIncomeAfterTDS = totalBeforeTDS - tdsAmount;
+
+    // 5. Monthly Running KM entries for the selected month
+    final kmLogs = fullMonthLogs
+        .where((log) => !log.isUnselected && log.kmTotal != null && log.kmTotal! > 0)
+        .toList()
+      ..sort((a, b) => a.logDate.compareTo(b.logDate));
+    final totalMonthKm = kmLogs.fold<int>(0, (sum, item) => sum + (item.kmTotal ?? 0));
 
     pdf.addPage(
       pw.MultiPage(
@@ -349,6 +358,119 @@ class PdfReportService {
                 ),
               ],
             ),
+          ),
+
+          // Monthly Running Summary Table
+          pw.SizedBox(height: 16),
+          pw.Text(
+            isNepali ? 'मासिक गाडी चलेको विवरण' : 'Monthly Running Summary',
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+            columnWidths: const {
+              0: pw.FlexColumnWidth(4.5),
+              1: pw.FlexColumnWidth(2.5),
+              2: pw.FlexColumnWidth(2.5),
+              3: pw.FlexColumnWidth(2.5),
+            },
+            children: [
+              // Header Row
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF2563EB)),
+                children: [
+                  _tableCell(isNepali ? 'मिति (Date)' : 'Date', isHeader: true, textColor: PdfColors.white),
+                  _tableCell(isNepali ? 'सुरु (Start)' : 'Start', isHeader: true, textColor: PdfColors.white, center: true),
+                  _tableCell(isNepali ? 'अन्तिम (End)' : 'End', isHeader: true, textColor: PdfColors.white, center: true),
+                  _tableCell(isNepali ? 'जम्मा (Total)' : 'Total', isHeader: true, textColor: PdfColors.white, alignRight: true),
+                ],
+              ),
+              if (kmLogs.isEmpty)
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                      child: pw.Text(
+                        isNepali ? 'यस महिना कुनै किलोमिटर रेकर्ड छैन' : 'No odometer records for this month',
+                        style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600, fontStyle: pw.FontStyle.italic),
+                      ),
+                    ),
+                    _tableCell('-'),
+                    _tableCell('-'),
+                    _tableCell('-', alignRight: true),
+                  ],
+                )
+              else ...[
+                ...kmLogs.map((item) {
+                  final adDate = NepalClock.parseDate(item.logDate);
+                  final nepaliDate = adDate.toNepaliDateTime();
+
+                  final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
+                  final bsDay = NepaliCalendarHelper.toNepaliNumber(nepaliDate.day);
+                  final bsYearNum = NepaliCalendarHelper.toNepaliNumber(nepaliDate.year);
+                  final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
+
+                  const adMonthNamesShort = [
+                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                  ];
+                  final adMonth = adMonthNamesShort[adDate.month - 1];
+                  final englishDateFormatted = '${adDate.year} $adMonth ${adDate.day}';
+
+                  final startKmStr = AppFormatters.formatNumber(item.kmStart ?? 0, locale);
+                  final endKmStr = AppFormatters.formatNumber(item.kmEnd ?? 0, locale);
+                  final totalKmStr = AppFormatters.formatUnit(item.kmTotal ?? 0, 'km', locale);
+
+                  return pw.TableRow(
+                    children: [
+                      // Dual date: Nepali date on top (bold), English date directly below
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              nepaliDateFormatted,
+                              style: pw.TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.black,
+                              ),
+                            ),
+                            pw.SizedBox(height: 1.5),
+                            pw.Text(
+                              englishDateFormatted,
+                              style: const pw.TextStyle(
+                                fontSize: 7.5,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _tableCell(startKmStr, center: true),
+                      _tableCell(endKmStr, center: true),
+                      _tableCell(totalKmStr, isBold: true, alignRight: true),
+                    ],
+                  );
+                }),
+                // Month Total Footer
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFEFF6FF)),
+                  children: [
+                    _tableCell(isNepali ? 'महिनाको जम्मा' : 'Month Total', isBold: true),
+                    _tableCell(''),
+                    _tableCell(''),
+                    _tableCell(
+                      AppFormatters.formatUnit(totalMonthKm, 'km', locale),
+                      isBold: true,
+                      alignRight: true,
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
 
           // Fuel Bill Summary if available

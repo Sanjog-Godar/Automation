@@ -120,6 +120,13 @@
   "fuel_records_col_totalKm": "जम्मा कि.मि.",
   "fuel_records_col_expectedLiters": "अनुमानित",
   "fuel_records_col_actualLiters": "प्राप्त",
+  "km_summary_table_title": "मासिक गाडी चलेको विवरण",
+  "km_summary_col_date": "मिति",
+  "km_summary_col_start": "सुरु",
+  "km_summary_col_end": "अन्तिम",
+  "km_summary_col_total": "जम्मा",
+  "km_summary_empty": "यस महिना कुनै किलोमिटर रेकर्ड छैन",
+  "km_summary_month_total": "महिनाको जम्मा",
 
   "generate_fuel_dialog_title": "ईन्धन बिल बनाउनुहोस्",
   "generate_fuel_dialog_lastEnded": "अघिल्लो बिल सकिएको मिति",

@@ -767,6 +767,48 @@ abstract class AppLocalizations {
   /// **'Actual'**
   String get fuel_records_col_actualLiters;
 
+  /// Title for monthly vehicle running summary table
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Running Summary'**
+  String get km_summary_table_title;
+
+  /// Date column header
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get km_summary_col_date;
+
+  /// Start odometer reading column header
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get km_summary_col_start;
+
+  /// End odometer reading column header
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get km_summary_col_end;
+
+  /// Total distance run column header
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get km_summary_col_total;
+
+  /// Empty state when no KM is recorded
+  ///
+  /// In en, this message translates to:
+  /// **'No odometer records for this month'**
+  String get km_summary_empty;
+
+  /// Total summary label for the month
+  ///
+  /// In en, this message translates to:
+  /// **'Month Total'**
+  String get km_summary_month_total;
+
   /// Title of modal to generate fuel bill
   ///
   /// In en, this message translates to:

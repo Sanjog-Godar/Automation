@@ -16,6 +16,7 @@ import '../widgets/app_drawer.dart';
 import '../widgets/calendar_grid.dart';
 import '../widgets/extra_trip_dialog.dart';
 import '../widgets/km_bottom_sheet.dart';
+import '../widgets/monthly_running_summary_table.dart';
 import '../widgets/monthly_summary_card.dart';
 
 /// Redesigned, airy main attendance, fuel billing, and earnings dashboard screen.
@@ -157,6 +158,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               nepaliMessage: l10n.toast_futureDateError,
             );
           },
+        ),
+        const SizedBox(height: 16),
+        MonthlyRunningSummaryTable(
+          bsYear: bsYear,
+          bsMonthIndex: bsMonthIndex,
+          logs: attendanceState.logs,
         ),
         const SizedBox(height: 24),
       ],

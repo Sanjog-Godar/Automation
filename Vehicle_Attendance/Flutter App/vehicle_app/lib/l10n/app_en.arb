@@ -474,6 +474,35 @@
     "description": "Table column for actual liters"
   },
 
+  "km_summary_table_title": "Monthly Running Summary",
+  "@km_summary_table_title": {
+    "description": "Title for monthly vehicle running summary table"
+  },
+  "km_summary_col_date": "Date",
+  "@km_summary_col_date": {
+    "description": "Date column header"
+  },
+  "km_summary_col_start": "Start",
+  "@km_summary_col_start": {
+    "description": "Start odometer reading column header"
+  },
+  "km_summary_col_end": "End",
+  "@km_summary_col_end": {
+    "description": "End odometer reading column header"
+  },
+  "km_summary_col_total": "Total",
+  "@km_summary_col_total": {
+    "description": "Total distance run column header"
+  },
+  "km_summary_empty": "No odometer records for this month",
+  "@km_summary_empty": {
+    "description": "Empty state when no KM is recorded"
+  },
+  "km_summary_month_total": "Month Total",
+  "@km_summary_month_total": {
+    "description": "Total summary label for the month"
+  },
+
   "generate_fuel_dialog_title": "Generate Fuel Bill",
   "@generate_fuel_dialog_title": {
     "description": "Title of modal to generate fuel bill"

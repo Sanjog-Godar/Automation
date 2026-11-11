@@ -380,6 +380,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fuel_records_col_actualLiters => 'Actual';
 
   @override
+  String get km_summary_table_title => 'Monthly Running Summary';
+
+  @override
+  String get km_summary_col_date => 'Date';
+
+  @override
+  String get km_summary_col_start => 'Start';
+
+  @override
+  String get km_summary_col_end => 'End';
+
+  @override
+  String get km_summary_col_total => 'Total';
+
+  @override
+  String get km_summary_empty => 'No odometer records for this month';
+
+  @override
+  String get km_summary_month_total => 'Month Total';
+
+  @override
   String get generate_fuel_dialog_title => 'Generate Fuel Bill';
 
   @override

@@ -381,6 +381,27 @@ class AppLocalizationsNe extends AppLocalizations {
   String get fuel_records_col_actualLiters => 'प्राप्त';
 
   @override
+  String get km_summary_table_title => 'मासिक गाडी चलेको विवरण';
+
+  @override
+  String get km_summary_col_date => 'मिति';
+
+  @override
+  String get km_summary_col_start => 'सुरु';
+
+  @override
+  String get km_summary_col_end => 'अन्तिम';
+
+  @override
+  String get km_summary_col_total => 'जम्मा';
+
+  @override
+  String get km_summary_empty => 'यस महिना कुनै किलोमिटर रेकर्ड छैन';
+
+  @override
+  String get km_summary_month_total => 'महिनाको जम्मा';
+
+  @override
   String get generate_fuel_dialog_title => 'ईन्धन बिल बनाउनुहोस्';
 
   @override
