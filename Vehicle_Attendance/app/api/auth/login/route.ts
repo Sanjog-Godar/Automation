@@ -40,7 +40,12 @@ export async function POST(req: NextRequest) {
 
     // Create response
     const response = NextResponse.json(
-      { message: 'Login successful', user: data.user },
+      {
+        message: 'Login successful',
+        user: data.user,
+        access_token: data.session?.access_token,
+        refresh_token: data.session?.refresh_token,
+      },
       { status: 200 }
     );
 

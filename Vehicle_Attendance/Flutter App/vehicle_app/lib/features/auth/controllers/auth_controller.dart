@@ -31,7 +31,11 @@ class AuthController extends Notifier<AuthState> {
     }
 
     if (hasSession) {
-      state = state.copyWith(status: AuthStatus.authenticated);
+      final persistedUser = _repository.getPersistedUser();
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: persistedUser ?? state.user,
+      );
     } else {
       state = state.copyWith(status: AuthStatus.unauthenticated, clearUser: true);
     }

@@ -58,7 +58,7 @@ class DayCard extends StatelessWidget {
 
     if (isToday) {
       cellBg = AppColors.primary;
-      borderColor = AppColors.primary;
+      borderColor = isMissingKm ? const Color(0xFFF59E0B) : AppColors.primary;
       boxShadow = const [
         BoxShadow(
           color: Color(0x4D3B44D1),
@@ -71,13 +71,13 @@ class DayCard extends StatelessWidget {
       borderColor = AppColors.alertBorder; // #f2c4bc
     } else if (isPresent) {
       cellBg = AppColors.eventSoft;     // #e3f5ec
-      borderColor = AppColors.eventBorder; // #a9dcc3
+      borderColor = isMissingKm ? const Color(0xFFD97706) : AppColors.eventBorder; // #d97706 warm alert border
     } else if (isHoliday) {
       cellBg = AppColors.holidayBg;
       borderColor = AppColors.holidayBorder;
     } else if (isReplace) {
       cellBg = AppColors.replacementBg;
-      borderColor = AppColors.replacementBorder;
+      borderColor = isMissingKm ? const Color(0xFFD97706) : AppColors.replacementBorder;
     } else if (isMissingKm) {
       cellBg = AppColors.missingKmBg;
       borderColor = AppColors.missingKmBorder;
@@ -87,7 +87,7 @@ class DayCard extends StatelessWidget {
       borderColor = Colors.transparent;
     }
 
-    final hasBottomIndicator = isMissingStatus || isMissingKm || isPresent || isHoliday || isReplace;
+    final hasBottomIndicator = isMissingStatus || isPresent || isHoliday || isReplace;
 
     final cellWidget = Semantics(
       label: semanticsLabel,
@@ -164,13 +164,48 @@ class DayCard extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       // -----------------------------------------------------------
+                      // Top-Right Corner: High-Visibility Missing KM Warning Badge
+                      // Solid amber circular badge with white warning icon & rim
+                      // High contrast and immediately noticeable for all ages
+                      // -----------------------------------------------------------
+                      if (isMissingKm)
+                        Positioned(
+                          top: 2.0,
+                          right: 2.0,
+                          child: Container(
+                            key: const Key('day_cell_warning_badge_km'),
+                            width: 18.0,
+                            height: 18.0,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD97706), // Vibrant amber alert
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x33000000),
+                                  blurRadius: 3,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 12.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+
+                      // -----------------------------------------------------------
                       // ZONE 1: BS Day Number (Mukta Bold 19-22sp, centered)
                       // Saturday numeral in red accent unless today.
+                      // Offset right margin when missing KM warning badge is present
                       // -----------------------------------------------------------
                       Positioned(
                         top: actualZone1Top,
                         left: 2.0,
-                        right: 2.0,
+                        right: isMissingKm ? 20.0 : 2.0,
                         height: zone1Height,
                         child: Center(
                           child: FittedBox(
@@ -270,51 +305,7 @@ class DayCard extends StatelessWidget {
     required bool isHoliday,
     required bool isReplace,
   }) {
-    // 1. Present + Missing KM: P badge with amber warning dot at right
-    if (isPresent && isMissingKm) {
-      final double badgeWidth = cellWidth < 40 ? 18.0 : 22.0;
-      const double dotSize = 5.0;
-      const double gap = 6.0;
-
-      final double naturalLeft = (cellWidth - badgeWidth) / 2;
-      final double naturalDotLeft = naturalLeft + badgeWidth + gap;
-      final double overflow = math.max(0.0, (naturalDotLeft + dotSize) - (cellWidth - 1.0));
-
-      final double actualLeft = naturalLeft - overflow;
-      final double actualDotLeft = actualLeft + badgeWidth + gap;
-
-      return Stack(
-        children: [
-          Positioned(
-            left: actualLeft,
-            top: 0,
-            bottom: 0,
-            width: badgeWidth,
-            child: _buildBadge(
-              letter: 'P',
-              bgColor: isToday ? Colors.white : AppColors.event,
-              textColor: isToday ? AppColors.event : Colors.white,
-              key: const Key('day_cell_status_p'),
-            ),
-          ),
-          Positioned(
-            left: actualDotLeft,
-            top: (17.0 - dotSize) / 2,
-            width: dotSize,
-            height: dotSize,
-            child: Container(
-              key: const Key('day_cell_warning_badge_km'),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.missingKm,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // 2. Present with KM
+    // 1. Present
     if (isPresent) {
       return Center(
         child: _buildBadge(

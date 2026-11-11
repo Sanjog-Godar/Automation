@@ -293,6 +293,10 @@ class SupabaseRestInterceptor extends Interceptor {
         );
 
         final userObj = res.data['user'] as Map<String, dynamic>? ?? {};
+        final accessToken = res.data['access_token'] as String?;
+        final refreshToken = res.data['refresh_token'] as String?;
+        final expiresIn = res.data['expires_in'];
+
         return Response(
           requestOptions: options,
           statusCode: 200,
@@ -302,6 +306,9 @@ class SupabaseRestInterceptor extends Interceptor {
               'id': userObj['id'] ?? 'unknown',
               'email': userObj['email'] ?? email,
             },
+            'access_token': accessToken,
+            'refresh_token': refreshToken,
+            'expires_in': expiresIn,
           },
         );
       }

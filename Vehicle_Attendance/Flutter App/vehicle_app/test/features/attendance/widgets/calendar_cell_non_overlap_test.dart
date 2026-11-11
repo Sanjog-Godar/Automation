@@ -189,43 +189,46 @@ void main() {
               );
             }
 
-            // 4. Obtain Warning Badge Rect if present
-            Rect? badgeRect;
+            // 4. Obtain Warning Badge Rects if present
             final statusBadgeFinder = find.byKey(const Key('day_cell_warning_badge_status'));
             final kmBadgeFinder = find.byKey(const Key('day_cell_warning_badge_km'));
+
             if (statusBadgeFinder.evaluate().isNotEmpty) {
               final box = tester.renderObject<RenderBox>(statusBadgeFinder);
-              badgeRect = box.localToGlobal(Offset.zero) & box.size;
-            } else if (kmBadgeFinder.evaluate().isNotEmpty) {
-              final box = tester.renderObject<RenderBox>(kmBadgeFinder);
-              badgeRect = box.localToGlobal(Offset.zero) & box.size;
+              final statusBadgeRect = box.localToGlobal(Offset.zero) & box.size;
+              // Zone 3 Bottom status badge never overlaps top row numerals
+              expect(
+                devRect.overlaps(statusBadgeRect),
+                isFalse,
+                reason: 'Devanagari ($devRect) overlapped status badge ($statusBadgeRect) in $stateName at width $width, scale $scale',
+              );
+              expect(
+                adRect.overlaps(statusBadgeRect),
+                isFalse,
+                reason: 'AD date ($adRect) overlapped status badge ($statusBadgeRect) in $stateName at width $width, scale $scale',
+              );
             }
 
-            if (badgeRect != null) {
-              // Badge never overlaps top row numerals
+            if (kmBadgeFinder.evaluate().isNotEmpty) {
+              final box = tester.renderObject<RenderBox>(kmBadgeFinder);
+              final kmBadgeRect = box.localToGlobal(Offset.zero) & box.size;
+              // Top-right corner KM warning icon never overlaps Zone 2 AD date or Zone 3 bottom pill
               expect(
-                devRect.overlaps(badgeRect),
+                adRect.overlaps(kmBadgeRect),
                 isFalse,
-                reason: 'Devanagari ($devRect) overlapped warning badge ($badgeRect) in $stateName at width $width, scale $scale',
+                reason: 'AD date ($adRect) overlapped top-right KM warning badge ($kmBadgeRect) in $stateName at width $width, scale $scale',
               );
-              expect(
-                adRect.overlaps(badgeRect),
-                isFalse,
-                reason: 'AD date ($adRect) overlapped warning badge ($badgeRect) in $stateName at width $width, scale $scale',
-              );
-
-              // For Present + Missing KM: P pill and amber badge must have >= 4dp clear space
               if (pillRect != null) {
                 expect(
-                  pillRect.overlaps(badgeRect),
+                  pillRect.overlaps(kmBadgeRect),
                   isFalse,
-                  reason: 'P pill ($pillRect) overlapped amber badge ($badgeRect) in $stateName at width $width, scale $scale',
+                  reason: 'P pill ($pillRect) overlapped top-right KM warning badge ($kmBadgeRect) in $stateName at width $width, scale $scale',
                 );
-                final clearSpace = badgeRect.left - pillRect.right;
+                final clearSpace = pillRect.top - kmBadgeRect.bottom;
                 expect(
                   clearSpace >= 6.0,
                   isTrue,
-                  reason: 'Clear space ($clearSpace dp) between P pill and amber badge must be >= 6.0dp at width $width, scale $scale',
+                  reason: 'Clear space ($clearSpace dp) between bottom P pill and top-right KM badge must be >= 6.0dp at width $width, scale $scale',
                 );
               }
             }

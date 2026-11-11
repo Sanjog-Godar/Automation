@@ -13,6 +13,7 @@ void main() {
 
   setUp(() {
     mockAuthRepository = MockAuthRepository();
+    when(() => mockAuthRepository.getPersistedUser()).thenReturn(null);
   });
 
   ProviderContainer createContainer() {
@@ -26,8 +27,10 @@ void main() {
   }
 
   group('AuthController Tests', () {
-    test('checkSession marks authenticated when repository confirms valid session', () async {
+    test('checkSession marks authenticated and restores persisted user', () async {
       when(() => mockAuthRepository.hasValidSession()).thenAnswer((_) async => true);
+      when(() => mockAuthRepository.getPersistedUser())
+          .thenReturn(const UserModel(id: 'usr-persisted', email: 'driver@persisted.com'));
 
       final container = createContainer();
       final controller = container.read(authControllerProvider.notifier);
@@ -37,6 +40,8 @@ void main() {
       final state = container.read(authControllerProvider);
       expect(state.status, AuthStatus.authenticated);
       expect(state.isAuthenticated, isTrue);
+      expect(state.user?.id, 'usr-persisted');
+      expect(state.user?.email, 'driver@persisted.com');
     });
 
     test('login updates state to authenticated on success', () async {
@@ -65,7 +70,7 @@ void main() {
       final state = container.read(authControllerProvider);
       expect(state.status, AuthStatus.authenticated);
       expect(state.user?.email, 'driver@test.com');
-      expect(state.errorMessage, isNull);
+      expect(state.errorMessage, null);
     });
 
     test('login updates state to error when repository throws AuthException', () async {
@@ -105,7 +110,7 @@ void main() {
 
       final state = container.read(authControllerProvider);
       expect(state.status, AuthStatus.unauthenticated);
-      expect(state.user, isNull);
+      expect(state.user, null);
     });
   });
 }
