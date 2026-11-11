@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/services/toast_service.dart';
 import '../../../core/utils/nepal_clock.dart';
 import '../../../core/utils/nepali_calendar_helper.dart';
@@ -69,6 +71,14 @@ class AttendanceController extends Notifier<AttendanceState> {
     _toastService = ref.watch(toastServiceProvider);
 
     final currentNepali = NepaliCalendarHelper.getCurrentNepaliYearMonth();
+
+    // Listen to locale changes so that switching language always re-fetches
+    // fresh data and immediately synchronizes the monthly summary.
+    ref.listen<Locale>(localeProvider, (previous, next) {
+      if (previous != null && previous.languageCode != next.languageCode) {
+        loadMonth(state.currentYear, state.currentMonthIndex);
+      }
+    });
 
     return AttendanceState(
       currentYear: currentNepali.year,

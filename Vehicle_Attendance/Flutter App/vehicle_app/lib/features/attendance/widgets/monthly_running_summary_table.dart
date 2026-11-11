@@ -197,7 +197,7 @@ class MonthlyRunningSummaryTable extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: kmLogs.length,
-              separatorBuilder: (_, __) => const Divider(
+              separatorBuilder: (_, _) => const Divider(
                 height: 1,
                 thickness: 0.5,
                 color: Color(0xFFF1F3F9),

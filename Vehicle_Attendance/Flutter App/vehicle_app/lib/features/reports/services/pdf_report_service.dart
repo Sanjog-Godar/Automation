@@ -1,4 +1,7 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
+import 'dart:ui' show Locale;
+import 'package:flutter/material.dart'
+    show Color, FontWeight, TextDirection, TextPainter, TextSpan, TextStyle, Canvas, Offset;
 import 'package:flutter/services.dart';
 import 'package:nepali_utils/nepali_utils.dart';
 import 'package:pdf/pdf.dart';
@@ -12,13 +15,130 @@ import '../../attendance/models/attendance_log.dart';
 import '../../attendance/models/monthly_summary.dart';
 import '../../fuel_bills/models/fuel_bill.dart';
 
+/// Helper to render Devanagari (Nepali) text with authentic complex script shaping
+/// (GSUB conjuncts, halanta / half-letters, reph, and pre-base matras) using Flutter's
+/// native HarfBuzz text engine, rasterized to high-density crisp images for package:pdf.
+class DevanagariShaper {
+  DevanagariShaper._();
+
+  static final Map<String, ({Uint8List bytes, double width, double height})> _cache = {};
+
+  /// Checks if [text] contains any Devanagari code points (U+0900 - U+097F).
+  static bool hasDevanagari(String text) {
+    for (final r in text.runes) {
+      if (r >= 0x0900 && r <= 0x097F) return true;
+    }
+    return false;
+  }
+
+  /// Pre-renders unique Devanagari strings into retina-crisp PNG bytes using Flutter's TextPainter.
+  static Future<void> preWarm(
+    List<({String text, double fontSize, bool isBold, PdfColor color})> items,
+  ) async {
+    const double pixelScale = 3.0; // 3x pixel ratio gives 216 DPI (crisp print & zoom quality)
+    for (final item in items) {
+      if (item.text.isEmpty || !hasDevanagari(item.text)) continue;
+      final key = '${item.text}_${item.fontSize}_${item.isBold}_${item.color.toInt()}';
+      if (_cache.containsKey(key)) continue;
+
+      try {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: item.text,
+            style: TextStyle(
+              fontFamily: 'Mukta',
+              fontSize: item.fontSize,
+              fontWeight: item.isBold ? FontWeight.bold : FontWeight.normal,
+              color: Color(item.color.toInt()),
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        painter.layout();
+
+        final displayWidth = painter.width;
+        final displayHeight = painter.height;
+
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        canvas.scale(pixelScale, pixelScale);
+        painter.paint(canvas, Offset.zero);
+        final picture = recorder.endRecording();
+
+        final imgWidth = (displayWidth * pixelScale).ceil().clamp(1, 4000);
+        final imgHeight = (displayHeight * pixelScale).ceil().clamp(1, 4000);
+        final img = picture.toImageSync(imgWidth, imgHeight);
+
+        final byteData = await img.toByteData(format: ui.ImageByteFormat.png).timeout(
+              const Duration(milliseconds: 300),
+              onTimeout: () => null,
+            );
+        if (byteData != null) {
+          _cache[key] = (
+            bytes: byteData.buffer.asUint8List(),
+            width: displayWidth,
+            height: displayHeight,
+          );
+        }
+      } catch (_) {
+        // Fallback to standard vector pw.Text gracefully
+      }
+    }
+  }
+
+  /// Returns an image-rendered shaped widget if pre-warmed, or standard pw.Text.
+  static pw.Widget render(
+    String text, {
+    double fontSize = 10,
+    bool isBold = false,
+    PdfColor textColor = PdfColors.black,
+    bool alignRight = false,
+    bool center = false,
+    pw.Alignment? alignment,
+  }) {
+    if (text.isEmpty) return pw.SizedBox();
+    final key = '${text}_${fontSize}_${isBold}_${textColor.toInt()}';
+    final entry = _cache[key];
+    if (entry != null) {
+      final align = alignRight
+          ? pw.Alignment.centerRight
+          : center
+              ? pw.Alignment.center
+              : (alignment ?? pw.Alignment.centerLeft);
+      return pw.Align(
+        alignment: align,
+        child: pw.Image(
+          pw.MemoryImage(entry.bytes),
+          width: entry.width,
+          height: entry.height,
+        ),
+      );
+    }
+
+    return pw.Text(
+      text,
+      style: pw.TextStyle(
+        fontSize: fontSize,
+        fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        color: textColor,
+      ),
+      textAlign: alignRight
+          ? pw.TextAlign.right
+          : center
+              ? pw.TextAlign.center
+              : pw.TextAlign.left,
+    );
+  }
+}
+
 /// Service responsible for generating the official monthly vehicle attendance and settlement PDF.
 /// Fully localized in English or Nepali based on the active locale.
 class PdfReportService {
   PdfReportService._();
 
-  /// Generates and previews/prints/downloads the monthly PDF report.
-  static Future<void> generateAndDownloadReport({
+  /// Builds the monthly vehicle attendance and settlement PDF document.
+  /// Fully localized in Nepali or English based on the active app language.
+  static Future<pw.Document> buildPdfDocument({
     required int bsYear,
     required int bsMonthIndex,
     required List<AttendanceLog> fullMonthLogs,
@@ -28,7 +148,7 @@ class PdfReportService {
     final pdf = pw.Document();
     final isNepali = locale.languageCode == 'ne';
 
-    // Load bundled Mukta TTF fonts from assets (Mukta supports both Latin and Devanagari)
+    // Load bundled Mukta TTF fonts from assets (supports both Latin and Devanagari)
     final regularFontData = await rootBundle.load('assets/fonts/Mukta-Regular.ttf');
     final boldFontData = await rootBundle.load('assets/fonts/Mukta-Bold.ttf');
     final ttfRegular = pw.Font.ttf(regularFontData);
@@ -87,6 +207,19 @@ class PdfReportService {
     final tipDayNums = tipDates.map((d) => isNepali ? AppFormatters.toDevanagariDigits('$d') : '$d').toList();
     final noneText = isNepali ? 'कुनै छैन' : 'None';
 
+    final presentSummaryLine = isNepali
+        ? 'जम्मा उपस्थित दिनहरू = ${presentDayNums.isNotEmpty ? presentDayNums.join(", ") : noneText} (जम्मा दिनहरू: ${AppFormatters.toDevanagariDigits("${presentDates.length}")})'
+        : 'Total Present Days = ${presentDayNums.isNotEmpty ? presentDayNums.join(", ") : noneText} (Total Days: ${presentDates.length})';
+    final absentSummaryLine = isNepali
+        ? 'बिदा = ${absentDayNums.isNotEmpty ? absentDayNums.join(", ") : noneText} (${AppFormatters.toDevanagariDigits("${absentDates.length}")})'
+        : 'Absent = ${absentDayNums.isNotEmpty ? absentDayNums.join(", ") : noneText} (${absentDates.length})';
+    final replaceSummaryLine = isNepali
+        ? 'सट्टा = ${replaceDayNums.isNotEmpty ? replaceDayNums.join(", ") : noneText} (${AppFormatters.toDevanagariDigits("${replaceDates.length}")})'
+        : 'Replace = ${replaceDayNums.isNotEmpty ? replaceDayNums.join(", ") : noneText} (${replaceDates.length})';
+    final tipSummaryLine = isNepali
+        ? 'अतिरिक्त टिप = ${tipDayNums.isNotEmpty ? tipDayNums.join(", ") : noneText}'
+        : 'Extra tips = ${tipDayNums.isNotEmpty ? tipDayNums.join(", ") : noneText}';
+
     // 4. Financial formulas (exact match with Next.js web)
     final presentIncome = summaryUpToToday.totalPresentDays * AppConstants.dailyWage;
     final presentFormula = isNepali
@@ -110,6 +243,98 @@ class PdfReportService {
       ..sort((a, b) => a.logDate.compareTo(b.logDate));
     final totalMonthKm = kmLogs.fold<int>(0, (sum, item) => sum + (item.kmTotal ?? 0));
 
+    // Pre-warm Devanagari text representations to achieve perfect ligatures/conjuncts
+    if (isNepali) {
+      final preWarmList = <({String text, double fontSize, bool isBold, PdfColor color})>[
+        // Header
+        (text: 'मासिक विवरण पाना', fontSize: 18.0, isBold: true, color: PdfColors.black),
+        (text: monthYearTitle, fontSize: 14.0, isBold: false, color: PdfColors.grey800),
+        // Footer
+        (text: 'तयार मिति: ${AppFormatters.toDevanagariDigits(NepalClock.todayDateString())}', fontSize: 8.0, isBold: false, color: PdfColors.grey600),
+        (text: 'सवारी साधन उपस्थिति प्रणाली', fontSize: 8.0, isBold: false, color: PdfColors.grey600),
+        // Date Lists
+        (text: presentSummaryLine, fontSize: 9.5, isBold: false, color: PdfColors.black),
+        (text: absentSummaryLine, fontSize: 9.5, isBold: false, color: PdfColors.black),
+        (text: replaceSummaryLine, fontSize: 9.5, isBold: false, color: PdfColors.black),
+        (text: tipSummaryLine, fontSize: 9.5, isBold: false, color: PdfColors.black),
+        // Section titles
+        (text: 'आम्दानी विवरण', fontSize: 12.0, isBold: true, color: PdfColors.black),
+        (text: 'अन्तिम हिसाब मिलान', fontSize: 12.0, isBold: true, color: PdfColors.black),
+        (text: 'मासिक गाडी चलेको विवरण', fontSize: 12.0, isBold: true, color: PdfColors.black),
+        (text: 'ईन्धन बिल रेकर्ड', fontSize: 12.0, isBold: true, color: PdfColors.black),
+        // Table 1 headers
+        (text: 'जम्मा दिनहरू', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'दर (हिसाब)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'जम्मा', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        // Table 1 rows
+        (text: 'उपस्थित दिनहरू', fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.toDevanagariDigits('${summaryUpToToday.totalPresentDays}'), fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: presentFormula, fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(presentIncome, locale), fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: 'बिदा दिनहरू', fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.toDevanagariDigits('$totalHolidayDays'), fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: 'सट्टा दिनहरू', fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.toDevanagariDigits('${summaryUpToToday.totalReplacementDays}'), fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: replaceFormula, fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(summaryUpToToday.totalDeductions, locale), fontSize: 9.0, isBold: false, color: PdfColors.black),
+        (text: 'कुल आम्दानी', fontSize: 9.0, isBold: true, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(totalEarning, locale), fontSize: 9.0, isBold: true, color: PdfColors.black),
+        (text: 'उपस्थित दिनको आम्दानीबाट सट्टा दिनको कटौती घटाई गणना गरिएको', fontSize: 8.5, isBold: false, color: PdfColors.grey600),
+        // Settlement Box
+        (text: 'उपस्थिति आम्दानी:', fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: 'अतिरिक्त यात्रा आम्दानी:', fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(summaryUpToToday.totalExtraIncome, locale), fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: 'कुल जम्मा:', fontSize: 10.0, isBold: true, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(totalBeforeTDS, locale), fontSize: 10.0, isBold: true, color: PdfColors.black),
+        (text: 'कट्टी: टीडीएस @ १.५%:', fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFDC2626)),
+        (text: AppFormatters.formatCurrency(tdsAmount, locale), fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFDC2626)),
+        (text: 'खुद आम्दानी (टीडीएस पछि):', fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
+        (text: AppFormatters.formatCurrency(netIncomeAfterTDS, locale), fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
+        // Monthly Running Summary Table
+        (text: 'मिति (Date)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'सुरु (Start)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'अन्तिम (End)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'जम्मा (Total)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'यस महिना कुनै किलोमिटर रेकर्ड छैन', fontSize: 8.5, isBold: false, color: PdfColors.grey600),
+        (text: 'महिनाको जम्मा', fontSize: 9.0, isBold: true, color: PdfColors.black),
+        (text: AppFormatters.formatUnit(totalMonthKm, 'km', locale), fontSize: 9.0, isBold: true, color: PdfColors.black),
+      ];
+
+      for (final item in kmLogs) {
+        final adDate = NepalClock.parseDate(item.logDate);
+        final nepaliDate = adDate.toNepaliDateTime();
+        final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
+        final bsDay = AppFormatters.toDevanagariDigits('${nepaliDate.day}');
+        final bsYearNum = AppFormatters.toDevanagariDigits('${nepaliDate.year}');
+        final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
+        final startKmStr = AppFormatters.formatNumber(item.kmStart ?? 0, locale);
+        final endKmStr = AppFormatters.formatNumber(item.kmEnd ?? 0, locale);
+        final totalKmStr = AppFormatters.formatUnit(item.kmTotal ?? 0, 'km', locale);
+
+        preWarmList.add((text: nepaliDateFormatted, fontSize: 9.5, isBold: true, color: PdfColors.black));
+        preWarmList.add((text: startKmStr, fontSize: 9.0, isBold: false, color: PdfColors.black));
+        preWarmList.add((text: endKmStr, fontSize: 9.0, isBold: false, color: PdfColors.black));
+        preWarmList.add((text: totalKmStr, fontSize: 9.0, isBold: true, color: PdfColors.black));
+      }
+
+      for (final fb in fuelBills) {
+        preWarmList.add((text: 'समयावधि', fontSize: 9.0, isBold: true, color: PdfColors.white));
+        preWarmList.add((text: 'जम्मा कि.मि.', fontSize: 9.0, isBold: true, color: PdfColors.white));
+        preWarmList.add((text: 'अनुमानित', fontSize: 9.0, isBold: true, color: PdfColors.white));
+        preWarmList.add((text: 'प्राप्त', fontSize: 9.0, isBold: true, color: PdfColors.white));
+        final formattedStart = AppFormatters.toDevanagariDigits(fb.startDate);
+        final formattedEnd = AppFormatters.toDevanagariDigits(fb.endDate);
+        preWarmList.add((text: '$formattedStart - $formattedEnd', fontSize: 9.0, isBold: false, color: PdfColors.black));
+        preWarmList.add((text: AppFormatters.formatUnit(fb.totalKm, 'km', locale), fontSize: 9.0, isBold: false, color: PdfColors.black));
+        preWarmList.add((text: AppFormatters.formatUnit(fb.expectedLiters, 'L', locale), fontSize: 9.0, isBold: false, color: PdfColors.black));
+        if (fb.actualLiters != null) {
+          preWarmList.add((text: AppFormatters.formatUnit(fb.actualLiters!, 'L', locale), fontSize: 9.0, isBold: false, color: PdfColors.black));
+        }
+      }
+
+      await DevanagariShaper.preWarm(preWarmList);
+    }
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -117,27 +342,27 @@ class PdfReportService {
         theme: pw.ThemeData.withFont(
           base: ttfRegular,
           bold: ttfBold,
+          italic: ttfRegular,
+          boldItalic: ttfBold,
         ),
         header: (context) {
           return pw.Column(
             children: [
               pw.Center(
-                child: pw.Text(
+                child: DevanagariShaper.render(
                   isNepali ? 'मासिक विवरण पाना' : 'Monthly Details Sheet',
-                  style: pw.TextStyle(
-                    fontSize: 18,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
+                  fontSize: 18,
+                  isBold: true,
+                  center: true,
                 ),
               ),
               pw.SizedBox(height: 3),
               pw.Center(
-                child: pw.Text(
+                child: DevanagariShaper.render(
                   monthYearTitle,
-                  style: const pw.TextStyle(
-                    fontSize: 14,
-                    color: PdfColors.grey800,
-                  ),
+                  fontSize: 14,
+                  textColor: PdfColors.grey800,
+                  center: true,
                 ),
               ),
               pw.SizedBox(height: 2),
@@ -165,19 +390,22 @@ class PdfReportService {
           return pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text(
+              DevanagariShaper.render(
                 isNepali
                     ? 'तयार मिति: ${AppFormatters.toDevanagariDigits(NepalClock.todayDateString())}'
                     : 'Generated: ${NepalClock.todayDateString()}',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                fontSize: 8,
+                textColor: PdfColors.grey600,
               ),
-              pw.Text(
+              DevanagariShaper.render(
                 isNepali ? 'सवारी साधन उपस्थिति प्रणाली' : 'Vehicle Attendance System',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                fontSize: 8,
+                textColor: PdfColors.grey600,
               ),
-              pw.Text(
+              DevanagariShaper.render(
                 isNepali ? 'पृष्ठ $pageStr / $pagesTotalStr' : 'Page $pageStr of $pagesTotalStr',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                fontSize: 8,
+                textColor: PdfColors.grey600,
               ),
             ],
           );
@@ -193,42 +421,23 @@ class PdfReportService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  isNepali
-                      ? 'जम्मा उपस्थित दिनहरू = ${presentDayNums.isNotEmpty ? presentDayNums.join(", ") : noneText} (जम्मा दिनहरू: ${AppFormatters.toDevanagariDigits("${presentDates.length}")})'
-                      : 'Total Present Days = ${presentDayNums.isNotEmpty ? presentDayNums.join(", ") : noneText} (Total Days: ${presentDates.length})',
-                  style: const pw.TextStyle(fontSize: 9.5),
-                ),
+                DevanagariShaper.render(presentSummaryLine, fontSize: 9.5),
                 pw.SizedBox(height: 4),
-                pw.Text(
-                  isNepali
-                      ? 'बिदा = ${absentDayNums.isNotEmpty ? absentDayNums.join(", ") : noneText} (${AppFormatters.toDevanagariDigits("${absentDates.length}")})'
-                      : 'Absent = ${absentDayNums.isNotEmpty ? absentDayNums.join(", ") : noneText} (${absentDates.length})',
-                  style: const pw.TextStyle(fontSize: 9.5),
-                ),
+                DevanagariShaper.render(absentSummaryLine, fontSize: 9.5),
                 pw.SizedBox(height: 4),
-                pw.Text(
-                  isNepali
-                      ? 'सट्टा = ${replaceDayNums.isNotEmpty ? replaceDayNums.join(", ") : noneText} (${AppFormatters.toDevanagariDigits("${replaceDates.length}")})'
-                      : 'Replace = ${replaceDayNums.isNotEmpty ? replaceDayNums.join(", ") : noneText} (${replaceDates.length})',
-                  style: const pw.TextStyle(fontSize: 9.5),
-                ),
+                DevanagariShaper.render(replaceSummaryLine, fontSize: 9.5),
                 pw.SizedBox(height: 4),
-                pw.Text(
-                  isNepali
-                      ? 'अतिरिक्त टिप = ${tipDayNums.isNotEmpty ? tipDayNums.join(", ") : noneText}'
-                      : 'Extra tips = ${tipDayNums.isNotEmpty ? tipDayNums.join(", ") : noneText}',
-                  style: const pw.TextStyle(fontSize: 9.5),
-                ),
+                DevanagariShaper.render(tipSummaryLine, fontSize: 9.5),
               ],
             ),
           ),
           pw.SizedBox(height: 14),
 
           // Earning Sheet Table Header
-          pw.Text(
+          DevanagariShaper.render(
             isNepali ? 'आम्दानी विवरण' : 'Earning Sheet',
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            fontSize: 12,
+            isBold: true,
           ),
           pw.SizedBox(height: 6),
 
@@ -248,7 +457,7 @@ class PdfReportService {
                 children: [
                   _tableCell('', isHeader: true, textColor: PdfColors.white),
                   _tableCell(isNepali ? 'जम्मा दिनहरू' : 'Total Days', isHeader: true, textColor: PdfColors.white),
-                  _tableCell(isNepali ? 'हिसाब' : 'Earning', isHeader: true, textColor: PdfColors.white),
+                  _tableCell(isNepali ? 'दर (हिसाब)' : 'Earning', isHeader: true, textColor: PdfColors.white),
                   _tableCell(isNepali ? 'जम्मा' : 'Total', isHeader: true, textColor: PdfColors.white, alignRight: true),
                 ],
               ),
@@ -295,7 +504,7 @@ class PdfReportService {
                 children: [
                   _tableCell(''),
                   _tableCell(''),
-                  _tableCell(isNepali ? 'जम्मा आम्दानी' : 'Total Earning', isBold: true),
+                  _tableCell(isNepali ? 'कुल आम्दानी' : 'Total Earning', isBold: true),
                   _tableCell(AppFormatters.formatCurrency(totalEarning, locale), isBold: true, alignRight: true),
                 ],
               ),
@@ -303,11 +512,12 @@ class PdfReportService {
           ),
           pw.SizedBox(height: 14),
 
-          pw.Text(
+          DevanagariShaper.render(
             isNepali
                 ? 'उपस्थित दिनको आम्दानीबाट सट्टा दिनको कटौती घटाई गणना गरिएको'
                 : 'Calculated by earning from total present days - Replace Days',
-            style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600),
+            fontSize: 8.5,
+            textColor: PdfColors.grey600,
           ),
           pw.SizedBox(height: 12),
 
@@ -322,9 +532,10 @@ class PdfReportService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
+                DevanagariShaper.render(
                   isNepali ? 'अन्तिम हिसाब मिलान' : 'Final Settlement',
-                  style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                  fontSize: 12,
+                  isBold: true,
                 ),
                 pw.SizedBox(height: 8),
                 _summaryRow(
@@ -362,9 +573,10 @@ class PdfReportService {
 
           // Monthly Running Summary Table
           pw.SizedBox(height: 16),
-          pw.Text(
+          DevanagariShaper.render(
             isNepali ? 'मासिक गाडी चलेको विवरण' : 'Monthly Running Summary',
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            fontSize: 12,
+            isBold: true,
           ),
           pw.SizedBox(height: 6),
           pw.Table(
@@ -391,9 +603,10 @@ class PdfReportService {
                   children: [
                     pw.Padding(
                       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                      child: pw.Text(
+                      child: DevanagariShaper.render(
                         isNepali ? 'यस महिना कुनै किलोमिटर रेकर्ड छैन' : 'No odometer records for this month',
-                        style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600, fontStyle: pw.FontStyle.italic),
+                        fontSize: 8.5,
+                        textColor: PdfColors.grey600,
                       ),
                     ),
                     _tableCell('-'),
@@ -407,8 +620,12 @@ class PdfReportService {
                   final nepaliDate = adDate.toNepaliDateTime();
 
                   final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
-                  final bsDay = NepaliCalendarHelper.toNepaliNumber(nepaliDate.day);
-                  final bsYearNum = NepaliCalendarHelper.toNepaliNumber(nepaliDate.year);
+                  final bsDay = isNepali
+                      ? AppFormatters.toDevanagariDigits('${nepaliDate.day}')
+                      : NepaliCalendarHelper.toNepaliNumber(nepaliDate.day);
+                  final bsYearNum = isNepali
+                      ? AppFormatters.toDevanagariDigits('${nepaliDate.year}')
+                      : NepaliCalendarHelper.toNepaliNumber(nepaliDate.year);
                   final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
 
                   const adMonthNamesShort = [
@@ -424,19 +641,17 @@ class PdfReportService {
 
                   return pw.TableRow(
                     children: [
-                      // Dual date: Nepali date on top (bold), English date directly below
+                      // Dual date: Nepali Bikram Sambat date on top (bold), English Gregorian below
                       pw.Padding(
                         padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                         child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text(
+                            DevanagariShaper.render(
                               nepaliDateFormatted,
-                              style: pw.TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: pw.FontWeight.bold,
-                                color: PdfColors.black,
-                              ),
+                              fontSize: 9.5,
+                              isBold: true,
+                              textColor: PdfColors.black,
                             ),
                             pw.SizedBox(height: 1.5),
                             pw.Text(
@@ -476,9 +691,10 @@ class PdfReportService {
           // Fuel Bill Summary if available
           if (fuelBills.isNotEmpty) ...[
             pw.SizedBox(height: 16),
-            pw.Text(
+            DevanagariShaper.render(
               isNepali ? 'ईन्धन बिल रेकर्ड' : 'Fuel Bill Records',
-              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+              fontSize: 12,
+              isBold: true,
             ),
             pw.SizedBox(height: 6),
             pw.Table(
@@ -504,7 +720,7 @@ class PdfReportService {
                   final formattedEnd = isNepali ? AppFormatters.toDevanagariDigits(fb.endDate) : fb.endDate;
                   return pw.TableRow(
                     children: [
-                      _tableCell('$formattedStart → $formattedEnd'),
+                      _tableCell('$formattedStart - $formattedEnd'),
                       _tableCell(AppFormatters.formatUnit(fb.totalKm, 'km', locale), alignRight: true),
                       _tableCell(AppFormatters.formatUnit(fb.expectedLiters, 'L', locale), alignRight: true),
                       _tableCell(fb.actualLiters != null ? AppFormatters.formatUnit(fb.actualLiters!, 'L', locale) : '-', alignRight: true),
@@ -518,6 +734,28 @@ class PdfReportService {
       ),
     );
 
+    return pdf;
+  }
+
+  /// Generates and previews/prints/downloads the monthly PDF report.
+  static Future<void> generateAndDownloadReport({
+    required int bsYear,
+    required int bsMonthIndex,
+    required List<AttendanceLog> fullMonthLogs,
+    List<FuelBill> fuelBills = const [],
+    Locale locale = const Locale('ne'),
+  }) async {
+    final pdf = await buildPdfDocument(
+      bsYear: bsYear,
+      bsMonthIndex: bsMonthIndex,
+      fullMonthLogs: fullMonthLogs,
+      fuelBills: fuelBills,
+      locale: locale,
+    );
+
+    final isNepali = locale.languageCode == 'ne';
+    final monthName = AppFormatters.bsMonthName(bsMonthIndex, locale);
+    final formattedYear = isNepali ? AppFormatters.toDevanagariDigits('$bsYear') : '$bsYear';
     final filename = isNepali
         ? 'उपस्थिति_${monthName}_$formattedYear.pdf'
         : 'Attendance_${monthName}_$bsYear.pdf';
@@ -535,20 +773,16 @@ class PdfReportService {
     bool center = false,
     PdfColor? textColor,
   }) {
+    final effectiveColor = textColor ?? (isHeader ? PdfColors.white : PdfColors.black);
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      child: pw.Text(
+      child: DevanagariShaper.render(
         text,
-        style: pw.TextStyle(
-          fontSize: 9,
-          fontWeight: isHeader || isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: textColor ?? PdfColors.black,
-        ),
-        textAlign: alignRight
-            ? pw.TextAlign.right
-            : center
-                ? pw.TextAlign.center
-                : pw.TextAlign.left,
+        fontSize: 9,
+        isBold: isHeader || isBold,
+        textColor: effectiveColor,
+        alignRight: alignRight,
+        center: center,
       ),
     );
   }
@@ -565,20 +799,18 @@ class PdfReportService {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(
+          DevanagariShaper.render(
             label,
-            style: pw.TextStyle(
-              fontSize: fontSize,
-              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-            ),
+            fontSize: fontSize,
+            isBold: isBold,
+            textColor: PdfColors.black,
           ),
-          pw.Text(
+          DevanagariShaper.render(
             value,
-            style: pw.TextStyle(
-              fontSize: fontSize,
-              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-              color: textColor ?? PdfColors.black,
-            ),
+            fontSize: fontSize,
+            isBold: isBold,
+            textColor: textColor ?? PdfColors.black,
+            alignRight: true,
           ),
         ],
       ),

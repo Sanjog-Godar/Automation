@@ -37,6 +37,19 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   int _selectedTab = _homeTab;
   final ScrollController _scrollController = ScrollController();
+  Locale? _lastLocale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = Localizations.localeOf(context);
+    if (_lastLocale != null && _lastLocale!.languageCode != currentLocale.languageCode) {
+      _lastLocale = currentLocale;
+      _refresh();
+    } else {
+      _lastLocale = currentLocale;
+    }
+  }
 
   @override
   void initState() {

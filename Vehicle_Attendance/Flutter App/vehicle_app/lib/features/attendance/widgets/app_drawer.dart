@@ -118,6 +118,12 @@ class AppDrawer extends ConsumerWidget {
                         await ref
                             .read(localeProvider.notifier)
                             .setLocale(const Locale('en'));
+                        final attState = ref.read(attendanceControllerProvider);
+                        ref.read(attendanceControllerProvider.notifier).loadMonth(
+                              attState.currentYear,
+                              attState.currentMonthIndex,
+                            );
+                        ref.read(fuelBillsControllerProvider.notifier).load();
                         await Future.delayed(const Duration(milliseconds: 180));
                         if (context.mounted) Navigator.pop(context);
                       },
@@ -134,6 +140,12 @@ class AppDrawer extends ConsumerWidget {
                         await ref
                             .read(localeProvider.notifier)
                             .setLocale(const Locale('ne'));
+                        final attState = ref.read(attendanceControllerProvider);
+                        ref.read(attendanceControllerProvider.notifier).loadMonth(
+                              attState.currentYear,
+                              attState.currentMonthIndex,
+                            );
+                        ref.read(fuelBillsControllerProvider.notifier).load();
                         await Future.delayed(const Duration(milliseconds: 180));
                         if (context.mounted) Navigator.pop(context);
                       },

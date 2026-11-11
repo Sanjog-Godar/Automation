@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/services/toast_service.dart';
 import '../models/fuel_bill.dart';
 import '../repositories/fuel_bills_repository.dart';
@@ -48,6 +50,13 @@ class FuelBillsController extends Notifier<FuelBillsState> {
   FuelBillsState build() {
     _repository = ref.watch(fuelBillsRepositoryProvider);
     _toastService = ref.watch(toastServiceProvider);
+
+    ref.listen<Locale>(localeProvider, (previous, next) {
+      if (previous != null && previous.languageCode != next.languageCode) {
+        load();
+      }
+    });
+
     return const FuelBillsState();
   }
 
