@@ -242,5 +242,43 @@ void main() {
       expect(find.byType(FuelBillRecordsDialog), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('Actual fuel color is green when >= expected and red when < expected', (tester) async {
+      await tester.pumpWidget(
+        buildTestTile(
+          bills: [
+            const FuelBill(
+              id: 1,
+              startDate: '2026-02-13',
+              endDate: '2026-11-11',
+              totalKm: 12,
+              expectedLiters: 1.6,
+              actualLiters: 1.5, // Less than expected -> Red
+            ),
+            const FuelBill(
+              id: 2,
+              startDate: '2026-02-01',
+              endDate: '2026-02-12',
+              totalKm: 1076,
+              expectedLiters: 143.47,
+              actualLiters: 144, // More than expected -> Green
+            ),
+          ],
+          lastBillDate: '2026-11-11',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('fuel_bill_records_tile')));
+      await tester.pumpAndSettle();
+
+      // Find the text widgets
+      final redText = tester.widget<Text>(find.text('1.5 L'));
+      final greenText = tester.widget<Text>(find.text('144 L'));
+
+      // Check colors
+      expect(redText.style?.color, const Color(0xFFDC2626)); // Red
+      expect(greenText.style?.color, const Color(0xFF15803D)); // Green
+    });
   });
 }

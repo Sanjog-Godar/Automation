@@ -309,20 +309,41 @@ class AppLocalizationsNe extends AppLocalizations {
       'अन्तिम किलोमिटर सुरुभन्दा कम हुन सक्दैन';
 
   @override
-  String get trip_dialog_title => 'अतिरिक्त आम्दानी';
+  String get trip_dialog_title => 'अतिरिक्त टिप विवरण';
 
   @override
   String get trip_dialog_subtitle =>
-      'अतिरिक्त आम्दानी रकम रु. मा प्रविष्ट गर्नुहोस्';
+      'यो टिप कहाँबाट र कति रकम अपेक्षा गरिएको हो उल्लेख गर्नुहोस्।';
 
   @override
-  String get trip_dialog_amountLabel => 'अतिरिक्त रकम (रु.)';
+  String get trip_dialog_locationLabel => 'टिप कहाँको थियो?';
 
   @override
-  String get trip_dialog_amountHint => 'जस्तै: १५००';
+  String get trip_dialog_upayeToggle => 'उपाय हो ?';
+
+  @override
+  String get upaye_badge => 'उपाय';
+
+  @override
+  String get trip_dialog_locationHint => 'जस्तै: साँझको बजार, विशेष यात्रा';
+
+  @override
+  String get trip_dialog_amountLabel => 'अपेक्षित टिप रकम (रु.)';
+
+  @override
+  String get trip_dialog_amountHint => '०';
+
+  @override
+  String get trip_dialog_save => 'टिप सुरक्षित गर्नुहोस्';
 
   @override
   String get trip_dialog_validationRequired => 'रकम अनिवार्य छ';
+
+  @override
+  String get tips_record_title => 'टिप रेकर्ड';
+
+  @override
+  String get tips_record_noNote => 'कुनै गन्तव्य छैन';
 
   @override
   String get fuel_records_tile_title => 'ईन्धन बिल रेकर्ड';

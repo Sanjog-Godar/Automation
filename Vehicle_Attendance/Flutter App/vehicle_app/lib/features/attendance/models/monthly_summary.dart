@@ -6,6 +6,7 @@ class MonthlySummary {
   final int totalPresentDays;
   final int totalReplacementDays;
   final int totalExtraIncome;
+  final int totalExtraTips;
   final int totalKm;
   final int grossIncome;
   final int totalDeductions;
@@ -15,6 +16,7 @@ class MonthlySummary {
     required this.totalPresentDays,
     required this.totalReplacementDays,
     required this.totalExtraIncome,
+    this.totalExtraTips = 0,
     required this.totalKm,
     required this.grossIncome,
     required this.totalDeductions,
@@ -35,6 +37,7 @@ class MonthlySummary {
     int totalPresentDays = 0;
     int totalReplacementDays = 0;
     int totalExtraIncome = 0;
+    int totalExtraTips = 0;
     int totalKm = 0;
 
     for (final log in logs) {
@@ -48,7 +51,9 @@ class MonthlySummary {
         totalReplacementDays += 1;
       }
 
-      totalExtraIncome += log.extraTripIncome;
+      final tip = log.extraTipAmount ?? log.extraTripIncome;
+      totalExtraIncome += log.extraTripIncome > 0 ? log.extraTripIncome : tip;
+      totalExtraTips += tip;
       totalKm += log.kmTotal ?? 0;
     }
 
@@ -60,6 +65,7 @@ class MonthlySummary {
       totalPresentDays: totalPresentDays,
       totalReplacementDays: totalReplacementDays,
       totalExtraIncome: totalExtraIncome,
+      totalExtraTips: totalExtraTips,
       totalKm: totalKm,
       grossIncome: grossIncome,
       totalDeductions: totalDeductions,

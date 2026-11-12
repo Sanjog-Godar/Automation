@@ -386,25 +386,54 @@
     "description": "Validation message when ending KM is less than starting"
   },
 
-  "trip_dialog_title": "Extra Trip Income",
+  "trip_dialog_title": "Extra Tip Details",
   "@trip_dialog_title": {
-    "description": "Title on extra trip income dialog"
+    "description": "Title on extra tip details dialog"
   },
-  "trip_dialog_subtitle": "Enter extra earnings amount in Rs.",
+  "trip_dialog_subtitle": "Note where this tip came from and how much you expect.",
   "@trip_dialog_subtitle": {
-    "description": "Subtitle on extra trip income dialog"
+    "description": "Subtitle on extra tip details dialog"
   },
-  "trip_dialog_amountLabel": "Extra Amount (Rs.)",
+  "trip_dialog_locationLabel": "Where was your tip?",
+  "@trip_dialog_locationLabel": {
+    "description": "Label for where tip came from"
+  },
+  "trip_dialog_upayeToggle": "Upaye Ho ?",
+  "@trip_dialog_upayeToggle": {
+    "description": "Toggle label for Upaye tip"
+  },
+  "upaye_badge": "Upaye",
+  "@upaye_badge": {
+    "description": "Badge label for Upaye"
+  },
+  "trip_dialog_locationHint": "e.g. Evening market return, special trip",
+  "@trip_dialog_locationHint": {
+    "description": "Hint for where tip came from"
+  },
+  "trip_dialog_amountLabel": "Expected tip amount (Rs.)",
   "@trip_dialog_amountLabel": {
-    "description": "Label for extra trip amount field"
+    "description": "Label for expected tip amount field"
   },
-  "trip_dialog_amountHint": "e.g. 1500",
+  "trip_dialog_amountHint": "0",
   "@trip_dialog_amountHint": {
-    "description": "Hint for extra trip amount field"
+    "description": "Hint for expected tip amount field"
+  },
+  "trip_dialog_save": "Save tip",
+  "@trip_dialog_save": {
+    "description": "Button to save tip"
   },
   "trip_dialog_validationRequired": "Amount is required",
   "@trip_dialog_validationRequired": {
     "description": "Validation message when amount is empty"
+  },
+
+  "tips_record_title": "Tips Record",
+  "@tips_record_title": {
+    "description": "Title for the Tips Record card below running summary"
+  },
+  "tips_record_noNote": "No destination",
+  "@tips_record_noNote": {
+    "description": "Fallback text when tip note is empty"
   },
 
   "fuel_records_tile_title": "Fuel Bill Records",

@@ -130,6 +130,13 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
     final isHoliday = _currentLog.status == AttendanceStatus.absentHoliday && !_currentLog.isUnselected;
     final isReplace = _currentLog.status == AttendanceStatus.absentReplacement && !_currentLog.isUnselected;
 
+    final tipAmount = _currentLog.effectiveTipAmount;
+    final hasTip = tipAmount > 0;
+    final tipNote = _currentLog.extraTipNote;
+    final tipSubtitle = (hasTip && tipNote != null && tipNote.trim().isNotEmpty)
+        ? tipNote.trim()
+        : l10n.day_sheet_extraTripSubtitle;
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -379,17 +386,17 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
               ),
               const SizedBox(height: 8),
 
-              // Extra Trip Income (Available regardless of status)
+              // Extra Tip (Available regardless of status)
               if (widget.onOpenExtraTrip != null) ...[
                 _buildActionRow(
                   context: context,
                   icon: Icons.add_circle_outline_rounded,
                   iconColor: AppColors.present,
-                  title: _currentLog.extraTripIncome > 0
-                      ? '${l10n.trip_dialog_title}: ${AppFormatters.formatCurrency(_currentLog.extraTripIncome, locale)}'
+                  title: hasTip
+                      ? '${l10n.trip_dialog_title}: ${AppFormatters.formatCurrency(tipAmount, locale)}'
                       : l10n.day_sheet_extraTripTitle,
-                  subtitle: l10n.day_sheet_extraTripSubtitle,
-                  buttonText: _currentLog.extraTripIncome > 0 ? l10n.common_edit : l10n.common_add,
+                  subtitle: tipSubtitle,
+                  buttonText: hasTip ? l10n.common_edit : l10n.common_add,
                   buttonColor: AppColors.present,
                   isEnabled: true,
                   onTap: () {

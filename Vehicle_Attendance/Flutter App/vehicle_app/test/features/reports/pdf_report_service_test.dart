@@ -115,5 +115,57 @@ void main() {
         expect(bytes, isNotEmpty);
       });
     });
+
+    testWidgets('buildPdfDocument builds valid PDF with Upaye and Solo Extra Tips in Nepali and English', (tester) async {
+      await tester.runAsync(() async {
+        final sampleLogs = [
+          AttendanceLog(
+            logDate: '2026-10-18',
+            status: AttendanceStatus.present,
+            isUnselected: false,
+            extraTipAmount: 6000,
+            extraTipNote: 'Upaye - Kushma',
+            kmStart: 100,
+            kmEnd: 150,
+            kmTotal: 50,
+          ),
+          AttendanceLog(
+            logDate: '2026-10-19',
+            status: AttendanceStatus.present,
+            isUnselected: false,
+            extraTipAmount: 1500,
+            extraTipNote: 'Pokhara Solo Return',
+            kmStart: 150,
+            kmEnd: 200,
+            kmTotal: 50,
+          ),
+          AttendanceLog(
+            logDate: '2026-10-20',
+            status: AttendanceStatus.absentReplacement,
+            isUnselected: false,
+          ),
+        ];
+
+        // 1. Nepali Locale
+        final docNe = await PdfReportService.buildPdfDocument(
+          bsYear: 2083,
+          bsMonthIndex: 7,
+          fullMonthLogs: sampleLogs,
+          locale: const Locale('ne'),
+        );
+        final bytesNe = await docNe.save();
+        expect(bytesNe, isNotEmpty);
+
+        // 2. English Locale
+        final docEn = await PdfReportService.buildPdfDocument(
+          bsYear: 2083,
+          bsMonthIndex: 7,
+          fullMonthLogs: sampleLogs,
+          locale: const Locale('en'),
+        );
+        final bytesEn = await docEn.save();
+        expect(bytesEn, isNotEmpty);
+      });
+    });
   });
 }

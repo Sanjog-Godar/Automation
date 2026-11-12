@@ -18,6 +18,7 @@ import '../widgets/extra_trip_dialog.dart';
 import '../widgets/km_bottom_sheet.dart';
 import '../widgets/monthly_running_summary_table.dart';
 import '../widgets/monthly_summary_card.dart';
+import '../widgets/tips_record_card.dart';
 
 /// Redesigned, airy main attendance, fuel billing, and earnings dashboard screen.
 /// Fully localized, supporting navigation drawer with instant language switching.
@@ -161,8 +162,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               context: context,
               log: log,
               dateTitle: log.logDate,
-              onSave: (amount) =>
-                  controller.updateExtraTrip(log.logDate, amount),
+              onSaveTip: (amount, note) =>
+                  controller.updateExtraTip(
+                    logDate: log.logDate,
+                    amount: amount,
+                    note: note,
+                  ),
             );
           },
           onFutureDateTap: (logDate) {
@@ -178,6 +183,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           bsMonthIndex: bsMonthIndex,
           logs: attendanceState.logs,
         ),
+        if (attendanceState.logs.any((l) => !l.isUnselected && l.effectiveTipAmount > 0)) ...[
+          const SizedBox(height: 16),
+          TipsRecordCard(
+            logs: attendanceState.logs,
+            onEditTip: (log) {
+              ExtraTripDialog.show(
+                context: context,
+                log: log,
+                dateTitle: log.logDate,
+                onSaveTip: (amount, note) => controller.updateExtraTip(
+                  logDate: log.logDate,
+                  amount: amount,
+                  note: note,
+                ),
+              );
+            },
+          ),
+        ],
         const SizedBox(height: 24),
       ],
     );

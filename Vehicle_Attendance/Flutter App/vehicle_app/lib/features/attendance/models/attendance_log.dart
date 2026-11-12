@@ -55,6 +55,8 @@ class AttendanceLog {
   final String logDate; // YYYY-MM-DD
   final AttendanceStatus status;
   final int extraTripIncome;
+  final int? extraTipAmount;
+  final String? extraTipNote;
   final int? kmStart;
   final int? kmEnd;
   final int? kmTotal;
@@ -64,11 +66,16 @@ class AttendanceLog {
     required this.logDate,
     required this.status,
     this.extraTripIncome = 0,
+    this.extraTipAmount,
+    this.extraTipNote,
     this.kmStart,
     this.kmEnd,
     this.kmTotal,
     this.isUnselected = false,
   });
+
+  /// Effective tip amount, prioritizing extraTipAmount and falling back to extraTripIncome.
+  int get effectiveTipAmount => extraTipAmount ?? extraTripIncome;
 
   /// Factory creating an unselected placeholder entry for a date
   /// matching Next.js `fullMonthLogs` initialization.
@@ -77,6 +84,8 @@ class AttendanceLog {
       logDate: dateStr,
       status: AttendanceStatus.absentHoliday,
       extraTripIncome: 0,
+      extraTipAmount: 0,
+      extraTipNote: null,
       kmStart: null,
       kmEnd: null,
       kmTotal: null,
@@ -85,10 +94,14 @@ class AttendanceLog {
   }
 
   factory AttendanceLog.fromJson(Map<String, dynamic> json) {
+    final tipAmount = (json['extra_tip_amount'] as num?)?.toInt();
+    final tripIncome = (json['extra_trip_income'] as num?)?.toInt() ?? 0;
     return AttendanceLog(
       logDate: json['log_date'] as String,
       status: AttendanceStatus.fromApiValue(json['status'] as String?),
-      extraTripIncome: (json['extra_trip_income'] as num?)?.toInt() ?? 0,
+      extraTripIncome: tripIncome,
+      extraTipAmount: tipAmount ?? (tripIncome > 0 ? tripIncome : 0),
+      extraTipNote: json['extra_tip_note'] as String?,
       kmStart: (json['km_start'] as num?)?.toInt(),
       kmEnd: (json['km_end'] as num?)?.toInt(),
       kmTotal: (json['km_total'] as num?)?.toInt(),
@@ -97,10 +110,13 @@ class AttendanceLog {
   }
 
   Map<String, dynamic> toJson() {
+    final tip = extraTipAmount ?? extraTripIncome;
     return {
       'log_date': logDate,
       'status': status.toApiValue(),
-      'extra_trip_income': extraTripIncome,
+      'extra_trip_income': extraTripIncome > 0 ? extraTripIncome : tip,
+      'extra_tip_amount': tip,
+      'extra_tip_note': extraTipNote,
       'km_start': kmStart,
       'km_end': kmEnd,
       'km_total': kmTotal,
@@ -111,6 +127,8 @@ class AttendanceLog {
     String? logDate,
     AttendanceStatus? status,
     int? extraTripIncome,
+    int? extraTipAmount,
+    String? extraTipNote,
     int? kmStart,
     int? kmEnd,
     int? kmTotal,
@@ -120,6 +138,8 @@ class AttendanceLog {
       logDate: logDate ?? this.logDate,
       status: status ?? this.status,
       extraTripIncome: extraTripIncome ?? this.extraTripIncome,
+      extraTipAmount: extraTipAmount ?? this.extraTipAmount,
+      extraTipNote: extraTipNote ?? this.extraTipNote,
       kmStart: kmStart ?? this.kmStart,
       kmEnd: kmEnd ?? this.kmEnd,
       kmTotal: kmTotal ?? this.kmTotal,
@@ -129,6 +149,6 @@ class AttendanceLog {
 
   @override
   String toString() =>
-      'AttendanceLog(date: $logDate, status: ${status.name}, isUnselected: $isUnselected, extraTrip: $extraTripIncome, km: $kmTotal)';
+      'AttendanceLog(date: $logDate, status: ${status.name}, isUnselected: $isUnselected, extraTrip: $extraTripIncome, extraTip: $extraTipAmount, note: $extraTipNote, km: $kmTotal)';
 }
 

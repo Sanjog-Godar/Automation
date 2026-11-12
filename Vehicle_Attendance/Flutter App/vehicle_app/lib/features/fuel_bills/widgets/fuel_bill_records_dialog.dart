@@ -500,8 +500,10 @@ class _FuelBillRecordsDialogState
 
 // ── Bill record card ──────────────────────────────────────────────────────────
 
-/// A fully responsive card for one fuel bill record.
-/// Shows period on one line, then KM / Expected L / Actual L as a chip row.
+/// A senior-friendly, responsive card for one fuel bill record.
+/// Displays a clear header with calendar icon and date range, followed by
+/// 3 dedicated metric boxes (Total KM, Expected Fuel, and Actual Fuel).
+/// Actual fuel is colored vivid green if >= expected, and red if < expected.
 class _BillRecordCard extends StatelessWidget {
   const _BillRecordCard({
     required this.bill,
@@ -525,56 +527,154 @@ class _BillRecordCard extends StatelessWidget {
         : bill.endDate;
 
     final kmFormatted = AppFormatters.formatUnit(bill.totalKm, 'km', locale);
-    final expectedFormatted = AppFormatters.formatUnit(bill.expectedLiters, 'L', locale);
+    final expectedFormatted =
+        AppFormatters.formatUnit(bill.expectedLiters, 'L', locale);
     final actualFormatted = bill.actualLiters != null
         ? AppFormatters.formatUnit(bill.actualLiters!, 'L', locale)
         : '—';
 
+    // Color logic: Actual fuel is green if >= expected, and red if < expected
+    final actual = bill.actualLiters;
+    final expected = bill.expectedLiters;
+    final bool hasActual = actual != null;
+    final bool isMoreOrEqual = hasActual && actual >= expected;
+
+    final Color actualTextColor = !hasActual
+        ? AppColors.textMuted
+        : isMoreOrEqual
+            ? const Color(0xFF15803D) // Vivid Green
+            : const Color(0xFFDC2626); // Vivid Red
+
+    final Color actualBgColor = !hasActual
+        ? const Color(0xFFF3F4F6)
+        : isMoreOrEqual
+            ? const Color(0xFFDCFCE7) // Soft green tint
+            : const Color(0xFFFEE2E2); // Soft red tint
+
+    final Color actualBorderColor = !hasActual
+        ? AppColors.border
+        : isMoreOrEqual
+            ? const Color(0xFF86EFAC)
+            : const Color(0xFFFCA5A5);
+
     return Container(
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          bottom: isLast
-              ? BorderSide.none
-              : const BorderSide(color: AppColors.divider),
-        ),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 1.0),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Period label (Uses standard arrow for test parity)
-          Text(
-            '$startFormatted → $endFormatted',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Stat chips row
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
+          // Period Header Row (Uses standard arrow for test parity)
+          Row(
             children: [
-              _StatChip(
-                label: l10n.fuel_records_col_totalKm,
-                value: kmFormatted,
-                valueColor: AppColors.primary,
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: AppColors.replacementBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 16,
+                  color: AppColors.replacement,
+                ),
               ),
-              _StatChip(
-                label: l10n.fuel_records_col_expectedLiters,
-                value: expectedFormatted,
-                valueColor: AppColors.primary,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$startFormatted → $endFormatted',
+                  style: const TextStyle(
+                    fontFamily: 'Mukta',
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              _StatChip(
-                label: l10n.fuel_records_col_actualLiters,
-                value: actualFormatted,
-                valueColor: bill.actualLiters != null
-                    ? AppColors.present
-                    : AppColors.textMuted,
+              if (hasActual)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: actualBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: actualBorderColor, width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isMoreOrEqual
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 11,
+                        color: actualTextColor,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        isMoreOrEqual
+                            ? (locale.languageCode == 'ne' ? 'पर्याप्त' : 'Sufficient')
+                            : (locale.languageCode == 'ne' ? 'कम' : 'Short'),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: actualTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // 3 Metric Stat Tiles Row
+          Row(
+            children: [
+              // 1. Total KM
+              Expanded(
+                child: _StatMetricBox(
+                  label: l10n.fuel_records_col_totalKm,
+                  value: kmFormatted,
+                  textColor: AppColors.primary,
+                  bgColor: const Color(0xFFF1F5F9),
+                  borderColor: const Color(0xFFE2E8F0),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 2. Expected Fuel
+              Expanded(
+                child: _StatMetricBox(
+                  label: l10n.fuel_records_col_expectedLiters,
+                  value: expectedFormatted,
+                  textColor: const Color(0xFF2563EB),
+                  bgColor: const Color(0xFFEFF6FF),
+                  borderColor: const Color(0xFFDBEAFE),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 3. Actual Fuel (Colored Green if >= expected, Red if < expected)
+              Expanded(
+                child: _StatMetricBox(
+                  label: l10n.fuel_records_col_actualLiters,
+                  value: actualFormatted,
+                  textColor: actualTextColor,
+                  bgColor: actualBgColor,
+                  borderColor: actualBorderColor,
+                  isHighlighted: true,
+                ),
               ),
             ],
           ),
@@ -584,46 +684,62 @@ class _BillRecordCard extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  const _StatChip({
+class _StatMetricBox extends StatelessWidget {
+  const _StatMetricBox({
     required this.label,
     required this.value,
-    required this.valueColor,
+    required this.textColor,
+    required this.bgColor,
+    required this.borderColor,
+    this.isHighlighted = false,
   });
 
   final String label;
   final String value;
-  final Color valueColor;
+  final Color textColor;
+  final Color bgColor;
+  final Color borderColor;
+  final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.border),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor, width: 1.0),
       ),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
             ),
-            TextSpan(
-              text: value,
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontFamily: 'Mukta',
+                fontSize: 13.5,
                 fontWeight: FontWeight.bold,
-                color: valueColor,
+                color: textColor,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

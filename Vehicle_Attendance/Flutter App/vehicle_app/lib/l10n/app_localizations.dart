@@ -647,35 +647,77 @@ abstract class AppLocalizations {
   /// **'Ending KM cannot be less than Starting KM'**
   String get km_sheet_validationEndLessThanStart;
 
-  /// Title on extra trip income dialog
+  /// Title on extra tip details dialog
   ///
   /// In en, this message translates to:
-  /// **'Extra Trip Income'**
+  /// **'Extra Tip Details'**
   String get trip_dialog_title;
 
-  /// Subtitle on extra trip income dialog
+  /// Subtitle on extra tip details dialog
   ///
   /// In en, this message translates to:
-  /// **'Enter extra earnings amount in Rs.'**
+  /// **'Note where this tip came from and how much you expect.'**
   String get trip_dialog_subtitle;
 
-  /// Label for extra trip amount field
+  /// Label for where tip came from
   ///
   /// In en, this message translates to:
-  /// **'Extra Amount (Rs.)'**
+  /// **'Where was your tip?'**
+  String get trip_dialog_locationLabel;
+
+  /// Toggle label for Upaye tip
+  ///
+  /// In en, this message translates to:
+  /// **'Upaye Ho ?'**
+  String get trip_dialog_upayeToggle;
+
+  /// Badge label for Upaye
+  ///
+  /// In en, this message translates to:
+  /// **'Upaye'**
+  String get upaye_badge;
+
+  /// Hint for where tip came from
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Evening market return, special trip'**
+  String get trip_dialog_locationHint;
+
+  /// Label for expected tip amount field
+  ///
+  /// In en, this message translates to:
+  /// **'Expected tip amount (Rs.)'**
   String get trip_dialog_amountLabel;
 
-  /// Hint for extra trip amount field
+  /// Hint for expected tip amount field
   ///
   /// In en, this message translates to:
-  /// **'e.g. 1500'**
+  /// **'0'**
   String get trip_dialog_amountHint;
+
+  /// Button to save tip
+  ///
+  /// In en, this message translates to:
+  /// **'Save tip'**
+  String get trip_dialog_save;
 
   /// Validation message when amount is empty
   ///
   /// In en, this message translates to:
   /// **'Amount is required'**
   String get trip_dialog_validationRequired;
+
+  /// Title for the Tips Record card below running summary
+  ///
+  /// In en, this message translates to:
+  /// **'Tips Record'**
+  String get tips_record_title;
+
+  /// Fallback text when tip note is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No destination'**
+  String get tips_record_noNote;
 
   /// Title on fuel bill records tile
   ///

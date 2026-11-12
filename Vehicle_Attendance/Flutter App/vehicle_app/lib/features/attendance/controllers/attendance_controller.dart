@@ -175,6 +175,8 @@ class AttendanceController extends Notifier<AttendanceState> {
     final updatedLog = oldLog.copyWith(
       status: newStatus,
       extraTripIncome: oldLog.extraTripIncome,
+      extraTipAmount: oldLog.extraTipAmount,
+      extraTipNote: oldLog.extraTipNote,
       isUnselected: false,
     );
 
@@ -193,15 +195,21 @@ class AttendanceController extends Notifier<AttendanceState> {
     }
   }
 
-  /// Updates extra trip income for a day.
-  /// If the day was unselected, maintains its placeholder status or keeps existing status without forcing it to present.
-  Future<void> updateExtraTrip(String logDate, int extraTrip) async {
+  /// Updates extra tip amount and location note for a day.
+  /// Synchronizes directly with the website's `extra_tip_amount` and `extra_tip_note` fields.
+  Future<void> updateExtraTip({
+    required String logDate,
+    required int amount,
+    String? note,
+  }) async {
     final index = state.logs.indexWhere((l) => l.logDate == logDate);
     if (index == -1) return;
 
     final oldLog = state.logs[index];
     final updatedLog = oldLog.copyWith(
-      extraTripIncome: extraTrip,
+      extraTipAmount: amount,
+      extraTipNote: (note != null && note.trim().isNotEmpty) ? note.trim() : null,
+      extraTripIncome: amount,
       isUnselected: false,
     );
 
@@ -210,13 +218,22 @@ class AttendanceController extends Notifier<AttendanceState> {
     try {
       final savedLog = await _repository.upsertAttendance(updatedLog);
       _replaceLogAtIndex(index, savedLog, logDate, isSaving: false);
+      _toastService.showSuccess(
+        'Extra tip saved',
+        nepaliMessage: 'अतिरिक्त टिप सुरक्षित गरियो',
+      );
     } catch (e) {
       _replaceLogAtIndex(index, oldLog, logDate, isSaving: false);
       _toastService.showError(
-        'Failed to save extra trip: $e',
-        nepaliMessage: 'अतिरिक्त आम्दानी सेभ गर्न सकिएन',
+        'Failed to save extra tip: $e',
+        nepaliMessage: 'अतिरिक्त टिप सुरक्षित गर्न सकिएन',
       );
     }
+  }
+
+  /// Backward-compatible alias for updateExtraTip.
+  Future<void> updateExtraTrip(String logDate, int extraTrip) async {
+    await updateExtraTip(logDate: logDate, amount: extraTrip);
   }
 
   /// Updates odometer KM readings (start, end, and computed total).

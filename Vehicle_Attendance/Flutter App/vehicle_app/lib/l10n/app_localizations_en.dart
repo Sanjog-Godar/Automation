@@ -309,19 +309,42 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ending KM cannot be less than Starting KM';
 
   @override
-  String get trip_dialog_title => 'Extra Trip Income';
+  String get trip_dialog_title => 'Extra Tip Details';
 
   @override
-  String get trip_dialog_subtitle => 'Enter extra earnings amount in Rs.';
+  String get trip_dialog_subtitle =>
+      'Note where this tip came from and how much you expect.';
 
   @override
-  String get trip_dialog_amountLabel => 'Extra Amount (Rs.)';
+  String get trip_dialog_locationLabel => 'Where was your tip?';
 
   @override
-  String get trip_dialog_amountHint => 'e.g. 1500';
+  String get trip_dialog_upayeToggle => 'Upaye Ho ?';
+
+  @override
+  String get upaye_badge => 'Upaye';
+
+  @override
+  String get trip_dialog_locationHint =>
+      'e.g. Evening market return, special trip';
+
+  @override
+  String get trip_dialog_amountLabel => 'Expected tip amount (Rs.)';
+
+  @override
+  String get trip_dialog_amountHint => '0';
+
+  @override
+  String get trip_dialog_save => 'Save tip';
 
   @override
   String get trip_dialog_validationRequired => 'Amount is required';
+
+  @override
+  String get tips_record_title => 'Tips Record';
+
+  @override
+  String get tips_record_noNote => 'No destination';
 
   @override
   String get fuel_records_tile_title => 'Fuel Bill Records';

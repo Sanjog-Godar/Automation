@@ -13,6 +13,7 @@ import '../../../core/utils/nepal_clock.dart';
 import '../../../core/utils/nepali_calendar_helper.dart';
 import '../../attendance/models/attendance_log.dart';
 import '../../attendance/models/monthly_summary.dart';
+import '../../attendance/widgets/extra_trip_dialog.dart';
 import '../../fuel_bills/models/fuel_bill.dart';
 
 /// Helper to render Devanagari (Nepali) text with authentic complex script shaping
@@ -191,7 +192,7 @@ class PdfReportService {
         replaceDates.add(bsDay);
       }
 
-      if (log.extraTripIncome > 0) {
+      if (log.effectiveTipAmount > 0) {
         if (!tipDates.contains(bsDay)) tipDates.add(bsDay);
       }
     }
@@ -231,10 +232,30 @@ class PdfReportService {
     final totalEarning = presentIncome - summaryUpToToday.totalDeductions;
     final totalHolidayDays = logsUpToToday.where((l) => l.status == AttendanceStatus.absentHoliday).length;
 
+    // Separate Upaye vs Solo Extra Tips
+    int upayeTipIncome = 0;
+    int soloTipIncome = 0;
+    for (final log in logsUpToToday) {
+      final tip = log.effectiveTipAmount;
+      if (tip > 0) {
+        final parsed = ExtraTripDialog.parseUpayeNote(log.extraTipNote);
+        if (parsed.isUpaye) {
+          upayeTipIncome += tip;
+        } else {
+          soloTipIncome += tip;
+        }
+      }
+    }
+    // Fallback if logsUpToToday had no individual tip notes but totalExtraIncome was recorded
+    if (upayeTipIncome == 0 && soloTipIncome == 0 && summaryUpToToday.totalExtraIncome > 0) {
+      upayeTipIncome = summaryUpToToday.totalExtraIncome;
+    }
+
     // TDS Calculation @ 1.5% strictly on totalEarning
     final tdsAmount = (totalEarning * AppConstants.tdsRate).round();
-    final totalBeforeTDS = totalEarning + summaryUpToToday.totalExtraIncome;
+    final totalBeforeTDS = totalEarning + upayeTipIncome;
     final netIncomeAfterTDS = totalBeforeTDS - tdsAmount;
+    final totalEarnings = netIncomeAfterTDS + soloTipIncome;
 
     // 5. Monthly Running KM entries for the selected month
     final kmLogs = fullMonthLogs
@@ -242,6 +263,13 @@ class PdfReportService {
         .toList()
       ..sort((a, b) => a.logDate.compareTo(b.logDate));
     final totalMonthKm = kmLogs.fold<int>(0, (sum, item) => sum + (item.kmTotal ?? 0));
+
+    // 6. Extra Tips list for the selected month
+    final tipLogs = fullMonthLogs
+        .where((log) => !log.isUnselected && log.effectiveTipAmount > 0)
+        .toList()
+      ..sort((a, b) => a.logDate.compareTo(b.logDate));
+    final totalMonthTips = tipLogs.fold<int>(0, (sum, item) => sum + item.effectiveTipAmount);
 
     // Pre-warm Devanagari text representations to achieve perfect ligatures/conjuncts
     if (isNepali) {
@@ -282,14 +310,20 @@ class PdfReportService {
         (text: 'उपस्थित दिनको आम्दानीबाट सट्टा दिनको कटौती घटाई गणना गरिएको', fontSize: 8.5, isBold: false, color: PdfColors.grey600),
         // Settlement Box
         (text: 'उपस्थिति आम्दानी:', fontSize: 10.0, isBold: false, color: PdfColors.black),
-        (text: 'अतिरिक्त यात्रा आम्दानी:', fontSize: 10.0, isBold: false, color: PdfColors.black),
-        (text: AppFormatters.formatCurrency(summaryUpToToday.totalExtraIncome, locale), fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: 'अतिरिक्त टिप (उपाय):', fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: 'अतिरिक्त टिप (व्यक्तिगत):', fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(upayeTipIncome, locale), fontSize: 10.0, isBold: false, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(soloTipIncome, locale), fontSize: 10.0, isBold: false, color: PdfColors.black),
         (text: 'कुल जम्मा:', fontSize: 10.0, isBold: true, color: PdfColors.black),
         (text: AppFormatters.formatCurrency(totalBeforeTDS, locale), fontSize: 10.0, isBold: true, color: PdfColors.black),
         (text: 'कट्टी: टीडीएस @ १.५%:', fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFDC2626)),
         (text: AppFormatters.formatCurrency(tdsAmount, locale), fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFDC2626)),
+        (text: 'खुद आम्दानी (टीडीएस पछि):', fontSize: 10.5, isBold: true, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(netIncomeAfterTDS, locale), fontSize: 10.5, isBold: true, color: PdfColors.black),
         (text: 'खुद आम्दानी (टीडीएस पछि):', fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
         (text: AppFormatters.formatCurrency(netIncomeAfterTDS, locale), fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
+        (text: 'जम्मा कुल आम्दानी:', fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
+        (text: AppFormatters.formatCurrency(totalEarnings, locale), fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
         // Monthly Running Summary Table
         (text: 'मिति (Date)', fontSize: 9.0, isBold: true, color: PdfColors.white),
         (text: 'सुरु (Start)', fontSize: 9.0, isBold: true, color: PdfColors.white),
@@ -298,6 +332,15 @@ class PdfReportService {
         (text: 'यस महिना कुनै किलोमिटर रेकर्ड छैन', fontSize: 8.5, isBold: false, color: PdfColors.grey600),
         (text: 'महिनाको जम्मा', fontSize: 9.0, isBold: true, color: PdfColors.black),
         (text: AppFormatters.formatUnit(totalMonthKm, 'km', locale), fontSize: 9.0, isBold: true, color: PdfColors.black),
+        // Tips Record Table
+        (text: 'टिप रेकर्ड', fontSize: 12.0, isBold: true, color: PdfColors.black),
+        (text: 'स्थान / विवरण', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'प्रकार', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'रकम', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'उपाय', fontSize: 9.0, isBold: true, color: const PdfColor.fromInt(0xFF2563EB)),
+        (text: 'व्यक्तिगत', fontSize: 9.0, isBold: true, color: const PdfColor.fromInt(0xFFD97706)),
+        (text: 'महिनाको जम्मा टिप', fontSize: 9.0, isBold: true, color: PdfColors.black),
+        (text: AppFormatters.formatCurrency(totalMonthTips, locale), fontSize: 9.0, isBold: true, color: PdfColors.black),
       ];
 
       for (final item in kmLogs) {
@@ -317,6 +360,25 @@ class PdfReportService {
         preWarmList.add((text: totalKmStr, fontSize: 9.0, isBold: true, color: PdfColors.black));
       }
 
+      for (final item in tipLogs) {
+        final adDate = NepalClock.parseDate(item.logDate);
+        final nepaliDate = adDate.toNepaliDateTime();
+        final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
+        final bsDay = AppFormatters.toDevanagariDigits('${nepaliDate.day}');
+        final bsYearNum = AppFormatters.toDevanagariDigits('${nepaliDate.year}');
+        final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
+
+        final parsed = ExtraTripDialog.parseUpayeNote(item.extraTipNote);
+        final locationText = parsed.cleanNote.isNotEmpty ? parsed.cleanNote : '-';
+        final amountStr = AppFormatters.formatCurrency(item.effectiveTipAmount, locale);
+
+        preWarmList.add((text: nepaliDateFormatted, fontSize: 9.5, isBold: true, color: PdfColors.black));
+        if (locationText != '-') {
+          preWarmList.add((text: locationText, fontSize: 9.0, isBold: false, color: PdfColors.black));
+        }
+        preWarmList.add((text: amountStr, fontSize: 9.0, isBold: true, color: PdfColors.black));
+      }
+
       for (final fb in fuelBills) {
         preWarmList.add((text: 'समयावधि', fontSize: 9.0, isBold: true, color: PdfColors.white));
         preWarmList.add((text: 'जम्मा कि.मि.', fontSize: 9.0, isBold: true, color: PdfColors.white));
@@ -328,7 +390,16 @@ class PdfReportService {
         preWarmList.add((text: AppFormatters.formatUnit(fb.totalKm, 'km', locale), fontSize: 9.0, isBold: false, color: PdfColors.black));
         preWarmList.add((text: AppFormatters.formatUnit(fb.expectedLiters, 'L', locale), fontSize: 9.0, isBold: false, color: PdfColors.black));
         if (fb.actualLiters != null) {
-          preWarmList.add((text: AppFormatters.formatUnit(fb.actualLiters!, 'L', locale), fontSize: 9.0, isBold: false, color: PdfColors.black));
+          final isMoreOrEqual = fb.actualLiters! >= fb.expectedLiters;
+          final actualColor = isMoreOrEqual
+              ? const PdfColor.fromInt(0xFF16A34A)
+              : const PdfColor.fromInt(0xFFDC2626);
+          preWarmList.add((
+            text: AppFormatters.formatUnit(fb.actualLiters!, 'L', locale),
+            fontSize: 9.0,
+            isBold: true,
+            color: actualColor,
+          ));
         }
       }
 
@@ -542,10 +613,10 @@ class PdfReportService {
                   isNepali ? 'उपस्थिति आम्दानी:' : 'Total Earning (from attendance):',
                   AppFormatters.formatCurrency(totalEarning, locale),
                 ),
-                if (summaryUpToToday.totalExtraIncome > 0)
+                if (upayeTipIncome > 0)
                   _summaryRow(
-                    isNepali ? 'अतिरिक्त यात्रा आम्दानी:' : 'Extra Trip Income:',
-                    AppFormatters.formatCurrency(summaryUpToToday.totalExtraIncome, locale),
+                    isNepali ? 'अतिरिक्त टिप (उपाय):' : 'Extra Tip Income (Upaye):',
+                    AppFormatters.formatCurrency(upayeTipIncome, locale),
                   ),
                 _summaryRow(
                   isNepali ? 'कुल जम्मा:' : 'Gross Total:',
@@ -563,10 +634,26 @@ class PdfReportService {
                 _summaryRow(
                   isNepali ? 'खुद आम्दानी (टीडीएस पछि):' : 'Net Income (After TDS):',
                   AppFormatters.formatCurrency(netIncomeAfterTDS, locale),
-                  textColor: const PdfColor.fromInt(0xFF16A34A), // green
+                  textColor: soloTipIncome > 0 ? PdfColors.black : const PdfColor.fromInt(0xFF16A34A),
                   isBold: true,
-                  fontSize: 13,
+                  fontSize: soloTipIncome > 0 ? 10.5 : 13,
                 ),
+                if (soloTipIncome > 0) ...[
+                  pw.SizedBox(height: 4),
+                  _summaryRow(
+                    isNepali ? 'अतिरिक्त टिप (व्यक्तिगत):' : 'Extra Tip (Solo):',
+                    AppFormatters.formatCurrency(soloTipIncome, locale),
+                  ),
+                  pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+                  pw.SizedBox(height: 4),
+                  _summaryRow(
+                    isNepali ? 'जम्मा कुल आम्दानी:' : 'Total Earnings:',
+                    AppFormatters.formatCurrency(totalEarnings, locale),
+                    textColor: const PdfColor.fromInt(0xFF16A34A),
+                    isBold: true,
+                    fontSize: 13,
+                  ),
+                ],
               ],
             ),
           ),
@@ -688,6 +775,113 @@ class PdfReportService {
             ],
           ),
 
+          // Tips Record Table
+          if (tipLogs.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            DevanagariShaper.render(
+              isNepali ? 'टिप रेकर्ड' : 'Tips Record',
+              fontSize: 12,
+              isBold: true,
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+              columnWidths: const {
+                0: pw.FlexColumnWidth(3.5),
+                1: pw.FlexColumnWidth(3.5),
+                2: pw.FlexColumnWidth(2.0),
+                3: pw.FlexColumnWidth(2.5),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFF2563EB)),
+                  children: [
+                    _tableCell(isNepali ? 'मिति (Date)' : 'Date', isHeader: true, textColor: PdfColors.white),
+                    _tableCell(isNepali ? 'स्थान / विवरण' : 'Location / Note', isHeader: true, textColor: PdfColors.white),
+                    _tableCell(isNepali ? 'प्रकार' : 'Type', isHeader: true, textColor: PdfColors.white, center: true),
+                    _tableCell(isNepali ? 'रकम' : 'Amount', isHeader: true, textColor: PdfColors.white, alignRight: true),
+                  ],
+                ),
+                ...tipLogs.map((item) {
+                  final adDate = NepalClock.parseDate(item.logDate);
+                  final nepaliDate = adDate.toNepaliDateTime();
+                  final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
+                  final bsDay = isNepali
+                      ? AppFormatters.toDevanagariDigits('${nepaliDate.day}')
+                      : NepaliCalendarHelper.toNepaliNumber(nepaliDate.day);
+                  final bsYearNum = isNepali
+                      ? AppFormatters.toDevanagariDigits('${nepaliDate.year}')
+                      : NepaliCalendarHelper.toNepaliNumber(nepaliDate.year);
+                  final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
+
+                  const adMonthNamesShort = [
+                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                  ];
+                  final adMonth = adMonthNamesShort[adDate.month - 1];
+                  final englishDateFormatted = '${adDate.year} $adMonth ${adDate.day}';
+
+                  final parsed = ExtraTripDialog.parseUpayeNote(item.extraTipNote);
+                  final locationText = parsed.cleanNote.isNotEmpty ? parsed.cleanNote : '-';
+                  final typeText = parsed.isUpaye
+                      ? (isNepali ? 'उपाय' : 'Upaye')
+                      : (isNepali ? 'व्यक्तिगत' : 'Solo');
+                  final amountStr = AppFormatters.formatCurrency(item.effectiveTipAmount, locale);
+
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            DevanagariShaper.render(
+                              nepaliDateFormatted,
+                              fontSize: 9.5,
+                              isBold: true,
+                              textColor: PdfColors.black,
+                            ),
+                            pw.SizedBox(height: 1.5),
+                            pw.Text(
+                              englishDateFormatted,
+                              style: const pw.TextStyle(
+                                fontSize: 7.5,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _tableCell(locationText),
+                      _tableCell(
+                        typeText,
+                        center: true,
+                        isBold: true,
+                        textColor: parsed.isUpaye
+                            ? const PdfColor.fromInt(0xFF2563EB)
+                            : const PdfColor.fromInt(0xFFD97706),
+                      ),
+                      _tableCell(amountStr, isBold: true, alignRight: true),
+                    ],
+                  );
+                }),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFEFF6FF)),
+                  children: [
+                    _tableCell(isNepali ? 'महिनाको जम्मा टिप' : 'Month Total Tips', isBold: true),
+                    _tableCell(''),
+                    _tableCell(''),
+                    _tableCell(
+                      AppFormatters.formatCurrency(totalMonthTips, locale),
+                      isBold: true,
+                      alignRight: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+
           // Fuel Bill Summary if available
           if (fuelBills.isNotEmpty) ...[
             pw.SizedBox(height: 16),
@@ -718,12 +912,25 @@ class PdfReportService {
                 ...fuelBills.map((fb) {
                   final formattedStart = isNepali ? AppFormatters.toDevanagariDigits(fb.startDate) : fb.startDate;
                   final formattedEnd = isNepali ? AppFormatters.toDevanagariDigits(fb.endDate) : fb.endDate;
+                  final hasActual = fb.actualLiters != null;
+                  final isMoreOrEqual = hasActual && fb.actualLiters! >= fb.expectedLiters;
+                  final actualColor = !hasActual
+                      ? PdfColors.black
+                      : isMoreOrEqual
+                          ? const PdfColor.fromInt(0xFF16A34A)
+                          : const PdfColor.fromInt(0xFFDC2626);
+
                   return pw.TableRow(
                     children: [
                       _tableCell('$formattedStart - $formattedEnd'),
                       _tableCell(AppFormatters.formatUnit(fb.totalKm, 'km', locale), alignRight: true),
                       _tableCell(AppFormatters.formatUnit(fb.expectedLiters, 'L', locale), alignRight: true),
-                      _tableCell(fb.actualLiters != null ? AppFormatters.formatUnit(fb.actualLiters!, 'L', locale) : '-', alignRight: true),
+                      _tableCell(
+                        hasActual ? AppFormatters.formatUnit(fb.actualLiters!, 'L', locale) : '-',
+                        alignRight: true,
+                        isBold: hasActual,
+                        textColor: actualColor,
+                      ),
                     ],
                   );
                 }),

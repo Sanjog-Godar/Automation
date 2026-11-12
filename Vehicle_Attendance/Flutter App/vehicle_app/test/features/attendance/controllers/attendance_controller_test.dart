@@ -202,6 +202,43 @@ void main() {
           )).called(1);
     });
 
+    test('updateExtraTip updates tip amount and location note seamlessly', () async {
+      final initialLogs = [
+        const AttendanceLog(
+          logDate: '2026-01-15',
+          status: AttendanceStatus.present,
+          extraTripIncome: 0,
+          kmTotal: 75,
+          isUnselected: false,
+        ),
+      ];
+
+      when(() => mockRepository.upsertAttendance(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as AttendanceLog,
+      );
+
+      final container = createContainer(initialLogs);
+      final controller = container.read(attendanceControllerProvider.notifier);
+      await controller.loadMonth(2082, 9);
+
+      await controller.updateExtraTip(
+        logDate: '2026-01-15',
+        amount: 850,
+        note: 'Evening market return, special trip',
+      );
+
+      final state = container.read(attendanceControllerProvider);
+      final updated = state.logs[0];
+      expect(updated.extraTipAmount, 850);
+      expect(updated.extraTipNote, 'Evening market return, special trip');
+      expect(updated.extraTripIncome, 850);
+      expect(updated.effectiveTipAmount, 850);
+      verify(() => mockToastService.showSuccess(
+            'Extra tip saved',
+            nepaliMessage: any(named: 'nepaliMessage'),
+          )).called(1);
+    });
+
     test('AttendanceController can be rebuilt/refreshed without LateInitializationError', () {
       final container = createContainer([]);
       // First read triggers build()
