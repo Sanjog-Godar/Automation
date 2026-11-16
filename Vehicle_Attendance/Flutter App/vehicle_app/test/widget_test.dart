@@ -29,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Default locale on first launch is Nepali
-    expect(find.text('सवारी साधन उपस्थिति'), findsOneWidget);
+    expect(find.text('बोलेरो उपस्थिति'), findsOneWidget);
     expect(find.text('ड्यासबोर्ड हेर्न लग-इन गर्नुहोस्'), findsOneWidget);
     expect(find.text('लग-इन गर्नुहोस्'), findsOneWidget);
 
@@ -38,7 +38,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Now in English
-    expect(find.text('Vehicle Attendance'), findsOneWidget);
+    expect(find.text('Bolero Attendance'), findsOneWidget);
     expect(find.text('Sign in to access your dashboard'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
   });

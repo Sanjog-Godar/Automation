@@ -49,7 +49,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Vehicle Attendance'), findsOneWidget);
+      expect(find.text('Bolero Attendance'), findsOneWidget);
       expect(find.text('Sign in to access your dashboard'), findsOneWidget);
       expect(find.text('Email Address'), findsOneWidget);
       expect(find.text('Password'), findsOneWidget);
@@ -66,7 +66,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(locale: const Locale('ne')));
       await tester.pumpAndSettle();
 
-      expect(find.text('सवारी साधन उपस्थिति'), findsOneWidget);
+      expect(find.text('बोलेरो उपस्थिति'), findsOneWidget);
       expect(find.text('ड्यासबोर्ड हेर्न लग-इन गर्नुहोस्'), findsOneWidget);
       expect(find.text('इमेल ठेगाना'), findsOneWidget);
       expect(find.text('पासवर्ड'), findsOneWidget);

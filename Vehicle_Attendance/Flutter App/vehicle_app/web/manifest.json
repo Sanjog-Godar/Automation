@@ -1,11 +1,11 @@
 {
-    "name": "vehicle_app",
-    "short_name": "vehicle_app",
+    "name": "Bolero Attendance",
+    "short_name": "Bolero Attendance",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1B1F86",
     "theme_color": "#3B44D1",
-    "description": "A new Flutter project.",
+    "description": "Bolero Attendance & Earnings Tracker",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

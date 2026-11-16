@@ -10,7 +10,7 @@ class AppLocalizationsNe extends AppLocalizations {
   AppLocalizationsNe([String locale = 'ne']) : super(locale);
 
   @override
-  String get app_name => 'सवारी साधन उपस्थिति';
+  String get app_name => 'बोलेरो उपस्थिति';
 
   @override
   String get common_language_selector_label => 'Language / भाषा';
@@ -55,7 +55,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get common_unit_l => 'लि.';
 
   @override
-  String get auth_login_title => 'सवारी साधन उपस्थिति';
+  String get auth_login_title => 'बोलेरो उपस्थिति';
 
   @override
   String get auth_login_subtitle => 'ड्यासबोर्ड हेर्न लग-इन गर्नुहोस्';
@@ -104,7 +104,7 @@ class AppLocalizationsNe extends AppLocalizations {
   }
 
   @override
-  String get dashboard_drawer_title => 'सवारी साधन उपस्थिति प्रणाली';
+  String get dashboard_drawer_title => 'बोलेरो उपस्थिति प्रणाली';
 
   @override
   String get dashboard_drawer_nav_dashboard => 'ड्यासबोर्ड';
@@ -598,7 +598,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get quick_actions_downloadPdf_subtitle => 'PDF ढाँचामा (आजसम्मको)';
 
   @override
-  String get pdf_report_systemTitle => 'सवारी साधन उपस्थिति प्रणाली';
+  String get pdf_report_systemTitle => 'बोलेरो उपस्थिति प्रणाली';
 
   @override
   String get pdf_report_sheetTitle => 'मासिक विवरण पाना';

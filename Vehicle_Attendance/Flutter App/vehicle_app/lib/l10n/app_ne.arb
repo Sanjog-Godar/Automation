@@ -1,7 +1,7 @@
 {
   "@@locale": "ne",
 
-  "app_name": "सवारी साधन उपस्थिति",
+  "app_name": "बोलेरो उपस्थिति",
   "common_language_selector_label": "Language / भाषा",
   "common_english": "English",
   "common_nepali": "नेपाली",
@@ -17,7 +17,7 @@
   "common_unit_liters": "लिटर",
   "common_unit_l": "लि.",
 
-  "auth_login_title": "सवारी साधन उपस्थिति",
+  "auth_login_title": "बोलेरो उपस्थिति",
   "auth_login_subtitle": "ड्यासबोर्ड हेर्न लग-इन गर्नुहोस्",
   "auth_login_emailLabel": "इमेल ठेगाना",
   "auth_login_emailHint": "your@email.com",
@@ -32,7 +32,7 @@
   "auth_login_signingInButton": "लग-इन हुँदैछ...",
 
   "dashboard_appbar_subtitle": "{monthName} {year} ({englishRange})",
-  "dashboard_drawer_title": "सवारी साधन उपस्थिति प्रणाली",
+  "dashboard_drawer_title": "बोलेरो उपस्थिति प्रणाली",
   "dashboard_drawer_nav_dashboard": "ड्यासबोर्ड",
   "dashboard_drawer_nav_fuelBills": "ईन्धन बिल रेकर्ड",
   "dashboard_drawer_nav_downloadReport": "रिपोर्ट डाउनलोड (PDF)",
@@ -192,7 +192,7 @@
   "quick_actions_downloadPdf_title": "रिपोर्ट डाउनलोड",
   "quick_actions_downloadPdf_subtitle": "PDF ढाँचामा (आजसम्मको)",
 
-  "pdf_report_systemTitle": "सवारी साधन उपस्थिति प्रणाली",
+  "pdf_report_systemTitle": "बोलेरो उपस्थिति प्रणाली",
   "pdf_report_sheetTitle": "मासिक विवरण पाना",
   "pdf_report_generatedDate": "सिर्जना गरिएको: {date}",
   "pdf_report_earningSection": "आम्दानी विवरण",

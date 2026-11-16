@@ -1,6 +1,6 @@
 {
-  "name": "vehicle-attendance-tracker",
-  "version": "1.0.0",
+  "name": "bolero-attendance",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

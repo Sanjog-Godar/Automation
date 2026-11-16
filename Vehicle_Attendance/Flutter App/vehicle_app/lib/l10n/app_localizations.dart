@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// Application display title
   ///
   /// In en, this message translates to:
-  /// **'Vehicle Attendance'**
+  /// **'Bolero Attendance'**
   String get app_name;
 
   /// Bilingual language header in sidebar drawer
@@ -191,7 +191,7 @@ abstract class AppLocalizations {
   /// Title on login card
   ///
   /// In en, this message translates to:
-  /// **'Vehicle Attendance'**
+  /// **'Bolero Attendance'**
   String get auth_login_title;
 
   /// Subtitle on login card
@@ -279,7 +279,7 @@ abstract class AppLocalizations {
   /// Header title inside navigation drawer
   ///
   /// In en, this message translates to:
-  /// **'Vehicle Attendance System'**
+  /// **'Bolero Attendance System'**
   String get dashboard_drawer_title;
 
   /// Drawer navigation item for dashboard
@@ -1166,7 +1166,7 @@ abstract class AppLocalizations {
   /// Header title on PDF export
   ///
   /// In en, this message translates to:
-  /// **'Vehicle Attendance System'**
+  /// **'Bolero Attendance System'**
   String get pdf_report_systemTitle;
 
   /// Subtitle on PDF export

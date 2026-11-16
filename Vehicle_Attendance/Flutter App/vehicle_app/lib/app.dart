@@ -21,7 +21,7 @@ class VehicleAttendanceApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'Vehicle Attendance',
+      title: 'Bolero Attendance',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,

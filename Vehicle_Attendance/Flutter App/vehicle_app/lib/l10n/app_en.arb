@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "app_name": "Vehicle Attendance",
+  "app_name": "Bolero Attendance",
   "@app_name": {
     "description": "Application display title"
   },
@@ -62,7 +62,7 @@
     "description": "Short fuel volume abbreviation"
   },
 
-  "auth_login_title": "Vehicle Attendance",
+  "auth_login_title": "Bolero Attendance",
   "@auth_login_title": {
     "description": "Title on login card"
   },
@@ -124,7 +124,7 @@
       "englishRange": { "type": "String" }
     }
   },
-  "dashboard_drawer_title": "Vehicle Attendance System",
+  "dashboard_drawer_title": "Bolero Attendance System",
   "@dashboard_drawer_title": {
     "description": "Header title inside navigation drawer"
   },
@@ -760,7 +760,7 @@
     "description": "Quick action subtitle to download PDF"
   },
 
-  "pdf_report_systemTitle": "Vehicle Attendance System",
+  "pdf_report_systemTitle": "Bolero Attendance System",
   "@pdf_report_systemTitle": {
     "description": "Header title on PDF export"
   },

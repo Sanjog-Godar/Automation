@@ -303,7 +303,7 @@ class PdfReportService {
         (text: monthYearTitle, fontSize: 14.0, isBold: false, color: PdfColors.grey800),
         // Footer
         (text: 'तयार मिति: ${AppFormatters.toDevanagariDigits(NepalClock.todayDateString())}', fontSize: 8.0, isBold: false, color: PdfColors.grey600),
-        (text: 'सवारी साधन उपस्थिति प्रणाली', fontSize: 8.0, isBold: false, color: PdfColors.grey600),
+        (text: 'बोलेरो उपस्थिति प्रणाली', fontSize: 8.0, isBold: false, color: PdfColors.grey600),
         // Date Lists
         (text: presentSummaryLine, fontSize: 9.5, isBold: false, color: PdfColors.black),
         (text: absentSummaryLine, fontSize: 9.5, isBold: false, color: PdfColors.black),
@@ -527,7 +527,7 @@ class PdfReportService {
                 textColor: PdfColors.grey600,
               ),
               DevanagariShaper.render(
-                isNepali ? 'सवारी साधन उपस्थिति प्रणाली' : 'Vehicle Attendance System',
+                isNepali ? 'बोलेरो उपस्थिति प्रणाली' : 'Bolero Attendance System',
                 fontSize: 8,
                 textColor: PdfColors.grey600,
               ),

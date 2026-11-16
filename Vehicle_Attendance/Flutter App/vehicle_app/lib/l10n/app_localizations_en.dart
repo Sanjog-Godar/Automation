@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get app_name => 'Vehicle Attendance';
+  String get app_name => 'Bolero Attendance';
 
   @override
   String get common_language_selector_label => 'Language / भाषा';
@@ -55,7 +55,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get common_unit_l => 'L';
 
   @override
-  String get auth_login_title => 'Vehicle Attendance';
+  String get auth_login_title => 'Bolero Attendance';
 
   @override
   String get auth_login_subtitle => 'Sign in to access your dashboard';
@@ -104,7 +104,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboard_drawer_title => 'Vehicle Attendance System';
+  String get dashboard_drawer_title => 'Bolero Attendance System';
 
   @override
   String get dashboard_drawer_nav_dashboard => 'Dashboard';
@@ -599,7 +599,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quick_actions_downloadPdf_subtitle => 'PDF format (up to today)';
 
   @override
-  String get pdf_report_systemTitle => 'Vehicle Attendance System';
+  String get pdf_report_systemTitle => 'Bolero Attendance System';
 
   @override
   String get pdf_report_sheetTitle => 'Monthly Details Sheet';
