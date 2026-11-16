@@ -323,6 +323,111 @@ class SupabaseRestInterceptor extends Interceptor {
       );
     }
 
+    // 5. /api/settlements
+    if (path == '/api/settlements' || path.endsWith('/api/settlements')) {
+      if (method == 'GET') {
+        final yearStr = options.queryParameters['year']?.toString();
+        final monthIndexStr = options.queryParameters['month_index']?.toString();
+        final year = int.tryParse(yearStr ?? '') ?? 2083;
+        final monthIndex = int.tryParse(monthIndexStr ?? '') ?? 0;
+
+        final prevMonthIndex = monthIndex == 0 ? 11 : monthIndex - 1;
+        final prevYear = monthIndex == 0 ? year - 1 : year;
+
+        dynamic currentData;
+        dynamic prevData;
+
+        try {
+          final currentRes = await _supabaseDio.get(
+            '/monthly_settlements',
+            queryParameters: {
+              'select': '*',
+              'bs_year': 'eq.$year',
+              'bs_month_index': 'eq.$monthIndex',
+            },
+          );
+          final currentList = currentRes.data is List ? currentRes.data as List : [];
+          currentData = currentList.isNotEmpty ? currentList.first : null;
+        } catch (e) {
+          debugPrint('[SupabaseRestInterceptor] Error fetching current settlement: $e');
+        }
+
+        try {
+          final prevRes = await _supabaseDio.get(
+            '/monthly_settlements',
+            queryParameters: {
+              'select': '*',
+              'bs_year': 'eq.$prevYear',
+              'bs_month_index': 'eq.$prevMonthIndex',
+            },
+          );
+          final prevList = prevRes.data is List ? prevRes.data as List : [];
+          prevData = prevList.isNotEmpty ? prevList.first : null;
+        } catch (e) {
+          debugPrint('[SupabaseRestInterceptor] Error fetching previous settlement: $e');
+        }
+
+        return Response(
+          requestOptions: options,
+          statusCode: 200,
+          data: {
+            'data': currentData,
+            'previous': prevData,
+          },
+        );
+      } else if (method == 'POST') {
+        final body = Map<String, dynamic>.from(options.data as Map);
+        final expected = (body['expected_amount'] as num?)?.toInt() ?? 0;
+        final received = (body['bank_received_amount'] as num?)?.toInt() ?? 0;
+
+        String settlementStatus = 'unsettled';
+        if (received >= expected && received > 0) {
+          settlementStatus = 'settled';
+        } else if (received > 0 && received < expected) {
+          settlementStatus = 'partial';
+        }
+
+        final payload = {
+          'bs_year': body['bs_year'],
+          'bs_month_index': body['bs_month_index'],
+          'expected_amount': expected,
+          'bank_received_amount': received,
+          'settlement_status': settlementStatus,
+          'payment_date': body['payment_date'],
+          'note': body['note'],
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+
+        try {
+          final res = await _supabaseDio.post(
+            '/monthly_settlements',
+            queryParameters: {
+              'on_conflict': 'bs_year,bs_month_index',
+            },
+            options: Options(
+              headers: {
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+            ),
+            data: payload,
+          );
+          final list = res.data is List ? res.data as List : [res.data];
+          return Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'data': list.isNotEmpty ? list.first : payload},
+          );
+        } catch (e) {
+          debugPrint('[SupabaseRestInterceptor] Error saving settlement to Supabase: $e');
+          return Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'data': payload},
+          );
+        }
+      }
+    }
+
     return null;
   }
 }

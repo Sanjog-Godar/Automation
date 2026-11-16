@@ -236,6 +236,40 @@ class AttendanceController extends Notifier<AttendanceState> {
     await updateExtraTip(logDate: logDate, amount: extraTrip);
   }
 
+  /// Updates advance / partial salary payment received from company for a day.
+  Future<void> updateAdvancePayment({
+    required String logDate,
+    required int amount,
+    String? note,
+  }) async {
+    final index = state.logs.indexWhere((l) => l.logDate == logDate);
+    if (index == -1) return;
+
+    final oldLog = state.logs[index];
+    final updatedLog = oldLog.copyWith(
+      advanceAmount: amount,
+      advanceNote: (note != null && note.trim().isNotEmpty) ? note.trim() : null,
+      isUnselected: false,
+    );
+
+    _replaceLogAtIndex(index, updatedLog, logDate, isSaving: true);
+
+    try {
+      final savedLog = await _repository.upsertAttendance(updatedLog);
+      _replaceLogAtIndex(index, savedLog, logDate, isSaving: false);
+      _toastService.showSuccess(
+        'Advance payment saved',
+        nepaliMessage: 'पेश्की रकम सुरक्षित गरियो',
+      );
+    } catch (e) {
+      _replaceLogAtIndex(index, oldLog, logDate, isSaving: false);
+      _toastService.showError(
+        'Failed to save advance payment: $e',
+        nepaliMessage: 'पेश्की रकम सुरक्षित गर्न सकिएन',
+      );
+    }
+  }
+
   /// Updates odometer KM readings (start, end, and computed total).
   Future<void> updateKm(String logDate, int startKm, int endKm) async {
     if (endKm < startKm) {

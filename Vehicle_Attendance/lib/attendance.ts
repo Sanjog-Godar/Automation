@@ -30,6 +30,14 @@ export interface AttendanceLog {
    * Total kilometers run for the day (km_end - km_start).
    */
   km_total?: number | null;
+  /**
+   * Advance / partial salary amount received on this day from company.
+   */
+  advance_amount?: number | null;
+  /**
+   * Note about the advance payment received.
+   */
+  advance_note?: string | null;
 }
 
 export interface MonthlySummary {
@@ -37,6 +45,7 @@ export interface MonthlySummary {
   totalReplacementDays: number;
   totalExtraIncome: number;
   totalExtraTips: number;
+  totalAdvanceReceived: number;
   totalKm: number;
   grossIncome: number;
   totalDeductions: number;
@@ -60,8 +69,9 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
   let totalPresentDays = 0;
   let totalReplacementDays = 0;
   let totalExtraIncome = 0;
-   let totalExtraTips = 0;
-   let totalKm = 0;
+  let totalExtraTips = 0;
+  let totalAdvanceReceived = 0;
+  let totalKm = 0;
 
   for (const log of logs) {
     if (log.status === 'present') {
@@ -73,6 +83,7 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
     totalExtraIncome += Number(log.extra_trip_income || 0);
 
     totalExtraTips += Number((log.extra_tip_amount ?? 0) || 0);
+    totalAdvanceReceived += Number((log.advance_amount ?? 0) || 0);
     totalKm += Number((log.km_total ?? 0) || 0);
   }
 
@@ -85,9 +96,22 @@ export function calculateMonthlySummary(logs: AttendanceLog[]): MonthlySummary {
     totalReplacementDays,
     totalExtraIncome,
     totalExtraTips,
+    totalAdvanceReceived,
     totalKm,
     grossIncome,
     totalDeductions,
     netIncome,
   };
 }
+
+export interface MonthlySettlement {
+  id?: number;
+  bs_year: number;
+  bs_month_index: number;
+  expected_amount: number;
+  bank_received_amount: number;
+  settlement_status: 'settled' | 'partial' | 'unsettled';
+  payment_date?: string | null;
+  note?: string | null;
+}
+

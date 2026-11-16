@@ -347,6 +347,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tips_record_noNote => 'No destination';
 
   @override
+  String get company_payments_tile_title => 'Company Payments Received';
+
+  @override
+  String company_payments_tile_total(String amount) {
+    return 'Total received: $amount';
+  }
+
+  @override
+  String get company_payments_tile_noPayments =>
+      'Record mid-month payments before salary';
+
+  @override
+  String get company_payments_dialog_title => 'Company Payments Received';
+
+  @override
+  String get company_payments_dialog_subtitle =>
+      'Record tips or partial payments received mid-month before salary. These will be automatically deducted from your final settlement.';
+
+  @override
+  String get company_payments_dialog_totalCard => 'Total Received This Month';
+
+  @override
+  String get company_payments_add_button => '+ Add Received Payment';
+
+  @override
+  String get company_payments_empty => 'No payments recorded for this month.';
+
+  @override
+  String get company_payments_entry_title => 'Record Received Payment';
+
+  @override
+  String get company_payments_entry_date => 'Received Date';
+
+  @override
+  String get company_payments_entry_amount => 'Received Amount (Rs.)';
+
+  @override
+  String get company_payments_entry_amount_hint => 'e.g. 6000';
+
+  @override
+  String get company_payments_entry_note => 'Remarks / Note';
+
+  @override
+  String get company_payments_entry_note_hint =>
+      'e.g. Upaye tip for Kushma trip';
+
+  @override
+  String get company_payments_delete_confirm =>
+      'Are you sure you want to delete this payment record?';
+
+  @override
+  String get settlement_tile_title => 'Bank Salary Settlement';
+
+  @override
+  String settlement_tile_fullySettled(String amount) {
+    return 'Fully settled: $amount';
+  }
+
+  @override
+  String settlement_tile_pending(String amount) {
+    return 'Unpaid balance: $amount';
+  }
+
+  @override
+  String get settlement_tile_notRecorded => 'Record final bank salary received';
+
+  @override
+  String get settlement_arrears_banner_title => 'Previous Month Dues Pending';
+
+  @override
+  String settlement_arrears_banner_desc(String amount, String month) {
+    return '$amount is still pending from $month salary.';
+  }
+
+  @override
+  String get settlement_dialog_title => 'Bank Salary Settlement';
+
+  @override
+  String get settlement_dialog_subtitle =>
+      'Record the actual salary amount deposited by the company into your bank. Any unpaid balance will be automatically carried forward.';
+
+  @override
+  String get settlement_expected_label => 'Expected from Company (Net)';
+
+  @override
+  String get settlement_actual_label => 'Actual Received in Bank';
+
+  @override
+  String get settlement_date_label => 'Deposit Date';
+
+  @override
+  String get settlement_diff_label => 'Unpaid Due (Carried Forward)';
+
+  @override
+  String get settlement_fully_paid_badge => 'Fully Paid';
+
+  @override
+  String get settlement_partial_badge => 'Partial Payment';
+
+  @override
+  String get settlement_calendar_bs => 'Nepali (BS)';
+
+  @override
+  String get settlement_calendar_ad => 'English (AD)';
+
+  @override
+  String get settlement_pick_date => 'Select Date';
+
+  @override
   String get fuel_records_tile_title => 'Fuel Bill Records';
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/l10n/formatters.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
@@ -8,6 +9,7 @@ import '../../auth/controllers/auth_controller.dart';
 import '../../fuel_bills/widgets/fuel_bill_records_dialog.dart';
 import '../../reports/services/pdf_report_service.dart';
 import '../controllers/attendance_controller.dart';
+import '../controllers/settlements_controller.dart';
 import '../../fuel_bills/controllers/fuel_bills_controller.dart';
 
 /// Navigation drawer presenting application identity, language switching,
@@ -187,12 +189,29 @@ class AppDrawer extends ConsumerWidget {
                         Navigator.pop(context);
                         final attendanceState = ref.read(attendanceControllerProvider);
                         final fuelBills = ref.read(fuelBillsControllerProvider).bills;
+
+                        // Ensure settlements are freshly loaded from storage/network
+                        await ref.read(settlementsControllerProvider.notifier).load(
+                              bsYear: attendanceState.currentYear,
+                              bsMonthIndex: attendanceState.currentMonthIndex,
+                            );
+
+                        final settlementsState = ref.read(settlementsControllerProvider);
+
+                        final prevDue = settlementsState.previousMonthDue;
+                        final prevMonthIndex = attendanceState.currentMonthIndex == 0 ? 11 : attendanceState.currentMonthIndex - 1;
+                        final prevMonthName = AppFormatters.bsMonthName(prevMonthIndex, locale);
+                        final prevYear = attendanceState.currentMonthIndex == 0 ? attendanceState.currentYear - 1 : attendanceState.currentYear;
+                        final prevYearStr = AppFormatters.formatYear(prevYear, locale);
+
                         await PdfReportService.generateAndDownloadReport(
                           bsYear: attendanceState.currentYear,
                           bsMonthIndex: attendanceState.currentMonthIndex,
                           fullMonthLogs: attendanceState.logs,
                           fuelBills: fuelBills,
                           locale: locale,
+                          previousMonthDue: prevDue,
+                          previousMonthName: '$prevMonthName $prevYearStr',
                         );
                       },
                     ),

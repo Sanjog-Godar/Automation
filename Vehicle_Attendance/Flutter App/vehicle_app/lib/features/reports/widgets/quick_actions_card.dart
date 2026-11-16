@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/l10n/formatters.dart';
 import '../../../core/services/toast_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../attendance/controllers/attendance_controller.dart';
+import '../../attendance/controllers/settlements_controller.dart';
 import '../../fuel_bills/controllers/fuel_bills_controller.dart';
 import '../../fuel_bills/widgets/generate_fuel_bill_dialog.dart';
 import '../services/pdf_report_service.dart';
@@ -25,7 +27,21 @@ class _QuickActionsCardState extends ConsumerState<QuickActionsCard> {
     try {
       final attendanceState = ref.read(attendanceControllerProvider);
       final fuelBills = ref.read(fuelBillsControllerProvider).bills;
+
+      // Ensure settlements are freshly loaded from storage/network
+      await ref.read(settlementsControllerProvider.notifier).load(
+            bsYear: attendanceState.currentYear,
+            bsMonthIndex: attendanceState.currentMonthIndex,
+          );
+
+      final settlementsState = ref.read(settlementsControllerProvider);
       final locale = Localizations.localeOf(context);
+
+      final prevDue = settlementsState.previousMonthDue;
+      final prevMonthIndex = attendanceState.currentMonthIndex == 0 ? 11 : attendanceState.currentMonthIndex - 1;
+      final prevMonthName = AppFormatters.bsMonthName(prevMonthIndex, locale);
+      final prevYear = attendanceState.currentMonthIndex == 0 ? attendanceState.currentYear - 1 : attendanceState.currentYear;
+      final prevYearStr = AppFormatters.formatYear(prevYear, locale);
 
       await PdfReportService.generateAndDownloadReport(
         bsYear: attendanceState.currentYear,
@@ -33,6 +49,8 @@ class _QuickActionsCardState extends ConsumerState<QuickActionsCard> {
         fullMonthLogs: attendanceState.logs,
         fuelBills: fuelBills,
         locale: locale,
+        previousMonthDue: prevDue,
+        previousMonthName: '$prevMonthName $prevYearStr',
       );
       if (mounted) {
         ref.read(toastServiceProvider).showSuccess(

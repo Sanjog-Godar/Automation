@@ -436,6 +436,149 @@
     "description": "Fallback text when tip note is empty"
   },
 
+  "company_payments_tile_title": "Company Payments Received",
+  "@company_payments_tile_title": {
+    "description": "Title on company payments received tile"
+  },
+  "company_payments_tile_total": "Total received: {amount}",
+  "@company_payments_tile_total": {
+    "description": "Subtitle showing total received this month",
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "company_payments_tile_noPayments": "Record mid-month payments before salary",
+  "@company_payments_tile_noPayments": {
+    "description": "Subtitle when no company payments are recorded"
+  },
+  "company_payments_dialog_title": "Company Payments Received",
+  "@company_payments_dialog_title": {
+    "description": "Title on company payments dialog"
+  },
+  "company_payments_dialog_subtitle": "Record tips or partial payments received mid-month before salary. These will be automatically deducted from your final settlement.",
+  "@company_payments_dialog_subtitle": {
+    "description": "Subtitle explanation on company payments dialog"
+  },
+  "company_payments_dialog_totalCard": "Total Received This Month",
+  "@company_payments_dialog_totalCard": {
+    "description": "Label for month total card in payments dialog"
+  },
+  "company_payments_add_button": "+ Add Received Payment",
+  "@company_payments_add_button": {
+    "description": "Button to record a new payment"
+  },
+  "company_payments_empty": "No payments recorded for this month.",
+  "@company_payments_empty": {
+    "description": "Empty state text in company payments dialog"
+  },
+  "company_payments_entry_title": "Record Received Payment",
+  "@company_payments_entry_title": {
+    "description": "Title for add/edit payment dialog"
+  },
+  "company_payments_entry_date": "Received Date",
+  "@company_payments_entry_date": {
+    "description": "Label for date picker"
+  },
+  "company_payments_entry_amount": "Received Amount (Rs.)",
+  "@company_payments_entry_amount": {
+    "description": "Label for amount field"
+  },
+  "company_payments_entry_amount_hint": "e.g. 6000",
+  "@company_payments_entry_amount_hint": {
+    "description": "Hint for amount field"
+  },
+  "company_payments_entry_note": "Remarks / Note",
+  "@company_payments_entry_note": {
+    "description": "Label for remarks field"
+  },
+  "company_payments_entry_note_hint": "e.g. Upaye tip for Kushma trip",
+  "@company_payments_entry_note_hint": {
+    "description": "Hint for remarks field"
+  },
+  "company_payments_delete_confirm": "Are you sure you want to delete this payment record?",
+  "@company_payments_delete_confirm": {
+    "description": "Confirmation prompt before deleting payment"
+  },
+
+  "settlement_tile_title": "Bank Salary Settlement",
+  "@settlement_tile_title": {
+    "description": "Title on bank salary settlement tile"
+  },
+  "settlement_tile_fullySettled": "Fully settled: {amount}",
+  "@settlement_tile_fullySettled": {
+    "description": "Subtitle when bank salary matches or exceeds expected",
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "settlement_tile_pending": "Unpaid balance: {amount}",
+  "@settlement_tile_pending": {
+    "description": "Subtitle when bank salary was less than expected",
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "settlement_tile_notRecorded": "Record final bank salary received",
+  "@settlement_tile_notRecorded": {
+    "description": "Subtitle when bank salary has not been recorded yet"
+  },
+  "settlement_arrears_banner_title": "Previous Month Dues Pending",
+  "@settlement_arrears_banner_title": {
+    "description": "Title of warning banner when previous month salary has unpaid balance"
+  },
+  "settlement_arrears_banner_desc": "{amount} is still pending from {month} salary.",
+  "@settlement_arrears_banner_desc": {
+    "description": "Description in arrears warning banner",
+    "placeholders": {
+      "amount": { "type": "String" },
+      "month": { "type": "String" }
+    }
+  },
+  "settlement_dialog_title": "Bank Salary Settlement",
+  "@settlement_dialog_title": {
+    "description": "Dialog title for bank salary settlement"
+  },
+  "settlement_dialog_subtitle": "Record the actual salary amount deposited by the company into your bank. Any unpaid balance will be automatically carried forward.",
+  "@settlement_dialog_subtitle": {
+    "description": "Dialog subtitle explanation"
+  },
+  "settlement_expected_label": "Expected from Company (Net)",
+  "@settlement_expected_label": {
+    "description": "Label for expected net receivable amount"
+  },
+  "settlement_actual_label": "Actual Received in Bank",
+  "@settlement_actual_label": {
+    "description": "Label for actual bank deposit amount"
+  },
+  "settlement_date_label": "Deposit Date",
+  "@settlement_date_label": {
+    "description": "Label for bank deposit date"
+  },
+  "settlement_diff_label": "Unpaid Due (Carried Forward)",
+  "@settlement_diff_label": {
+    "description": "Label for remaining unpaid balance"
+  },
+  "settlement_fully_paid_badge": "Fully Paid",
+  "@settlement_fully_paid_badge": {
+    "description": "Badge text when salary is fully settled"
+  },
+  "settlement_partial_badge": "Partial Payment",
+  "@settlement_partial_badge": {
+    "description": "Badge text when salary is partially settled"
+  },
+  "settlement_calendar_bs": "Nepali (BS)",
+  "@settlement_calendar_bs": {
+    "description": "Bikram Sambat calendar mode toggle"
+  },
+  "settlement_calendar_ad": "English (AD)",
+  "@settlement_calendar_ad": {
+    "description": "Gregorian calendar mode toggle"
+  },
+  "settlement_pick_date": "Select Date",
+  "@settlement_pick_date": {
+    "description": "Button to open calendar picker"
+  },
+
   "fuel_records_tile_title": "Fuel Bill Records",
   "@fuel_records_tile_title": {
     "description": "Title on fuel bill records tile"

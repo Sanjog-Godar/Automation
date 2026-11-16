@@ -7,6 +7,7 @@ class MonthlySummary {
   final int totalReplacementDays;
   final int totalExtraIncome;
   final int totalExtraTips;
+  final int totalAdvanceReceived;
   final int totalKm;
   final int grossIncome;
   final int totalDeductions;
@@ -17,6 +18,7 @@ class MonthlySummary {
     required this.totalReplacementDays,
     required this.totalExtraIncome,
     this.totalExtraTips = 0,
+    this.totalAdvanceReceived = 0,
     required this.totalKm,
     required this.grossIncome,
     required this.totalDeductions,
@@ -29,6 +31,7 @@ class MonthlySummary {
   /// - Deductions = Replace * replacementDeduction
   /// - Net = Gross - Deductions
   /// - KM is summed informatively (not part of salary / no TDS).
+  /// - Advance received is summed for deduction on salary payout.
   factory MonthlySummary.calculate(
     List<AttendanceLog> logs, {
     int dailyWage = AppConstants.dailyWage,
@@ -38,6 +41,7 @@ class MonthlySummary {
     int totalReplacementDays = 0;
     int totalExtraIncome = 0;
     int totalExtraTips = 0;
+    int totalAdvanceReceived = 0;
     int totalKm = 0;
 
     for (final log in logs) {
@@ -54,6 +58,7 @@ class MonthlySummary {
       final tip = log.extraTipAmount ?? log.extraTripIncome;
       totalExtraIncome += log.extraTripIncome > 0 ? log.extraTripIncome : tip;
       totalExtraTips += tip;
+      totalAdvanceReceived += log.advanceAmount;
       totalKm += log.kmTotal ?? 0;
     }
 
@@ -66,6 +71,7 @@ class MonthlySummary {
       totalReplacementDays: totalReplacementDays,
       totalExtraIncome: totalExtraIncome,
       totalExtraTips: totalExtraTips,
+      totalAdvanceReceived: totalAdvanceReceived,
       totalKm: totalKm,
       grossIncome: grossIncome,
       totalDeductions: totalDeductions,

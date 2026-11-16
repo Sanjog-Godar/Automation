@@ -719,6 +719,198 @@ abstract class AppLocalizations {
   /// **'No destination'**
   String get tips_record_noNote;
 
+  /// Title on company payments received tile
+  ///
+  /// In en, this message translates to:
+  /// **'Company Payments Received'**
+  String get company_payments_tile_title;
+
+  /// Subtitle showing total received this month
+  ///
+  /// In en, this message translates to:
+  /// **'Total received: {amount}'**
+  String company_payments_tile_total(String amount);
+
+  /// Subtitle when no company payments are recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Record mid-month payments before salary'**
+  String get company_payments_tile_noPayments;
+
+  /// Title on company payments dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Company Payments Received'**
+  String get company_payments_dialog_title;
+
+  /// Subtitle explanation on company payments dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Record tips or partial payments received mid-month before salary. These will be automatically deducted from your final settlement.'**
+  String get company_payments_dialog_subtitle;
+
+  /// Label for month total card in payments dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Total Received This Month'**
+  String get company_payments_dialog_totalCard;
+
+  /// Button to record a new payment
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add Received Payment'**
+  String get company_payments_add_button;
+
+  /// Empty state text in company payments dialog
+  ///
+  /// In en, this message translates to:
+  /// **'No payments recorded for this month.'**
+  String get company_payments_empty;
+
+  /// Title for add/edit payment dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Record Received Payment'**
+  String get company_payments_entry_title;
+
+  /// Label for date picker
+  ///
+  /// In en, this message translates to:
+  /// **'Received Date'**
+  String get company_payments_entry_date;
+
+  /// Label for amount field
+  ///
+  /// In en, this message translates to:
+  /// **'Received Amount (Rs.)'**
+  String get company_payments_entry_amount;
+
+  /// Hint for amount field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 6000'**
+  String get company_payments_entry_amount_hint;
+
+  /// Label for remarks field
+  ///
+  /// In en, this message translates to:
+  /// **'Remarks / Note'**
+  String get company_payments_entry_note;
+
+  /// Hint for remarks field
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Upaye tip for Kushma trip'**
+  String get company_payments_entry_note_hint;
+
+  /// Confirmation prompt before deleting payment
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this payment record?'**
+  String get company_payments_delete_confirm;
+
+  /// Title on bank salary settlement tile
+  ///
+  /// In en, this message translates to:
+  /// **'Bank Salary Settlement'**
+  String get settlement_tile_title;
+
+  /// Subtitle when bank salary matches or exceeds expected
+  ///
+  /// In en, this message translates to:
+  /// **'Fully settled: {amount}'**
+  String settlement_tile_fullySettled(String amount);
+
+  /// Subtitle when bank salary was less than expected
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid balance: {amount}'**
+  String settlement_tile_pending(String amount);
+
+  /// Subtitle when bank salary has not been recorded yet
+  ///
+  /// In en, this message translates to:
+  /// **'Record final bank salary received'**
+  String get settlement_tile_notRecorded;
+
+  /// Title of warning banner when previous month salary has unpaid balance
+  ///
+  /// In en, this message translates to:
+  /// **'Previous Month Dues Pending'**
+  String get settlement_arrears_banner_title;
+
+  /// Description in arrears warning banner
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} is still pending from {month} salary.'**
+  String settlement_arrears_banner_desc(String amount, String month);
+
+  /// Dialog title for bank salary settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Bank Salary Settlement'**
+  String get settlement_dialog_title;
+
+  /// Dialog subtitle explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Record the actual salary amount deposited by the company into your bank. Any unpaid balance will be automatically carried forward.'**
+  String get settlement_dialog_subtitle;
+
+  /// Label for expected net receivable amount
+  ///
+  /// In en, this message translates to:
+  /// **'Expected from Company (Net)'**
+  String get settlement_expected_label;
+
+  /// Label for actual bank deposit amount
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Received in Bank'**
+  String get settlement_actual_label;
+
+  /// Label for bank deposit date
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit Date'**
+  String get settlement_date_label;
+
+  /// Label for remaining unpaid balance
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid Due (Carried Forward)'**
+  String get settlement_diff_label;
+
+  /// Badge text when salary is fully settled
+  ///
+  /// In en, this message translates to:
+  /// **'Fully Paid'**
+  String get settlement_fully_paid_badge;
+
+  /// Badge text when salary is partially settled
+  ///
+  /// In en, this message translates to:
+  /// **'Partial Payment'**
+  String get settlement_partial_badge;
+
+  /// Bikram Sambat calendar mode toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Nepali (BS)'**
+  String get settlement_calendar_bs;
+
+  /// Gregorian calendar mode toggle
+  ///
+  /// In en, this message translates to:
+  /// **'English (AD)'**
+  String get settlement_calendar_ad;
+
+  /// Button to open calendar picker
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get settlement_pick_date;
+
   /// Title on fuel bill records tile
   ///
   /// In en, this message translates to:

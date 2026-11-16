@@ -145,6 +145,8 @@ class PdfReportService {
     required List<AttendanceLog> fullMonthLogs,
     List<FuelBill> fuelBills = const [],
     Locale locale = const Locale('ne'),
+    int previousMonthDue = 0,
+    String? previousMonthName,
   }) async {
     final pdf = pw.Document();
     final isNepali = locale.languageCode == 'ne';
@@ -175,6 +177,7 @@ class PdfReportService {
     final List<int> absentDates = [];
     final List<int> replaceDates = [];
     final List<int> tipDates = [];
+    final List<int> advanceDates = [];
 
     for (int i = 0; i < fullMonthLogs.length; i++) {
       final log = fullMonthLogs[i];
@@ -195,17 +198,23 @@ class PdfReportService {
       if (log.effectiveTipAmount > 0) {
         if (!tipDates.contains(bsDay)) tipDates.add(bsDay);
       }
+
+      if (log.advanceAmount > 0) {
+        if (!advanceDates.contains(bsDay)) advanceDates.add(bsDay);
+      }
     }
 
     presentDates.sort();
     absentDates.sort();
     replaceDates.sort();
     tipDates.sort();
+    advanceDates.sort();
 
     final presentDayNums = presentDates.map((d) => isNepali ? AppFormatters.toDevanagariDigits('$d') : '$d').toList();
     final absentDayNums = absentDates.map((d) => isNepali ? AppFormatters.toDevanagariDigits('$d') : '$d').toList();
     final replaceDayNums = replaceDates.map((d) => isNepali ? AppFormatters.toDevanagariDigits('$d') : '$d').toList();
     final tipDayNums = tipDates.map((d) => isNepali ? AppFormatters.toDevanagariDigits('$d') : '$d').toList();
+    final advanceDayNums = advanceDates.map((d) => isNepali ? AppFormatters.toDevanagariDigits('$d') : '$d').toList();
     final noneText = isNepali ? 'कुनै छैन' : 'None';
 
     final presentSummaryLine = isNepali
@@ -220,6 +229,9 @@ class PdfReportService {
     final tipSummaryLine = isNepali
         ? 'अतिरिक्त टिप = ${tipDayNums.isNotEmpty ? tipDayNums.join(", ") : noneText}'
         : 'Extra tips = ${tipDayNums.isNotEmpty ? tipDayNums.join(", ") : noneText}';
+    final advanceSummaryLine = isNepali
+        ? 'अगाडि प्राप्त रकम = ${advanceDayNums.isNotEmpty ? advanceDayNums.join(", ") : noneText}'
+        : 'Received earlier = ${advanceDayNums.isNotEmpty ? advanceDayNums.join(", ") : noneText}';
 
     // 4. Financial formulas (exact match with Next.js web)
     final presentIncome = summaryUpToToday.totalPresentDays * AppConstants.dailyWage;
@@ -232,9 +244,12 @@ class PdfReportService {
     final totalEarning = presentIncome - summaryUpToToday.totalDeductions;
     final totalHolidayDays = logsUpToToday.where((l) => l.status == AttendanceStatus.absentHoliday).length;
 
-    // Separate Upaye vs Solo Extra Tips
+    // Separate Upaye vs Solo Extra Tips and Advances
     int upayeTipIncome = 0;
     int soloTipIncome = 0;
+    int totalAdvanceReceived = 0;
+    final advanceLogs = <AttendanceLog>[];
+
     for (final log in logsUpToToday) {
       final tip = log.effectiveTipAmount;
       if (tip > 0) {
@@ -245,7 +260,14 @@ class PdfReportService {
           soloTipIncome += tip;
         }
       }
+
+      if (log.advanceAmount > 0) {
+        totalAdvanceReceived += log.advanceAmount;
+        advanceLogs.add(log);
+      }
     }
+    advanceLogs.sort((a, b) => a.logDate.compareTo(b.logDate));
+
     // Fallback if logsUpToToday had no individual tip notes but totalExtraIncome was recorded
     if (upayeTipIncome == 0 && soloTipIncome == 0 && summaryUpToToday.totalExtraIncome > 0) {
       upayeTipIncome = summaryUpToToday.totalExtraIncome;
@@ -255,7 +277,9 @@ class PdfReportService {
     final tdsAmount = (totalEarning * AppConstants.tdsRate).round();
     final totalBeforeTDS = totalEarning + upayeTipIncome;
     final netIncomeAfterTDS = totalBeforeTDS - tdsAmount;
+    final remainingReceivable = (netIncomeAfterTDS - totalAdvanceReceived).clamp(0, 99999999);
     final totalEarnings = netIncomeAfterTDS + soloTipIncome;
+    final totalPayableByCompany = remainingReceivable + previousMonthDue;
 
     // 5. Monthly Running KM entries for the selected month
     final kmLogs = fullMonthLogs
@@ -322,6 +346,16 @@ class PdfReportService {
         (text: AppFormatters.formatCurrency(netIncomeAfterTDS, locale), fontSize: 10.5, isBold: true, color: PdfColors.black),
         (text: 'खुद आम्दानी (टीडीएस पछि):', fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
         (text: AppFormatters.formatCurrency(netIncomeAfterTDS, locale), fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
+        (text: 'कट्टी: अगाडि नै प्राप्त रकम:', fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFDC2626)),
+        (text: '- ${AppFormatters.formatCurrency(totalAdvanceReceived, locale)}', fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFDC2626)),
+        (text: 'कम्पनीबाट बाँकी लिनुपर्ने:', fontSize: 11.5, isBold: true, color: const PdfColor.fromInt(0xFF2563EB)),
+        (text: AppFormatters.formatCurrency(remainingReceivable, locale), fontSize: 11.5, isBold: true, color: const PdfColor.fromInt(0xFF2563EB)),
+        (text: 'गत महिनाको बाँकी बक्यौता:', fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFD97706)),
+        (text: '+ ${AppFormatters.formatCurrency(previousMonthDue, locale)}', fontSize: 10.0, isBold: true, color: const PdfColor.fromInt(0xFFD97706)),
+        (text: 'कम्पनीबाट जम्मा बाँकी भुक्तानी:', fontSize: 12.0, isBold: true, color: const PdfColor.fromInt(0xFF2563EB)),
+        (text: AppFormatters.formatCurrency(totalPayableByCompany, locale), fontSize: 12.0, isBold: true, color: const PdfColor.fromInt(0xFF2563EB)),
+        if (previousMonthName != null && previousMonthName.isNotEmpty)
+          (text: '($previousMonthName को बाँकी तलब)', fontSize: 8.5, isBold: false, color: PdfColors.grey700),
         (text: 'जम्मा कुल आम्दानी:', fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
         (text: AppFormatters.formatCurrency(totalEarnings, locale), fontSize: 13.0, isBold: true, color: const PdfColor.fromInt(0xFF16A34A)),
         // Monthly Running Summary Table
@@ -341,6 +375,12 @@ class PdfReportService {
         (text: 'व्यक्तिगत', fontSize: 9.0, isBold: true, color: const PdfColor.fromInt(0xFFD97706)),
         (text: 'महिनाको जम्मा टिप', fontSize: 9.0, isBold: true, color: PdfColors.black),
         (text: AppFormatters.formatCurrency(totalMonthTips, locale), fontSize: 9.0, isBold: true, color: PdfColors.black),
+        // Company Payments Received Table
+        (text: 'कम्पनीबाट प्राप्त रकम विवरण', fontSize: 12.0, isBold: true, color: PdfColors.black),
+        (text: 'कैफियत / स्रोत (Note)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'रकम (Amount)', fontSize: 9.0, isBold: true, color: PdfColors.white),
+        (text: 'जम्मा प्राप्त रकम', fontSize: 9.0, isBold: true, color: const PdfColor.fromInt(0xFFB45309)),
+        (text: AppFormatters.formatCurrency(totalAdvanceReceived, locale), fontSize: 9.0, isBold: true, color: const PdfColor.fromInt(0xFFB45309)),
       ];
 
       for (final item in kmLogs) {
@@ -377,6 +417,24 @@ class PdfReportService {
           preWarmList.add((text: locationText, fontSize: 9.0, isBold: false, color: PdfColors.black));
         }
         preWarmList.add((text: amountStr, fontSize: 9.0, isBold: true, color: PdfColors.black));
+      }
+
+      for (final item in advanceLogs) {
+        final adDate = NepalClock.parseDate(item.logDate);
+        final nepaliDate = adDate.toNepaliDateTime();
+        final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
+        final bsDay = AppFormatters.toDevanagariDigits('${nepaliDate.day}');
+        final bsYearNum = AppFormatters.toDevanagariDigits('${nepaliDate.year}');
+        final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
+
+        final noteText = (item.advanceNote != null && item.advanceNote!.trim().isNotEmpty)
+            ? item.advanceNote!.trim()
+            : 'कम्पनीबाट प्राप्त';
+        final amountStr = AppFormatters.formatCurrency(item.advanceAmount, locale);
+
+        preWarmList.add((text: nepaliDateFormatted, fontSize: 9.5, isBold: true, color: PdfColors.black));
+        preWarmList.add((text: noteText, fontSize: 9.0, isBold: false, color: PdfColors.black));
+        preWarmList.add((text: amountStr, fontSize: 9.0, isBold: true, color: const PdfColor.fromInt(0xFFD97706)));
       }
 
       for (final fb in fuelBills) {
@@ -499,6 +557,10 @@ class PdfReportService {
                 DevanagariShaper.render(replaceSummaryLine, fontSize: 9.5),
                 pw.SizedBox(height: 4),
                 DevanagariShaper.render(tipSummaryLine, fontSize: 9.5),
+                if (totalAdvanceReceived > 0) ...[
+                  pw.SizedBox(height: 4),
+                  DevanagariShaper.render(advanceSummaryLine, fontSize: 9.5),
+                ],
               ],
             ),
           ),
@@ -634,16 +696,70 @@ class PdfReportService {
                 _summaryRow(
                   isNepali ? 'खुद आम्दानी (टीडीएस पछि):' : 'Net Income (After TDS):',
                   AppFormatters.formatCurrency(netIncomeAfterTDS, locale),
-                  textColor: soloTipIncome > 0 ? PdfColors.black : const PdfColor.fromInt(0xFF16A34A),
+                  textColor: (soloTipIncome > 0 || totalAdvanceReceived > 0 || previousMonthDue > 0)
+                      ? PdfColors.black
+                      : const PdfColor.fromInt(0xFF16A34A),
                   isBold: true,
-                  fontSize: soloTipIncome > 0 ? 10.5 : 13,
+                  fontSize: (soloTipIncome > 0 || totalAdvanceReceived > 0 || previousMonthDue > 0) ? 10.5 : 13,
                 ),
+                if (totalAdvanceReceived > 0) ...[
+                  pw.SizedBox(height: 3),
+                  _summaryRow(
+                    isNepali ? 'कट्टी: अगाडि नै प्राप्त रकम:' : 'Less: Amount Received Earlier:',
+                    '- ${AppFormatters.formatCurrency(totalAdvanceReceived, locale)}',
+                    textColor: const PdfColor.fromInt(0xFFDC2626),
+                    isBold: true,
+                  ),
+                  pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+                  pw.SizedBox(height: 3),
+                  _summaryRow(
+                    isNepali
+                        ? (previousMonthDue > 0 ? 'यस महिनाको खुद बाँकी:' : 'कम्पनीबाट बाँकी लिनुपर्ने:')
+                        : (previousMonthDue > 0 ? 'This Month Net Receivable:' : 'Remaining to Receive from Company:'),
+                    AppFormatters.formatCurrency(remainingReceivable, locale),
+                    textColor: const PdfColor.fromInt(0xFF2563EB),
+                    isBold: true,
+                    fontSize: 11.5,
+                  ),
+                ],
+                if (previousMonthDue > 0) ...[
+                  pw.SizedBox(height: 3),
+                  _summaryRow(
+                    isNepali ? 'गत महिनाको बाँकी बक्यौता:' : 'Previous Month Unpaid Due:',
+                    '+ ${AppFormatters.formatCurrency(previousMonthDue, locale)}',
+                    textColor: const PdfColor.fromInt(0xFFD97706),
+                    isBold: true,
+                  ),
+                  if (previousMonthName != null && previousMonthName.isNotEmpty) ...[
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(left: 4, bottom: 2),
+                      child: DevanagariShaper.render(
+                        isNepali
+                            ? '($previousMonthName को बाँकी तलब)'
+                            : '(Pending from $previousMonthName)',
+                        fontSize: 8.5,
+                        textColor: PdfColors.grey700,
+                      ),
+                    ),
+                  ],
+                  pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+                  pw.SizedBox(height: 3),
+                  _summaryRow(
+                    isNepali ? 'कम्पनीबाट जम्मा बाँकी भुक्तानी:' : 'Total Payable by Company:',
+                    AppFormatters.formatCurrency(totalPayableByCompany, locale),
+                    textColor: const PdfColor.fromInt(0xFF2563EB),
+                    isBold: true,
+                    fontSize: 12.0,
+                  ),
+                ],
                 if (soloTipIncome > 0) ...[
                   pw.SizedBox(height: 4),
                   _summaryRow(
                     isNepali ? 'अतिरिक्त टिप (व्यक्तिगत):' : 'Extra Tip (Solo):',
                     AppFormatters.formatCurrency(soloTipIncome, locale),
                   ),
+                ],
+                if (soloTipIncome > 0 || totalAdvanceReceived > 0) ...[
                   pw.Divider(color: PdfColors.grey300, thickness: 0.5),
                   pw.SizedBox(height: 4),
                   _summaryRow(
@@ -882,6 +998,101 @@ class PdfReportService {
             ),
           ],
 
+          // Company Payments Received Table
+          if (advanceLogs.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            DevanagariShaper.render(
+              isNepali ? 'कम्पनीबाट प्राप्त रकम विवरण' : 'Company Payments Received',
+              fontSize: 12,
+              isBold: true,
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+              columnWidths: const {
+                0: pw.FlexColumnWidth(3.5),
+                1: pw.FlexColumnWidth(4.5),
+                2: pw.FlexColumnWidth(3.0),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFD97706)),
+                  children: [
+                    _tableCell(isNepali ? 'मिति (Date)' : 'Date', isHeader: true, textColor: PdfColors.white),
+                    _tableCell(isNepali ? 'कैफियत / स्रोत (Note)' : 'Note / Source', isHeader: true, textColor: PdfColors.white),
+                    _tableCell(isNepali ? 'रकम (Amount)' : 'Amount', isHeader: true, textColor: PdfColors.white, alignRight: true),
+                  ],
+                ),
+                ...advanceLogs.map((item) {
+                  final adDate = NepalClock.parseDate(item.logDate);
+                  final nepaliDate = adDate.toNepaliDateTime();
+                  final bsMonth = NepaliCalendarHelper.nepaliMonths[nepaliDate.month - 1];
+                  final bsDay = isNepali
+                      ? AppFormatters.toDevanagariDigits('${nepaliDate.day}')
+                      : NepaliCalendarHelper.toNepaliNumber(nepaliDate.day);
+                  final bsYearNum = isNepali
+                      ? AppFormatters.toDevanagariDigits('${nepaliDate.year}')
+                      : NepaliCalendarHelper.toNepaliNumber(nepaliDate.year);
+                  final nepaliDateFormatted = '$bsYearNum $bsMonth $bsDay';
+
+                  const adMonthNamesShort = [
+                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                  ];
+                  final adMonth = adMonthNamesShort[adDate.month - 1];
+                  final englishDateFormatted = '${adDate.year} $adMonth ${adDate.day}';
+
+                  final noteText = (item.advanceNote != null && item.advanceNote!.trim().isNotEmpty)
+                      ? item.advanceNote!.trim()
+                      : (isNepali ? 'कम्पनीबाट प्राप्त' : 'Received from Company');
+                  final amountStr = AppFormatters.formatCurrency(item.advanceAmount, locale);
+
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            DevanagariShaper.render(
+                              nepaliDateFormatted,
+                              fontSize: 9.5,
+                              isBold: true,
+                              textColor: PdfColors.black,
+                            ),
+                            pw.SizedBox(height: 1.5),
+                            pw.Text(
+                              englishDateFormatted,
+                              style: const pw.TextStyle(
+                                fontSize: 7.5,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _tableCell(noteText),
+                      _tableCell(amountStr, isBold: true, alignRight: true, textColor: const PdfColor.fromInt(0xFFD97706)),
+                    ],
+                  );
+                }),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFFEF3C7)),
+                  children: [
+                    _tableCell(isNepali ? 'जम्मा प्राप्त रकम' : 'Total Amount Received', isBold: true),
+                    _tableCell(''),
+                    _tableCell(
+                      AppFormatters.formatCurrency(totalAdvanceReceived, locale),
+                      isBold: true,
+                      alignRight: true,
+                      textColor: const PdfColor.fromInt(0xFFB45309),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+
           // Fuel Bill Summary if available
           if (fuelBills.isNotEmpty) ...[
             pw.SizedBox(height: 16),
@@ -951,6 +1162,8 @@ class PdfReportService {
     required List<AttendanceLog> fullMonthLogs,
     List<FuelBill> fuelBills = const [],
     Locale locale = const Locale('ne'),
+    int previousMonthDue = 0,
+    String? previousMonthName,
   }) async {
     final pdf = await buildPdfDocument(
       bsYear: bsYear,
@@ -958,6 +1171,8 @@ class PdfReportService {
       fullMonthLogs: fullMonthLogs,
       fuelBills: fuelBills,
       locale: locale,
+      previousMonthDue: previousMonthDue,
+      previousMonthName: previousMonthName,
     );
 
     final isNepali = locale.languageCode == 'ne';

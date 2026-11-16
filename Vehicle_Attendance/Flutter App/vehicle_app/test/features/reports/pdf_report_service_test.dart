@@ -135,6 +135,8 @@ void main() {
             isUnselected: false,
             extraTipAmount: 1500,
             extraTipNote: 'Pokhara Solo Return',
+            advanceAmount: 3000,
+            advanceNote: 'Mid-month Advance from Company',
             kmStart: 150,
             kmEnd: 200,
             kmTotal: 50,
@@ -165,6 +167,29 @@ void main() {
         );
         final bytesEn = await docEn.save();
         expect(bytesEn, isNotEmpty);
+      });
+    });
+
+    testWidgets('buildPdfDocument builds valid PDF including previous month arrears/due', (tester) async {
+      await tester.runAsync(() async {
+        final sampleLogs = [
+          AttendanceLog(
+            logDate: '2026-10-18',
+            status: AttendanceStatus.present,
+            isUnselected: false,
+          ),
+        ];
+
+        final docWithDue = await PdfReportService.buildPdfDocument(
+          bsYear: 2083,
+          bsMonthIndex: 7,
+          fullMonthLogs: sampleLogs,
+          previousMonthDue: 4000,
+          previousMonthName: 'कार्तिक २०८३',
+          locale: const Locale('ne'),
+        );
+        final bytes = await docWithDue.save();
+        expect(bytes, isNotEmpty);
       });
     });
   });

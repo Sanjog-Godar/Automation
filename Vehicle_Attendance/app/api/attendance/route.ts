@@ -11,6 +11,8 @@ interface UpsertBody {
   km_start?: number | null;
   km_end?: number | null;
   km_total?: number | null;
+  advance_amount?: number | null;
+  advance_note?: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -18,7 +20,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = (await req.json()) as UpsertBody;
-    const { log_date, status, extra_trip_income, extra_tip_amount, extra_tip_note, km_start, km_end, km_total } = body;
+    const {
+      log_date,
+      status,
+      extra_trip_income,
+      extra_tip_amount,
+      extra_tip_note,
+      km_start,
+      km_end,
+      km_total,
+      advance_amount,
+      advance_note,
+    } = body;
 
     if (!log_date || !status) {
       return NextResponse.json({ error: 'log_date and status are required' }, { status: 400 });
@@ -36,6 +49,8 @@ export async function POST(req: NextRequest) {
           km_start: km_start ?? null,
           km_end: km_end ?? null,
           km_total: km_total ?? null,
+          advance_amount: advance_amount ?? 0,
+          advance_note: advance_note ?? null,
         },
         { onConflict: 'log_date' }
       )

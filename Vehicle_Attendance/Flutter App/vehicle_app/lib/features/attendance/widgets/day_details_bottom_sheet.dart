@@ -109,6 +109,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context);
+    final isNepali = locale.languageCode == 'ne';
 
     final adDate = NepalClock.parseDate(_currentLog.logDate);
     final dayOfWeek = adDate.weekday % 7; // 0=Sun ... 6=Sat

@@ -57,6 +57,8 @@ class AttendanceLog {
   final int extraTripIncome;
   final int? extraTipAmount;
   final String? extraTipNote;
+  final int advanceAmount;
+  final String? advanceNote;
   final int? kmStart;
   final int? kmEnd;
   final int? kmTotal;
@@ -68,6 +70,8 @@ class AttendanceLog {
     this.extraTripIncome = 0,
     this.extraTipAmount,
     this.extraTipNote,
+    this.advanceAmount = 0,
+    this.advanceNote,
     this.kmStart,
     this.kmEnd,
     this.kmTotal,
@@ -86,6 +90,8 @@ class AttendanceLog {
       extraTripIncome: 0,
       extraTipAmount: 0,
       extraTipNote: null,
+      advanceAmount: 0,
+      advanceNote: null,
       kmStart: null,
       kmEnd: null,
       kmTotal: null,
@@ -96,12 +102,15 @@ class AttendanceLog {
   factory AttendanceLog.fromJson(Map<String, dynamic> json) {
     final tipAmount = (json['extra_tip_amount'] as num?)?.toInt();
     final tripIncome = (json['extra_trip_income'] as num?)?.toInt() ?? 0;
+    final advance = (json['advance_amount'] as num?)?.toInt() ?? 0;
     return AttendanceLog(
       logDate: json['log_date'] as String,
       status: AttendanceStatus.fromApiValue(json['status'] as String?),
       extraTripIncome: tripIncome,
       extraTipAmount: tipAmount ?? (tripIncome > 0 ? tripIncome : 0),
       extraTipNote: json['extra_tip_note'] as String?,
+      advanceAmount: advance,
+      advanceNote: json['advance_note'] as String?,
       kmStart: (json['km_start'] as num?)?.toInt(),
       kmEnd: (json['km_end'] as num?)?.toInt(),
       kmTotal: (json['km_total'] as num?)?.toInt(),
@@ -117,6 +126,8 @@ class AttendanceLog {
       'extra_trip_income': extraTripIncome > 0 ? extraTripIncome : tip,
       'extra_tip_amount': tip,
       'extra_tip_note': extraTipNote,
+      'advance_amount': advanceAmount,
+      'advance_note': advanceNote,
       'km_start': kmStart,
       'km_end': kmEnd,
       'km_total': kmTotal,
@@ -129,6 +140,8 @@ class AttendanceLog {
     int? extraTripIncome,
     int? extraTipAmount,
     String? extraTipNote,
+    int? advanceAmount,
+    String? advanceNote,
     int? kmStart,
     int? kmEnd,
     int? kmTotal,
@@ -140,6 +153,8 @@ class AttendanceLog {
       extraTripIncome: extraTripIncome ?? this.extraTripIncome,
       extraTipAmount: extraTipAmount ?? this.extraTipAmount,
       extraTipNote: extraTipNote ?? this.extraTipNote,
+      advanceAmount: advanceAmount ?? this.advanceAmount,
+      advanceNote: advanceNote ?? this.advanceNote,
       kmStart: kmStart ?? this.kmStart,
       kmEnd: kmEnd ?? this.kmEnd,
       kmTotal: kmTotal ?? this.kmTotal,
@@ -149,6 +164,6 @@ class AttendanceLog {
 
   @override
   String toString() =>
-      'AttendanceLog(date: $logDate, status: ${status.name}, isUnselected: $isUnselected, extraTrip: $extraTripIncome, extraTip: $extraTipAmount, note: $extraTipNote, km: $kmTotal)';
+      'AttendanceLog(date: $logDate, status: ${status.name}, isUnselected: $isUnselected, extraTrip: $extraTripIncome, extraTip: $extraTipAmount, note: $extraTipNote, advance: $advanceAmount, km: $kmTotal)';
 }
 

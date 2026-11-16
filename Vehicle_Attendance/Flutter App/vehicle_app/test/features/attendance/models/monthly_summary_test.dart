@@ -7,13 +7,15 @@ void main() {
   group('MonthlySummary Calculation Tests', () {
     test('Calculates exact financial formulas matching Next.js lib/attendance.ts', () {
       final logs = [
-        // Present day with extra trip & tip
+        // Present day with extra trip & tip and advance payment
         const AttendanceLog(
           logDate: '2026-01-15',
           status: AttendanceStatus.present,
           extraTripIncome: 500,
           extraTipAmount: 500,
           extraTipNote: 'Evening market return',
+          advanceAmount: 2000,
+          advanceNote: 'Mid-month advance',
           kmTotal: 65,
           isUnselected: false,
         ),
@@ -51,6 +53,7 @@ void main() {
       expect(summary.totalPresentDays, 2);
       expect(summary.totalExtraIncome, 500);
       expect(summary.totalExtraTips, 500);
+      expect(summary.totalAdvanceReceived, 2000);
       expect(summary.grossIncome, 2 * AppConstants.dailyWage + 500); // 2900
 
       // Replacement days: 1 -> 1 * 3000 = 3000

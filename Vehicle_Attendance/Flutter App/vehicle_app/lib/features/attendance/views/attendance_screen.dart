@@ -12,12 +12,16 @@ import '../../fuel_bills/controllers/fuel_bills_controller.dart';
 import '../../fuel_bills/widgets/fuel_bill_records_tile.dart';
 import '../../reports/widgets/quick_actions_card.dart';
 import '../controllers/attendance_controller.dart';
+import '../controllers/settlements_controller.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/arrears_alert_banner.dart';
 import '../widgets/calendar_grid.dart';
+import '../widgets/company_payments_tile.dart';
 import '../widgets/extra_trip_dialog.dart';
 import '../widgets/km_bottom_sheet.dart';
 import '../widgets/monthly_running_summary_table.dart';
 import '../widgets/monthly_summary_card.dart';
+import '../widgets/salary_settlement_tile.dart';
 import '../widgets/tips_record_card.dart';
 
 /// Redesigned, airy main attendance, fuel billing, and earnings dashboard screen.
@@ -64,6 +68,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             );
       }
       ref.read(fuelBillsControllerProvider.notifier).load();
+      ref.read(settlementsControllerProvider.notifier).load(
+            bsYear: state.currentYear,
+            bsMonthIndex: state.currentMonthIndex,
+          );
     });
   }
 
@@ -82,7 +90,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
   }
 
-  /// Reloads every API-backed section (attendance + fuel bills) for the month
+  /// Reloads every API-backed section (attendance + fuel bills + settlements) for the month
   /// currently on screen. Used by pull-to-refresh and by language switches so
   /// the dashboard always reflects fresh server data.
   Future<void> _refresh() async {
@@ -93,6 +101,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             state.currentMonthIndex,
           ),
       ref.read(fuelBillsControllerProvider.notifier).load(),
+      ref.read(settlementsControllerProvider.notifier).load(
+            bsYear: state.currentYear,
+            bsMonthIndex: state.currentMonthIndex,
+          ),
     ]);
   }
 
@@ -102,11 +114,22 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Previous Month Unpaid Arrears Banner (if any)
+        const ArrearsAlertBanner(),
+
         // Monthly Summary Card (Hero Metrics)
         MonthlySummaryCard(
           summary: attendanceState.summary,
           isLoading: attendanceState.isLoading,
         ),
+        const SizedBox(height: 16),
+
+        // Salary Settlement Tile (Tapping opens Modal Dialog)
+        const SalarySettlementTile(),
+        const SizedBox(height: 16),
+
+        // Company Payments Received Tile (Tapping opens Modal Dialog)
+        const CompanyPaymentsTile(),
         const SizedBox(height: 16),
 
         // Fuel Bill Records Button Tile (Tapping opens Modal Dialog)
@@ -218,6 +241,17 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     ref.listen<Locale>(localeProvider, (previous, next) {
       if (previous?.languageCode == next.languageCode) return;
       _refresh();
+    });
+
+    // Automatically load settlement and check previous month arrears on month navigation
+    ref.listen<AttendanceState>(attendanceControllerProvider, (previous, next) {
+      if (previous?.currentYear != next.currentYear ||
+          previous?.currentMonthIndex != next.currentMonthIndex) {
+        ref.read(settlementsControllerProvider.notifier).load(
+              bsYear: next.currentYear,
+              bsMonthIndex: next.currentMonthIndex,
+            );
+      }
     });
 
     final bsYear = attendanceState.currentYear;

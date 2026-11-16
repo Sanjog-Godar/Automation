@@ -346,6 +346,115 @@ class AppLocalizationsNe extends AppLocalizations {
   String get tips_record_noNote => 'कुनै गन्तव्य छैन';
 
   @override
+  String get company_payments_tile_title => 'कम्पनीबाट प्राप्त रकम';
+
+  @override
+  String company_payments_tile_total(String amount) {
+    return 'जम्मा प्राप्त: $amount';
+  }
+
+  @override
+  String get company_payments_tile_noPayments =>
+      'महिनाको बीचमा प्राप्त रकम दर्ता गर्नुहोस्';
+
+  @override
+  String get company_payments_dialog_title => 'कम्पनीबाट प्राप्त रकम';
+
+  @override
+  String get company_payments_dialog_subtitle =>
+      'तलब आउनु अगावै कम्पनीबाट प्राप्त भएको टिप वा पेश्की रकम यहाँ दर्ता गर्नुहोस्। यो अन्तिम हिसाबमा स्वतः कट्टी हुनेछ।';
+
+  @override
+  String get company_payments_dialog_totalCard => 'यस महिना प्राप्त कुल रकम';
+
+  @override
+  String get company_payments_add_button => '+ रकम थप्नुहोस्';
+
+  @override
+  String get company_payments_empty => 'यस महिना कुनै रकम प्राप्त भएको छैन।';
+
+  @override
+  String get company_payments_entry_title => 'प्राप्त रकम दर्ता गर्नुहोस्';
+
+  @override
+  String get company_payments_entry_date => 'प्राप्त मिति';
+
+  @override
+  String get company_payments_entry_amount => 'प्राप्त रकम (रु.)';
+
+  @override
+  String get company_payments_entry_amount_hint => 'जस्तै: ६०००';
+
+  @override
+  String get company_payments_entry_note => 'कैफियत / विवरण';
+
+  @override
+  String get company_payments_entry_note_hint => 'जस्तै: कुश्मा टिपको पैसा';
+
+  @override
+  String get company_payments_delete_confirm =>
+      'के तपाईं यो भुक्तानी रेकर्ड मेटाउन चाहनुहुन्छ?';
+
+  @override
+  String get settlement_tile_title => 'बैंक तलब भुक्तानी';
+
+  @override
+  String settlement_tile_fullySettled(String amount) {
+    return 'पूर्ण भुक्तानी भयो: $amount';
+  }
+
+  @override
+  String settlement_tile_pending(String amount) {
+    return 'बाँकी बक्यौता: $amount';
+  }
+
+  @override
+  String get settlement_tile_notRecorded =>
+      'बैंकमा प्राप्त तलब रकम दर्ता गर्नुहोस्';
+
+  @override
+  String get settlement_arrears_banner_title => 'गत महिनाको बाँकी बक्यौता';
+
+  @override
+  String settlement_arrears_banner_desc(String amount, String month) {
+    return '$month को तलबबाट $amount अझै बैंकमा प्राप्त हुन बाँकी छ।';
+  }
+
+  @override
+  String get settlement_dialog_title => 'बैंक तलब भुक्तानी';
+
+  @override
+  String get settlement_dialog_subtitle =>
+      'कम्पनीले बैंक खातामा पठाएको वास्तविक तलब रकम यहाँ दर्ता गर्नुहोस्। अपुग भएको रकम स्वतः अर्को महिनामा सर्नेछ।';
+
+  @override
+  String get settlement_expected_label => 'कम्पनीबाट लिनुपर्ने खुद रकम';
+
+  @override
+  String get settlement_actual_label => 'बैंकमा प्राप्त वास्तविक रकम (रु.)';
+
+  @override
+  String get settlement_date_label => 'बैंकमा जम्मा भएको मिति';
+
+  @override
+  String get settlement_diff_label => 'बाँकी बक्यौता (अर्को महिना सर्ने)';
+
+  @override
+  String get settlement_fully_paid_badge => 'पूर्ण भुक्तानी';
+
+  @override
+  String get settlement_partial_badge => 'आंशिक भुक्तानी';
+
+  @override
+  String get settlement_calendar_bs => 'नेपाली (BS)';
+
+  @override
+  String get settlement_calendar_ad => 'अंग्रेजी (AD)';
+
+  @override
+  String get settlement_pick_date => 'मिति छान्नुहोस्';
+
+  @override
   String get fuel_records_tile_title => 'ईन्धन बिल रेकर्ड';
 
   @override
