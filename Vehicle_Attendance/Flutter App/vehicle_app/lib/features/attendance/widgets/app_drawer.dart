@@ -323,7 +323,7 @@ class AppDrawer extends ConsumerWidget {
                   const SizedBox(height: 4),
                   const Center(
                     child: Text(
-                      'v1.1.0 • Mukta Font',
+                      'v1.2.0 • Mukta Font',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textMuted,
