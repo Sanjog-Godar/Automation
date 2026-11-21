@@ -436,47 +436,76 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
           borderRadius: BorderRadius.circular(14),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            constraints: const BoxConstraints(minHeight: 68),
+            constraints: const BoxConstraints(minHeight: 70),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
-              color: isActive ? activeBg : AppColors.surface,
+              color: isActive ? activeColor : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isActive ? activeColor : AppColors.border,
-                width: isActive ? 2.0 : 1.0,
+                color: isActive ? activeColor : const Color(0xFFCBD5E1),
+                width: isActive ? 2.5 : 1.5,
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
+                  color: isActive ? activeColor.withValues(alpha: 0.38) : Colors.black.withValues(alpha: 0.05),
+                  blurRadius: isActive ? 8 : 4,
+                  offset: isActive ? const Offset(0, 3) : const Offset(0, 2),
                 ),
               ],
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Stack(
               children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: isActive ? activeColor : AppColors.textMuted,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.bold,
-                    color: isActive ? activeColor : AppColors.textPrimary,
+                Positioned(
+                  top: 2,
+                  right: 4,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: isActive ? Colors.white : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: isActive
+                        ? Icon(
+                            Icons.check_rounded,
+                            size: 12,
+                            color: activeColor,
+                          )
+                        : null,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtext,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: isActive ? activeColor : AppColors.textMuted,
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 22,
+                        color: isActive ? Colors.white : activeColor,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          color: isActive ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtext,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isActive ? Colors.white.withValues(alpha: 0.95) : AppColors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
