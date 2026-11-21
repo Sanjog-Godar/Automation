@@ -677,9 +677,8 @@ export function MonthlyAttendanceClient() {
       return;
     }
     
-    // Toggle feature: if clicking the same status button, delete the entry
+    // Once ticked, a status button cannot be unticked (prevents accidental deletion of attendance & KM)
     if (!current.isUnselected && current.status === status) {
-      deleteMutation.mutate(log_date);
       return;
     }
     

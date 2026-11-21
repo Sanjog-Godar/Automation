@@ -124,11 +124,10 @@ class AttendanceController extends Notifier<AttendanceState> {
     await loadMonth(next.year, next.monthIndex);
   }
 
-  /// Handles status toggle or change for a specific day.
+  /// Handles status selection or change for a specific day.
   ///
-  /// Mirroring Next.js `handleStatusClick`:
-  /// - If clicking the active status on a selected day, toggles delete (replaces with placeholder).
-  /// - If status != present, resets extraTripIncome to 0 while preserving KM.
+  /// - If status is already selected, it cannot be unticked (prevents accidental deletion of attendance & KM).
+  /// - Upserts status while strictly preserving entered KM, advance payment, and extra tips.
   /// - Rollback on error affects ONLY the mutated date.
   Future<void> changeStatus(String logDate, AttendanceStatus newStatus) async {
     if (NepalClock.isFuture(logDate)) {
@@ -144,31 +143,22 @@ class AttendanceController extends Notifier<AttendanceState> {
 
     final oldLog = state.logs[index];
 
-    // Toggle delete if clicking same status on already selected day
+    // Once ticked, a status button cannot be unticked
     if (!oldLog.isUnselected && oldLog.status == newStatus) {
-      final placeholder = AttendanceLog.unselectedPlaceholder(logDate);
-      _replaceLogAtIndex(index, placeholder, logDate, isSaving: true);
-
-      try {
-        await _repository.deleteAttendance(logDate);
-        _removeSavingDate(logDate);
-      } catch (e) {
-        // Rollback ONLY this date
-        _replaceLogAtIndex(index, oldLog, logDate, isSaving: false);
-        _toastService.showError(
-          'Delete failed: $e',
-          nepaliMessage: 'मेट्दा समस्या आयो',
-        );
-      }
       return;
     }
 
-    // Upsert status
+    // Upsert status while strictly preserving entered KM, advance, and tips
     final updatedLog = oldLog.copyWith(
       status: newStatus,
       extraTripIncome: oldLog.extraTripIncome,
       extraTipAmount: oldLog.extraTipAmount,
       extraTipNote: oldLog.extraTipNote,
+      kmStart: oldLog.kmStart,
+      kmEnd: oldLog.kmEnd,
+      kmTotal: oldLog.kmTotal,
+      advanceAmount: oldLog.advanceAmount,
+      advanceNote: oldLog.advanceNote,
       isUnselected: false,
     );
 

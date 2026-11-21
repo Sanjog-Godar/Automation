@@ -49,11 +49,14 @@ void main() {
   }
 
   group('AttendanceController Tests', () {
-    test('Optimistic toggle delete replaces entry with isUnselected placeholder and preserves list length', () async {
+    test('Clicking same status on already selected day does NOT untick or delete, preserving KM', () async {
       final initialLogs = [
         const AttendanceLog(
           logDate: '2026-01-14',
           status: AttendanceStatus.present,
+          kmStart: 1000,
+          kmEnd: 1050,
+          kmTotal: 50,
           extraTripIncome: 200,
           isUnselected: false,
         ),
@@ -64,34 +67,38 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.deleteAttendance('2026-01-14')).thenAnswer((_) async {});
-
       final container = createContainer(initialLogs);
       final controller = container.read(attendanceControllerProvider.notifier);
       await controller.loadMonth(2082, 9);
 
       expect(container.read(attendanceControllerProvider).logs.length, 2);
 
-      // Clicking present on an already-present day toggles delete
+      // Clicking present on an already-present day must NOT untick or delete
       await controller.changeStatus('2026-01-14', AttendanceStatus.present);
 
       final state = container.read(attendanceControllerProvider);
-      // List length MUST remain exactly 2
       expect(state.logs.length, 2);
 
       final day1 = state.logs[0];
       expect(day1.logDate, '2026-01-14');
-      expect(day1.isUnselected, isTrue);
-      expect(day1.status, AttendanceStatus.absentHoliday); // default placeholder status
+      expect(day1.isUnselected, isFalse);
+      expect(day1.status, AttendanceStatus.present);
+      expect(day1.kmTotal, 50);
+      expect(day1.kmStart, 1000);
+      expect(day1.kmEnd, 1050);
 
-      verify(() => mockRepository.deleteAttendance('2026-01-14')).called(1);
+      // deleteAttendance must NEVER be called
+      verifyNever(() => mockRepository.deleteAttendance(any()));
     });
 
-    test('Rollback on failure restores ONLY the affected date without clobbering other dates', () async {
+    test('Rollback on upsert failure restores ONLY the affected date without clobbering other dates', () async {
       final initialLogs = [
         const AttendanceLog(
           logDate: '2026-01-14',
           status: AttendanceStatus.present,
+          kmStart: 1000,
+          kmEnd: 1050,
+          kmTotal: 50,
           extraTripIncome: 500,
           isUnselected: false,
         ),
@@ -103,20 +110,21 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.deleteAttendance('2026-01-14'))
+      when(() => mockRepository.upsertAttendance(any()))
           .thenThrow(Exception('Network timeout'));
 
       final container = createContainer(initialLogs);
       final controller = container.read(attendanceControllerProvider.notifier);
       await controller.loadMonth(2082, 9);
 
-      await controller.changeStatus('2026-01-14', AttendanceStatus.present);
+      await controller.changeStatus('2026-01-14', AttendanceStatus.absentHoliday);
 
       final state = container.read(attendanceControllerProvider);
       // Day 1 must be rolled back to original values
       final day1 = state.logs[0];
       expect(day1.status, AttendanceStatus.present);
       expect(day1.extraTripIncome, 500);
+      expect(day1.kmTotal, 50);
       expect(day1.isUnselected, isFalse);
 
       // Day 2 must remain completely untouched

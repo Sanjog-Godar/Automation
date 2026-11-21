@@ -371,13 +371,19 @@ void main() {
         ),
       );
 
-      // Tapping already-active 'Present' triggers onStatusChange with AttendanceStatus.present
-      // (which AttendanceController handles by toggling delete)
+      // Tapping already-active 'Present' does NOT trigger onStatusChange (cannot untick)
       await tester.tap(find.byKey(const Key('sheet_status_btn_present')));
       await tester.pump();
 
+      expect(changedDate, isNull);
+      expect(changedStatus, isNull);
+
+      // Tapping a different status 'Holiday' DOES trigger onStatusChange
+      await tester.tap(find.byKey(const Key('sheet_status_btn_holiday')));
+      await tester.pump();
+
       expect(changedDate, '2026-11-04');
-      expect(changedStatus, AttendanceStatus.present);
+      expect(changedStatus, AttendanceStatus.absentHoliday);
     });
 
     testWidgets('Missing days count chip accurately matches missing cells', (tester) async {

@@ -83,23 +83,25 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
   }
 
   void _handleStatusSelect(AttendanceStatus status) {
+    // Once ticked, a status button cannot be unticked
+    if (!_currentLog.isUnselected && _currentLog.status == status) {
+      return;
+    }
+
     HapticFeedback.lightImpact();
     widget.onStatusChange(_currentLog.logDate, status);
 
+    final bool hadKm = _currentLog.kmTotal != null && _currentLog.kmTotal! > 0;
+
     setState(() {
-      if (!_currentLog.isUnselected && _currentLog.status == status) {
-        // Toggled off (deleted)
-        _currentLog = AttendanceLog.unselectedPlaceholder(_currentLog.logDate);
-      } else {
-        _currentLog = _currentLog.copyWith(
-          status: status,
-          isUnselected: false,
-        );
-      }
+      _currentLog = _currentLog.copyWith(
+        status: status,
+        isUnselected: false,
+      );
     });
 
-    // If marked Present, immediately prompt for Odometer KM without needing to re-open the bottom sheet
-    if (status == AttendanceStatus.present && !_currentLog.isUnselected) {
+    // If marked Present and KM is not yet entered, prompt for Odometer KM
+    if (status == AttendanceStatus.present && !hadKm) {
       Navigator.pop(context);
       widget.onOpenKm(_currentLog);
     }
