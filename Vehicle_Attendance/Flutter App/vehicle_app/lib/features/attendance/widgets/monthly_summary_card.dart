@@ -186,16 +186,6 @@ class MonthlySummaryCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 3),
-
-                      // Formula subtitle
-                      Text(
-                        l10n.summary_netIncomeFormula,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: Colors.white.withValues(alpha: 0.7),
-                        ),
-                      ),
                       const SizedBox(height: 18),
 
                       // Glass Container (Earnings vs Deductions Breakdown)

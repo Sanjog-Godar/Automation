@@ -272,8 +272,6 @@ class _GenerateFuelBillDialogState
             _SectionLabel(label: l10n.generate_fuel_dialog_startDate),
             const SizedBox(height: 5),
             _ReadonlyDateBox(text: _formatDisplayDate(_startDate, locale)),
-            const SizedBox(height: 3),
-            _HintText(l10n.generate_fuel_dialog_startDateHint),
             const SizedBox(height: 12),
 
             // ── 3. Bill End Date (To) ─────────────────────────────────────
@@ -361,8 +359,6 @@ class _GenerateFuelBillDialogState
                 ),
               ),
             ),
-            const SizedBox(height: 3),
-            _HintText(l10n.generate_fuel_dialog_actualLitersHelper),
             const SizedBox(height: 20),
 
             // ── Action Buttons ────────────────────────────────────────────

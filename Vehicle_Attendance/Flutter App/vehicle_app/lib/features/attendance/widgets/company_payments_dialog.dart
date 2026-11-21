@@ -125,15 +125,6 @@ class CompanyPaymentsDialog extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.company_payments_dialog_subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                        height: 1.3,
-                      ),
-                    ),
                   ],
                 ),
               ),
