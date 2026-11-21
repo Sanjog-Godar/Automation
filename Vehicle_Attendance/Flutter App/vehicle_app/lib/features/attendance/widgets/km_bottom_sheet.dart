@@ -168,8 +168,8 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
           Text(
             l10n.km_sheet_startKmLabel,
             style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
@@ -178,19 +178,20 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
             controller: _startController,
             keyboardType: TextInputType.number,
             autofocus: true,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: l10n.km_sheet_startKmHint,
               suffixText: l10n.common_unit_km,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             ),
           ),
           const SizedBox(height: 14),
           Text(
             l10n.km_sheet_endKmLabel,
             style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
@@ -198,54 +199,70 @@ class _KmBottomSheetState extends State<KmBottomSheet> {
           TextField(
             controller: _endController,
             keyboardType: TextInputType.number,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: l10n.km_sheet_endKmHint,
               suffixText: l10n.common_unit_km,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             ),
           ),
           const SizedBox(height: 14),
           if (totalKm != null)
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
               decoration: BoxDecoration(
                 color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               alignment: Alignment.center,
               child: Text(
                 l10n.km_sheet_totalRun(AppFormatters.formatNumber(totalKm, locale)),
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
                 ),
               ),
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(90, 48),
+                  foregroundColor: AppColors.textMuted,
+                  side: const BorderSide(color: AppColors.border, width: 1.2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
                 onPressed: () => Navigator.pop(context),
-                child: Text(l10n.common_cancel),
+                child: Text(
+                  l10n.common_cancel,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(120, 48),
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: _isSaving ? null : () => _handleSubmit(l10n),
-                child: _isSaving
+                icon: _isSaving
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : Text(l10n.km_sheet_saveButton),
+                    : const Icon(Icons.check_rounded, size: 20),
+                label: Text(
+                  l10n.km_sheet_saveButton,
+                  style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

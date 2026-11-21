@@ -34,12 +34,14 @@ class SettlementsRepository {
         },
       );
 
-      if (response.statusCode == 200 &&
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300 &&
           response.data != null &&
-          response.data is Map<String, dynamic>) {
-        final data = response.data as Map<String, dynamic>;
-        final currentJson = data['data'] as Map<String, dynamic>?;
-        final prevJson = data['previous'] as Map<String, dynamic>?;
+          response.data is Map) {
+        final data = Map<String, dynamic>.from(response.data as Map);
+        final currentJson = data['data'] is Map ? Map<String, dynamic>.from(data['data'] as Map) : null;
+        final prevJson = data['previous'] is Map ? Map<String, dynamic>.from(data['previous'] as Map) : null;
 
         final prevMonthIndex = bsMonthIndex == 0 ? 11 : bsMonthIndex - 1;
         final prevYear = bsMonthIndex == 0 ? bsYear - 1 : bsYear;
@@ -84,12 +86,15 @@ class SettlementsRepository {
         data: settlement.toJson(),
       );
 
-      if (response.statusCode == 200 &&
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300 &&
           response.data != null &&
-          response.data is Map<String, dynamic>) {
-        final data = (response.data as Map<String, dynamic>)['data'] as Map<String, dynamic>?;
-        if (data != null) {
-          final saved = MonthlySettlement.fromJson(data);
+          response.data is Map) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+        final data = resMap['data'];
+        if (data is Map) {
+          final saved = MonthlySettlement.fromJson(Map<String, dynamic>.from(data));
           await _saveToCache(settlement.bsYear, settlement.bsMonthIndex, saved);
           return saved;
         }

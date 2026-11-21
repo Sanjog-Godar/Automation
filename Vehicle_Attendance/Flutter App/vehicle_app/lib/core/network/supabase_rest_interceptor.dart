@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
@@ -20,6 +21,7 @@ class SupabaseRestInterceptor extends Interceptor {
                 baseUrl: '${AppConfig.supabaseUrl}/rest/v1',
                 connectTimeout: AppConfig.connectTimeout,
                 receiveTimeout: AppConfig.receiveTimeout,
+                validateStatus: (status) => status != null && status < 500,
                 headers: {
                   'apikey': AppConfig.supabaseAnonKey,
                   'Authorization': 'Bearer ${AppConfig.supabaseAnonKey}',
@@ -47,11 +49,12 @@ class SupabaseRestInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // If Next.js proxy request failed with connection/CORS error, fallback to Supabase directly
+    // If Next.js proxy request failed with connection/CORS error or 404/5xx, fallback to Supabase directly
     final isConnectionOrCors = err.type == DioExceptionType.connectionError ||
         err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.unknown ||
-        (err.response?.statusCode != null && err.response!.statusCode! >= 500);
+        err.type == DioExceptionType.badResponse ||
+        (err.response?.statusCode != null && (err.response!.statusCode! >= 400));
 
     if (isConnectionOrCors) {
       try {
@@ -376,7 +379,18 @@ class SupabaseRestInterceptor extends Interceptor {
           },
         );
       } else if (method == 'POST') {
-        final body = Map<String, dynamic>.from(options.data as Map);
+        final dynamic rawData = options.data;
+        Map<String, dynamic> body = {};
+        if (rawData is Map<String, dynamic>) {
+          body = rawData;
+        } else if (rawData is Map) {
+          body = Map<String, dynamic>.from(rawData);
+        } else if (rawData is String && rawData.isNotEmpty) {
+          try {
+            body = jsonDecode(rawData) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+
         final expected = (body['expected_amount'] as num?)?.toInt() ?? 0;
         final received = (body['bank_received_amount'] as num?)?.toInt() ?? 0;
 
@@ -411,20 +425,23 @@ class SupabaseRestInterceptor extends Interceptor {
             ),
             data: payload,
           );
-          final list = res.data is List ? res.data as List : [res.data];
-          return Response(
-            requestOptions: options,
-            statusCode: 200,
-            data: {'data': list.isNotEmpty ? list.first : payload},
-          );
+          if (res.statusCode != null && res.statusCode! >= 200 && res.statusCode! < 300) {
+            final list = res.data is List ? res.data as List : [res.data];
+            return Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {'data': list.isNotEmpty ? list.first : payload},
+            );
+          }
         } catch (e) {
           debugPrint('[SupabaseRestInterceptor] Error saving settlement to Supabase: $e');
-          return Response(
-            requestOptions: options,
-            statusCode: 200,
-            data: {'data': payload},
-          );
         }
+
+        return Response(
+          requestOptions: options,
+          statusCode: 200,
+          data: {'data': payload},
+        );
       }
     }
 

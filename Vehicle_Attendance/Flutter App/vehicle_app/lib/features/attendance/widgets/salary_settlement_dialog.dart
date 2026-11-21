@@ -424,18 +424,7 @@ class _SalarySettlementDialogState extends ConsumerState<SalarySettlementDialog>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-
-                // Subtitle explanation
-                Text(
-                  l10n.settlement_dialog_subtitle,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textMuted,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
                 // Expected Net Receivable Card
                 Container(
@@ -777,25 +766,13 @@ class _SalarySettlementDialogState extends ConsumerState<SalarySettlementDialog>
                                     : '${l10n.settlement_diff_label}: ${AppFormatters.formatCurrency(difference, locale)}',
                                 style: TextStyle(
                                   fontFamily: 'Mukta',
-                                  fontSize: 13.5,
+                                  fontSize: 14.5,
                                   fontWeight: FontWeight.bold,
                                   color: isFullyPaid
                                       ? const Color(0xFF16A34A)
                                       : const Color(0xFFDC2626),
                                 ),
                               ),
-                              if (isPartial) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  isNepaliAppLang
-                                      ? 'यो बाँकी रकम स्वतः अर्को महिनाको हिसाब र पीडीएफमा थपिनेछ।'
-                                      : 'This unpaid balance will automatically carry forward to next month.',
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    color: Color(0xFF991B1B),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -809,23 +786,36 @@ class _SalarySettlementDialogState extends ConsumerState<SalarySettlementDialog>
                 Wrap(
                   alignment: WrapAlignment.end,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: 12,
+                  runSpacing: 10,
                   children: [
-                    TextButton(
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(90, 48),
+                        foregroundColor: AppColors.textMuted,
+                        side: const BorderSide(color: AppColors.border, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                       onPressed: () => Navigator.pop(context),
-                      child: Text(l10n.common_cancel),
+                      child: Text(
+                        l10n.common_cancel,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       key: const Key('save_salary_settlement_button'),
                       style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(120, 48),
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () => _handleSave(expectedAmount),
-                      child: Text(l10n.common_save),
+                      icon: const Icon(Icons.check_rounded, size: 20),
+                      label: Text(
+                        l10n.common_save,
+                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),

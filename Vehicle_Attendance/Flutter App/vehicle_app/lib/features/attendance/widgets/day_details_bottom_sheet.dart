@@ -322,6 +322,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                   _buildStatusButton(
                     context: context,
                     key: const Key('sheet_status_btn_present'),
+                    icon: Icons.check_circle_rounded,
                     label: l10n.status_present,
                     subtext: AppFormatters.formatCurrency(AppConstants.dailyWage, locale),
                     isActive: isPresent,
@@ -333,6 +334,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                   _buildStatusButton(
                     context: context,
                     key: const Key('sheet_status_btn_holiday'),
+                    icon: Icons.beach_access_rounded,
                     label: l10n.status_holiday,
                     subtext: l10n.status_holidaySubtitle,
                     isActive: isHoliday,
@@ -344,6 +346,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                   _buildStatusButton(
                     context: context,
                     key: const Key('sheet_status_btn_replace'),
+                    icon: Icons.swap_horiz_rounded,
                     label: l10n.status_replace,
                     subtext: '-${AppFormatters.formatCurrency(AppConstants.replacementDeduction, locale)}',
                     isActive: isReplace,
@@ -374,7 +377,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                 title: _currentLog.kmTotal != null && _currentLog.kmTotal! > 0
                     ? '${AppFormatters.formatUnit(_currentLog.kmTotal!, 'km', locale)} (${AppFormatters.formatNumber(_currentLog.kmStart ?? 0, locale)} - ${AppFormatters.formatNumber(_currentLog.kmEnd ?? 0, locale)})'
                     : l10n.day_sheet_enterKmTitle,
-                subtitle: l10n.day_sheet_enterKmSubtitle,
+                subtitle: null,
                 buttonText: _currentLog.kmTotal != null && _currentLog.kmTotal! > 0 ? l10n.common_edit : l10n.common_add,
                 buttonColor: AppColors.primary,
                 isEnabled: isPresent,
@@ -396,7 +399,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                   title: hasTip
                       ? '${l10n.trip_dialog_title}: ${AppFormatters.formatCurrency(tipAmount, locale)}'
                       : l10n.day_sheet_extraTripTitle,
-                  subtitle: tipSubtitle,
+                  subtitle: hasTip ? tipSubtitle : null,
                   buttonText: hasTip ? l10n.common_edit : l10n.common_add,
                   buttonColor: AppColors.present,
                   isEnabled: true,
@@ -416,6 +419,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
   Widget _buildStatusButton({
     required BuildContext context,
     required Key key,
+    required IconData icon,
     required String label,
     required String subtext,
     required bool isActive,
@@ -432,14 +436,14 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
           borderRadius: BorderRadius.circular(14),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            constraints: const BoxConstraints(minHeight: 58),
+            constraints: const BoxConstraints(minHeight: 68),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
               color: isActive ? activeBg : AppColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isActive ? activeColor : AppColors.border,
-                width: isActive ? 1.8 : 1.0,
+                width: isActive ? 2.0 : 1.0,
               ),
               boxShadow: const [
                 BoxShadow(
@@ -452,10 +456,16 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: isActive ? activeColor : AppColors.textMuted,
+                ),
+                const SizedBox(height: 4),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.bold,
                     color: isActive ? activeColor : AppColors.textPrimary,
                   ),
@@ -464,7 +474,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                 Text(
                   subtext,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: isActive ? activeColor : AppColors.textMuted,
                   ),
@@ -482,7 +492,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
     required IconData icon,
     required Color iconColor,
     required String title,
-    required String subtitle,
+    required String? subtitle,
     required String buttonText,
     required Color buttonColor,
     required bool isEnabled,
@@ -492,7 +502,7 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
       decoration: BoxDecoration(
         color: isEnabled ? AppColors.surface : AppColors.background,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: isEnabled ? AppColors.border : AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -504,16 +514,16 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: isEnabled ? buttonColor.withValues(alpha: 0.1) : AppColors.border,
+                    color: isEnabled ? buttonColor.withValues(alpha: 0.12) : AppColors.border,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     icon,
-                    size: 20,
+                    size: 22,
                     color: isEnabled ? buttonColor : AppColors.textMuted,
                   ),
                 ),
@@ -525,38 +535,37 @@ class _DayDetailsBottomSheetState extends State<DayDetailsBottomSheet> {
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: 13.5,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.bold,
                           color: isEnabled ? AppColors.textPrimary : AppColors.textMuted,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textMuted,
+                      if (subtitle != null && subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isEnabled ? buttonColor.withValues(alpha: 0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isEnabled ? buttonColor.withValues(alpha: 0.3) : AppColors.border,
-                    ),
+                    color: isEnabled ? buttonColor : AppColors.border,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     buttonText,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: isEnabled ? buttonColor : AppColors.textMuted,
+                      color: isEnabled ? Colors.white : AppColors.textMuted,
                     ),
                   ),
                 ),
