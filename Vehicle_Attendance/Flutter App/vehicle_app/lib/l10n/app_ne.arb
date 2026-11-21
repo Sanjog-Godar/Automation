@@ -3,6 +3,10 @@
 
   "app_name": "बोलेरो उपस्थिति",
   "common_language_selector_label": "Language / भाषा",
+  "settings_font_scale_title": "अक्षरको आकार / Text Size",
+  "settings_font_scale_normal": "सामान्य",
+  "settings_font_scale_large": "ठूलो",
+  "settings_font_scale_senior": "धेरै ठूलो (ज्येष्ठ नागरिक)",
   "common_english": "English",
   "common_nepali": "नेपाली",
   "common_cancel": "रद्द गर्नुहोस्",

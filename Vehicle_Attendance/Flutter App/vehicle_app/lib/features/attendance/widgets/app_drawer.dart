@@ -4,6 +4,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/l10n/formatters.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/font_scale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../fuel_bills/widgets/fuel_bill_records_dialog.dart';
@@ -21,6 +22,7 @@ class AppDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final activeLocale = ref.watch(localeProvider);
+    final activeFontScale = ref.watch(fontScaleProvider);
     final authState = ref.watch(authControllerProvider);
     final email = authState.user?.email ?? 'driver@vehicle.local';
 
@@ -151,6 +153,56 @@ class AppDrawer extends ConsumerWidget {
                         await Future.delayed(const Duration(milliseconds: 180));
                         if (context.mounted) Navigator.pop(context);
                       },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Section: Text Size / अक्षरको आकार (Accessibility)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.format_size_rounded, size: 18, color: AppColors.textMuted),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              l10n.settings_font_scale_title,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textMuted,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Font Size Options: Normal, Large, Senior
+                    Row(
+                      children: [
+                        _FontSizeChip(
+                          key: const Key('drawer_font_scale_normal'),
+                          label: l10n.settings_font_scale_normal,
+                          isSelected: activeFontScale == AppFontScale.normal,
+                          onTap: () => ref.read(fontScaleProvider.notifier).setScale(AppFontScale.normal),
+                        ),
+                        const SizedBox(width: 6),
+                        _FontSizeChip(
+                          key: const Key('drawer_font_scale_large'),
+                          label: l10n.settings_font_scale_large,
+                          isSelected: activeFontScale == AppFontScale.large,
+                          onTap: () => ref.read(fontScaleProvider.notifier).setScale(AppFontScale.large),
+                        ),
+                        const SizedBox(width: 6),
+                        _FontSizeChip(
+                          key: const Key('drawer_font_scale_senior'),
+                          label: l10n.settings_font_scale_senior,
+                          isSelected: activeFontScale == AppFontScale.senior,
+                          onTap: () => ref.read(fontScaleProvider.notifier).setScale(AppFontScale.senior),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 18),
 
@@ -411,6 +463,58 @@ class _DrawerNavItem extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FontSizeChip extends StatelessWidget {
+  const _FontSizeChip({
+    super.key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 46),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primarySoft : AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.border,
+                width: isSelected ? 1.8 : 1.0,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Mukta',
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                height: 1.15,
+              ),
+            ),
+          ),
         ),
       ),
     );

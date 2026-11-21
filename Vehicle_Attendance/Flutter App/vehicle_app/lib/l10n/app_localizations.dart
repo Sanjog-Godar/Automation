@@ -110,6 +110,30 @@ abstract class AppLocalizations {
   /// **'Language / भाषा'**
   String get common_language_selector_label;
 
+  /// Bilingual text size header in sidebar drawer
+  ///
+  /// In en, this message translates to:
+  /// **'Text Size / अक्षरको आकार'**
+  String get settings_font_scale_title;
+
+  /// Standard font size option
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get settings_font_scale_normal;
+
+  /// Large font size option
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get settings_font_scale_large;
+
+  /// Extra large font size option for seniors
+  ///
+  /// In en, this message translates to:
+  /// **'Senior (Extra Large)'**
+  String get settings_font_scale_senior;
+
   /// English language option
   ///
   /// In en, this message translates to:

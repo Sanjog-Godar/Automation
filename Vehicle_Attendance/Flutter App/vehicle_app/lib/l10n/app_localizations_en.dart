@@ -16,6 +16,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get common_language_selector_label => 'Language / भाषा';
 
   @override
+  String get settings_font_scale_title => 'Text Size / अक्षरको आकार';
+
+  @override
+  String get settings_font_scale_normal => 'Normal';
+
+  @override
+  String get settings_font_scale_large => 'Large';
+
+  @override
+  String get settings_font_scale_senior => 'Senior (Extra Large)';
+
+  @override
   String get common_english => 'English';
 
   @override

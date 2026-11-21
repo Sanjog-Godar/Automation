@@ -9,6 +9,22 @@
   "@common_language_selector_label": {
     "description": "Bilingual language header in sidebar drawer"
   },
+  "settings_font_scale_title": "Text Size / अक्षरको आकार",
+  "@settings_font_scale_title": {
+    "description": "Bilingual text size header in sidebar drawer"
+  },
+  "settings_font_scale_normal": "Normal",
+  "@settings_font_scale_normal": {
+    "description": "Standard font size option"
+  },
+  "settings_font_scale_large": "Large",
+  "@settings_font_scale_large": {
+    "description": "Large font size option"
+  },
+  "settings_font_scale_senior": "Senior (Extra Large)",
+  "@settings_font_scale_senior": {
+    "description": "Extra large font size option for seniors"
+  },
   "common_english": "English",
   "@common_english": {
     "description": "English language option"
