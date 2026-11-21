@@ -103,7 +103,7 @@ class AppConfig {
   static const String languagePrefsKey = 'selected_language_code';
 
   /// Current application version string and build number.
-  static const String currentVersion = '1.2.0';
-  static const int currentBuildNumber = 3;
+  static const String currentVersion = '1.2.1';
+  static const int currentBuildNumber = 4;
 }
 

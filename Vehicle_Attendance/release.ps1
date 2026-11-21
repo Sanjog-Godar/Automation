@@ -10,3 +10,4 @@ if ($Version -and $Notes) {
 } else {
     npx tsx scripts/release.ts
 }
+

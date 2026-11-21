@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const versionData = {
-    version: '1.2.0',
-    buildNumber: 3,
-    releaseDate: '2026-11-21',
-    apkUrl: 'https://vehiclemgmt.vercel.app/bolero-attendance.apk',
-    releaseNotes: 'Bilingual Devanagari numbers, senior UI layout, high contrast status buttons, and permanent KM data protection.',
-    releaseNotesNe: 'ठूला अक्षर, स्पष्ट बटन, नेपाली अंक र सुरक्षित किलोमिटर विवरण।',
-  };
+    "version": "1.2.1",
+    "buildNumber": 4,
+    "releaseDate": "2026-11-21",
+    "apkUrl": "https://vehiclemgmt.vercel.app/bolero-attendance.apk",
+    "releaseNotes": "Bug fixes and performance improvements (v1.2.1)",
+    "releaseNotesNe": "सुधारहरू र नयाँ सुविधाहरू (v1.2.1)"
+};
 
   return NextResponse.json(versionData, {
     headers: {
@@ -16,4 +16,3 @@ export async function GET() {
     },
   });
 }
-
