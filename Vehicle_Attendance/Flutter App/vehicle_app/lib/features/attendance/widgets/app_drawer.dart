@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../fuel_bills/widgets/fuel_bill_records_dialog.dart';
 import '../../reports/services/pdf_report_service.dart';
+import '../../../core/services/app_update_service.dart';
 import '../controllers/attendance_controller.dart';
 import '../controllers/settlements_controller.dart';
 import '../../fuel_bills/controllers/fuel_bills_controller.dart';
@@ -251,6 +252,20 @@ class AppDrawer extends ConsumerWidget {
                           previousMonthDue: prevDue,
                           previousMonthName: '$prevMonthName $prevYearStr',
                         );
+                      },
+                    ),
+                    const SizedBox(height: 4),
+
+                    _DrawerNavItem(
+                      key: const Key('drawer_nav_check_updates'),
+                      icon: Icons.system_update_rounded,
+                      title: l10n.drawer_check_updates,
+                      isSelected: false,
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await ref
+                            .read(appUpdateServiceProvider)
+                            .checkForUpdateAndPrompt(context, silent: false);
                       },
                     ),
                   ],

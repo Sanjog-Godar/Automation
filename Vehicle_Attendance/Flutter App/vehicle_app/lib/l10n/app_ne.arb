@@ -240,5 +240,14 @@
   "error_invalidCredentials": "इमेल वा पासवर्ड मिलेन",
   "error_sessionExpired": "सत्र समाप्त भयो, कृपया पुन: लग-इन गर्नुहोस्",
   "error_unauthorized": "पहुँच अस्वीकृत गरियो",
-  "error_serverError": "सर्भरमा समस्या आयो, कृपया पछि प्रयास गर्नुहोस्"
+  "error_serverError": "सर्भरमा समस्या आयो, कृपया पछि प्रयास गर्नुहोस्",
+  "update_available_title": "नयाँ अपडेट उपलब्ध छ",
+  "update_available_desc": "नयाँ संस्करण {version} उपलब्ध छ। नयाँ सुविधाहरू र सुधारहरूको लागि अहिले अपडेट गर्नुहोस्।",
+  "update_btn_update": "अहिले अपडेट गर्नुहोस्",
+  "update_btn_later": "पछिको लागि",
+  "update_downloading": "अपडेट डाउनलोड हुँदैछ: {percent}%",
+  "update_installing": "अपडेट इन्स्टल हुँदैछ...",
+  "update_failed": "डाउनलोड हुन सकेन। ब्राउजरबाट डाउनलोड गर्न थिच्नुहोस्।",
+  "update_up_to_date": "एप नवीनतम संस्करणमा छ (v{version})",
+  "drawer_check_updates": "अपडेट जाँच गर्नुहोस्"
 }

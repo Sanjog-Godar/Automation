@@ -762,4 +762,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get error_serverError => 'Server error, please try again later';
+
+  @override
+  String get update_available_title => 'New Update Available';
+
+  @override
+  String update_available_desc(String version) {
+    return 'Version $version is available. Update now to get the latest features and improvements.';
+  }
+
+  @override
+  String get update_btn_update => 'Update Now';
+
+  @override
+  String get update_btn_later => 'Later';
+
+  @override
+  String update_downloading(String percent) {
+    return 'Downloading update: $percent%';
+  }
+
+  @override
+  String get update_installing => 'Installing update...';
+
+  @override
+  String get update_failed => 'Update download failed. Tap to open in browser.';
+
+  @override
+  String update_up_to_date(String version) {
+    return 'Bolero Attendance is up to date (v$version)';
+  }
+
+  @override
+  String get drawer_check_updates => 'Check for Updates';
 }

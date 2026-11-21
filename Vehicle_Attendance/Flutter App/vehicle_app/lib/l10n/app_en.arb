@@ -983,6 +983,51 @@
   "error_serverError": "Server error, please try again later",
   "@error_serverError": {
     "description": "API error mapping for 500 server error"
+  },
+  "update_available_title": "New Update Available",
+  "@update_available_title": {
+    "description": "Title for app update dialog"
+  },
+  "update_available_desc": "Version {version} is available. Update now to get the latest features and improvements.",
+  "@update_available_desc": {
+    "description": "Description for app update dialog",
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "update_btn_update": "Update Now",
+  "@update_btn_update": {
+    "description": "Button to trigger update download"
+  },
+  "update_btn_later": "Later",
+  "@update_btn_later": {
+    "description": "Button to dismiss update dialog"
+  },
+  "update_downloading": "Downloading update: {percent}%",
+  "@update_downloading": {
+    "description": "Progress message during update download",
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "update_installing": "Installing update...",
+  "@update_installing": {
+    "description": "Message when update APK is ready to install"
+  },
+  "update_failed": "Update download failed. Tap to open in browser.",
+  "@update_failed": {
+    "description": "Error fallback message for update download"
+  },
+  "update_up_to_date": "Bolero Attendance is up to date (v{version})",
+  "@update_up_to_date": {
+    "description": "Message when app is already at newest version",
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "drawer_check_updates": "Check for Updates",
+  "@drawer_check_updates": {
+    "description": "Drawer menu item to check for app updates"
   }
 }
 

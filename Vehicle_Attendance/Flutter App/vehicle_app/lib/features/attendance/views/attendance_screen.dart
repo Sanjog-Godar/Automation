@@ -4,6 +4,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/l10n/formatters.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/services/toast_service.dart';
+import '../../../core/services/app_update_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/nepali_calendar_helper.dart';
 import '../../../l10n/app_localizations.dart';
@@ -59,6 +60,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             bsYear: state.currentYear,
             bsMonthIndex: state.currentMonthIndex,
           );
+
+      // Check for available OTA update silently in background
+      if (mounted) {
+        ref.read(appUpdateServiceProvider).checkForUpdateAndPrompt(context, silent: true);
+      }
     });
   }
 

@@ -762,4 +762,38 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get error_serverError =>
       'सर्भरमा समस्या आयो, कृपया पछि प्रयास गर्नुहोस्';
+
+  @override
+  String get update_available_title => 'नयाँ अपडेट उपलब्ध छ';
+
+  @override
+  String update_available_desc(String version) {
+    return 'नयाँ संस्करण $version उपलब्ध छ। नयाँ सुविधाहरू र सुधारहरूको लागि अहिले अपडेट गर्नुहोस्।';
+  }
+
+  @override
+  String get update_btn_update => 'अहिले अपडेट गर्नुहोस्';
+
+  @override
+  String get update_btn_later => 'पछिको लागि';
+
+  @override
+  String update_downloading(String percent) {
+    return 'अपडेट डाउनलोड हुँदैछ: $percent%';
+  }
+
+  @override
+  String get update_installing => 'अपडेट इन्स्टल हुँदैछ...';
+
+  @override
+  String get update_failed =>
+      'डाउनलोड हुन सकेन। ब्राउजरबाट डाउनलोड गर्न थिच्नुहोस्।';
+
+  @override
+  String update_up_to_date(String version) {
+    return 'एप नवीनतम संस्करणमा छ (v$version)';
+  }
+
+  @override
+  String get drawer_check_updates => 'अपडेट जाँच गर्नुहोस्';
 }

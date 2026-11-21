@@ -101,5 +101,9 @@ class AppConfig {
 
   /// SharedPreferences storage key for persistent language selection.
   static const String languagePrefsKey = 'selected_language_code';
+
+  /// Current application version string and build number.
+  static const String currentVersion = '1.2.0';
+  static const int currentBuildNumber = 3;
 }
 

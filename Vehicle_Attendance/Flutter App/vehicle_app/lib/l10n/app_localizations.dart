@@ -1444,6 +1444,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server error, please try again later'**
   String get error_serverError;
+
+  /// Title for app update dialog
+  ///
+  /// In en, this message translates to:
+  /// **'New Update Available'**
+  String get update_available_title;
+
+  /// Description for app update dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available. Update now to get the latest features and improvements.'**
+  String update_available_desc(String version);
+
+  /// Button to trigger update download
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get update_btn_update;
+
+  /// Button to dismiss update dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get update_btn_later;
+
+  /// Progress message during update download
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading update: {percent}%'**
+  String update_downloading(String percent);
+
+  /// Message when update APK is ready to install
+  ///
+  /// In en, this message translates to:
+  /// **'Installing update...'**
+  String get update_installing;
+
+  /// Error fallback message for update download
+  ///
+  /// In en, this message translates to:
+  /// **'Update download failed. Tap to open in browser.'**
+  String get update_failed;
+
+  /// Message when app is already at newest version
+  ///
+  /// In en, this message translates to:
+  /// **'Bolero Attendance is up to date (v{version})'**
+  String update_up_to_date(String version);
+
+  /// Drawer menu item to check for app updates
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get drawer_check_updates;
 }
 
 class _AppLocalizationsDelegate
