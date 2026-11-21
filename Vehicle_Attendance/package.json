@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx scripts/seed-dates.ts",
-    "clean": "tsx scripts/clean-defaults.ts"
+    "clean": "tsx scripts/clean-defaults.ts",
+    "release": "tsx scripts/release.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
