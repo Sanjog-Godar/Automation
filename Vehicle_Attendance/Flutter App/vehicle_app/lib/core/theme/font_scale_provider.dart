@@ -50,3 +50,4 @@ class FontScaleNotifier extends Notifier<AppFontScale> {
     }
   }
 }
+
